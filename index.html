@@ -1,128 +1,23 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M-SOLUTIONS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* --- סגנונות כלליים למצב כהה --- */
-        body {
-            background-color: #000000;
-            color: #ffffff;
-        }
-        .product-card {
-            border: 1px solid #333333;
-            background-color: #1a1a1a;
-            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
-            transition: transform 0.2s;
-            margin-bottom: 20px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            text-align: right;
-        }
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(255, 255, 255, 0.3);
-        }
-        .card-title {
-            color: #f8f9fa;
-            font-size: 1.25rem;
-            font-weight: 600;
-            height: 50px; /* גובה קבוע לכותרת */
-            overflow: hidden;
-        }
-        .card-text {
-            height: 70px; /* גובה קבוע לתיאור */
-            overflow: hidden;
-            font-size: 0.9rem;
-            color: #aaaaaa;
-        }
-        .product-price {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4dc2ff;
-            margin-bottom: 10px;
-            direction: ltr;
-        }
-        .main-header {
-            color: #ffffff !important;
-            font-size: 2.5rem;
-            font-weight: bold;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-        }
-
-        /* --- סגנונות תמונה --- */
-        .product-image {
-            height: 250px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .product-image a {
-            display: block; /* ודא שהקישור תופס את כל שטח התמונה */
-            height: 100%;
-            width: 100%;
-        }
-        .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .card-body {
-            flex-grow: 1;
-            padding: 15px;
-        }
-        .btn-buy {
-            width: 100%;
-            font-size: 1.1rem;
-            background-color: #ff471a;
-            border-color: #ff471a;
-        }
-        .btn-buy:hover {
-            background-color: #e03c15;
-            border-color: #e03c15;
-        }
-        .alert-danger {
-            background-color: #330000;
-            color: #ffaaaa;
-            border-color: #800000;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1 class="text-center mb-4 main-header">M-SOLUTIONS</h1> 
-    <div id="product-list" class="row">
-    </div>
-</div>
-
 <script>
     // ** הקישור שלך ל-CSV (וודא שהוא נכון ומפורסם) **
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?output=csv'; 
     
-    // הגדרת שמות הטורים כפי שהם מופיעים בגיליון
+    // הגדרת שמות הטורים החדשים (חייבים להתאים לגיליון!)
     const HEADERS = [
-        "A. קישור מוצר (רגיל)", 
-        "B. שם המוצר (כותרת)", 
-        "C. תיאור קצר", 
-        "D. מחיר ($)", 
-        "E. קישור לתמונה (Image URL)", 
-        "F. קישור אפיליאציה" // הטור שאותו נמלא ידנית ונשתמש בו
+        "PRODUCT_URL", 
+        "TITLE", 
+        "DESCRIPTION", 
+        "PRICE", 
+        "IMAGE_URL", 
+        "AFFILIATE_LINK" 
     ];
 
-
-    // פונקציה חזקה לניתוח CSV
+    // פונקציה חזקה לניתוח CSV (נשארה זהה)
     function parseCSV(csvText, headers) {
         const products = [];
         const lines = csvText.trim().split('\n');
         
-        // מתחילים משורה 1 (דילוג על הכותרות שכבר הגדרנו)
         for (let i = 1; i < lines.length; i++) {
-            // regex יעיל לפיצול CSV שתומך בגרשיים בתוך תא
             const values = lines[i].match(/(?:"[^"]*"|[^,])+/g); 
             
             if (values && values.length >= headers.length) {
@@ -143,7 +38,74 @@
 
     async function loadProducts() {
         const productList = document.getElementById('product-list');
-        productList.innerHTML = 'טוען מוצרים...';
+        productList.innerHTML = 'טוען מוצרים...'; // יראה אם יש בעיה בטעינת הנתונים
 
         try {
-            const response = await fetch(SHE
+            const response = await fetch(SHEET_URL);
+            const csvText = await response.text();
+            
+            const products = parseCSV(csvText, HEADERS);
+            
+            productList.innerHTML = ''; 
+            
+            if (products.length === 0) {
+                 productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה.</div>`;
+                 return;
+            }
+
+            products.forEach(product => {
+                
+                // משיכת הנתונים לפי השמות החדשים
+                const affiliateLink = product['AFFILIATE_LINK'];
+                const regularLink = product['PRODUCT_URL'];
+
+                const finalLink = affiliateLink && affiliateLink.length > 5 ? affiliateLink : regularLink;
+                
+                const title = product['TITLE'];
+                const description = product['DESCRIPTION'];
+                let price = product['PRICE'];
+                const imageUrl = product['IMAGE_URL'];
+
+                if (finalLink && title && imageUrl) {
+                    
+                    if (price && !price.toString().startsWith('$') && price.toString().trim() !== '') {
+                        price = `$${price}`;
+                    }
+
+                    const cardHtml = `
+                        <div class="col-md-4 col-sm-6">
+                            <div class="product-card">
+                                
+                                <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" style="text-decoration: none; color: inherit;">
+                                    <div class="product-image">
+                                        <img src="${imageUrl}" alt="${title} - תמונה" onerror="this.onerror=null; this.src='https://via.placeholder.com/250?text=No+Image';">
+                                    </div>
+                                </a>
+
+                                <div class="card-body">
+                                    <h5 class="card-title">${title}</h5>
+                                    <p class="card-text">${description || 'אין תיאור.'}</p>
+                                    <div class="product-price">${price}</div>
+                                    
+                                    <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" class="btn btn-primary btn-buy">קנה עכשיו בעלי אקספרס</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    productList.innerHTML += cardHtml;
+                }
+            });
+            
+        } catch (error) {
+            // אם הטעינה נכשלת (למשל, קישור CSV שגוי)
+            productList.innerHTML = `<div class="alert alert-danger" role="alert" dir="rtl">
+                                        שגיאה בטעינת הנתונים. ודא שהקישור ל-CSV נכון.
+                                        <br>פרטי שגיאה: ${error.message}
+                                    </div>`;
+            console.error('Error loading products:', error);
+        }
+    }
+
+    // הפעלת הפונקציה בעת טעינת הדף
+    loadProducts();
+</script>
