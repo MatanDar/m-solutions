@@ -97,14 +97,14 @@
 <div class="container">
     <h1 class="text-center mb-4 main-header">M-SOLUTIONS</h1> 
     <div id="product-list" class="row">
-    </div>
+        </div>
 </div>
 
 <script>
     // 🚨 עדכן את הקישור שלך ל-CSV כאן! 🚨
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?output=csv'; 
     
-    // ⚠️ חובה לוודא ששמות הטורים בגיליון שלך תואמים לשמות אלה! ⚠️
+    // ⚠️ שמות הטורים באנגלית פשוטה (חובה להתאים בגיליון!) ⚠️
     const HEADERS = [
         "PRODUCT_URL", 
         "TITLE", 
@@ -114,7 +114,7 @@
         "AFFILIATE_LINK" 
     ];
 
-    // פונקציה חזקה לניתוח CSV (ללא שינוי)
+    // פונקציה חזקה לניתוח CSV
     function parseCSV(csvText, headers) {
         const products = [];
         const lines = csvText.trim().split('\n');
@@ -140,6 +140,13 @@
 
     async function loadProducts() {
         const productList = document.getElementById('product-list');
+        
+        // 🏆 התיקון שהושתת על DOMContentLoaded פותר את השגיאה האחרונה.
+        if (!productList) {
+            console.error("Error: Element with ID 'product-list' not found.");
+            return;
+        }
+
         productList.innerHTML = 'טוען מוצרים...';
 
         try {
@@ -151,7 +158,7 @@
             productList.innerHTML = ''; 
             
             if (products.length === 0) {
-                 productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה.</div>`;
+                 productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה. אנא ודא שהגיליון מכיל נתונים.</div>`;
                  return;
             }
 
@@ -207,7 +214,7 @@
         }
     }
 
-    // 🏆 התיקון הקריטי: הפעלת הפונקציה רק לאחר טעינת כל ה-HTML
+    // 🏆 הפעלת הפונקציה רק לאחר טעינת כל מבנה ה-HTML
     document.addEventListener('DOMContentLoaded', () => {
         loadProducts();
     });
