@@ -101,8 +101,8 @@
 </div>
 
 <script>
-    // 🚨 עדכן את הקישור שלך ל-CSV כאן! 🚨
-    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?output=csv'; 
+    // 🏆 קישור CSV מעודכן (כולל ה-GID המדויק ששלחת) 🏆
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv'; 
     
     // ⚠️ שמות הטורים באנגלית פשוטה (חובה להתאים בגיליון!) ⚠️
     const HEADERS = [
@@ -114,7 +114,7 @@
         "AFFILIATE_LINK" 
     ];
 
-    // פונקציה חזקה לניתוח CSV
+    // פונקציה לניתוח CSV
     function parseCSV(csvText, headers) {
         const products = [];
         const lines = csvText.trim().split('\n');
@@ -141,7 +141,7 @@
     async function loadProducts() {
         const productList = document.getElementById('product-list');
         
-        // 🏆 התיקון שהושתת על DOMContentLoaded פותר את השגיאה האחרונה.
+        // הגנה מפני שגיאת null אם ה-ID לא נמצא (מה שפתרנו עם DOMContentLoaded)
         if (!productList) {
             console.error("Error: Element with ID 'product-list' not found.");
             return;
@@ -158,7 +158,7 @@
             productList.innerHTML = ''; 
             
             if (products.length === 0) {
-                 productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה. אנא ודא שהגיליון מכיל נתונים.</div>`;
+                 productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה.</div>`;
                  return;
             }
 
@@ -167,7 +167,6 @@
                 const affiliateLink = product['AFFILIATE_LINK'];
                 const regularLink = product['PRODUCT_URL'];
 
-                // משתמשים בקישור האפיליאציה (F) אם קיים, אחרת בקישור הרגיל (A)
                 const finalLink = affiliateLink && affiliateLink.length > 5 ? affiliateLink : regularLink;
                 
                 const title = product['TITLE'];
@@ -175,11 +174,15 @@
                 let price = product['PRICE'];
                 const imageUrl = product['IMAGE_URL'];
 
+                // מוודא שיש נתונים מינימליים להצגה
                 if (finalLink && title && imageUrl) {
                     
                     if (price && !price.toString().startsWith('$') && price.toString().trim() !== '') {
                         price = `$${price}`;
                     }
+                    
+                    // 🏆 תיקון ה-Placeholder ל-placehold.co (פתרון שגיאת ERR_NAME_NOT_RESOLVED)
+                    const imageOnError = "this.onerror=null; this.src='https://placehold.co/250x250?text=No+Image'";
 
                     const cardHtml = `
                         <div class="col-md-4 col-sm-6">
@@ -187,7 +190,7 @@
                                 
                                 <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" style="text-decoration: none; color: inherit;">
                                     <div class="product-image">
-                                        <img src="${imageUrl}" alt="${title} - תמונה" onerror="this.onerror=null; this.src='https://via.placeholder.com/250?text=No+Image';">
+                                        <img src="${imageUrl}" alt="${title} - תמונה" onerror="${imageOnError}">
                                     </div>
                                 </a>
 
@@ -214,7 +217,7 @@
         }
     }
 
-    // 🏆 הפעלת הפונקציה רק לאחר טעינת כל מבנה ה-HTML
+    // 🏆 התיקון הקריטי לשגיאת ה-null: הפעלת הפונקציה רק לאחר טעינת ה-HTML
     document.addEventListener('DOMContentLoaded', () => {
         loadProducts();
     });
