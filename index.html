@@ -60,9 +60,10 @@
             margin-bottom: 40px; 
         }
         .main-logo {
-            width: 100%; /* וודא שהוא תופס 90% מהרוחב הזמין */
+            /* ✅ תיקון רספונסיביות: הגדלת הגודל המקסימלי */
+            max-width: 500px; 
+            width: 90%;
             height: auto;
-            /* border-radius: 10px; הוסר - לא רלוונטי ללוגו הזה */
         }
         
         /* --- סגנונות תמונה (מוצר) --- */
@@ -81,7 +82,10 @@
         .product-image img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            /* ✅ תיקון חיתוך: מציג את כל התמונה */
+            object-fit: contain; 
+            padding: 10px; 
+            background-color: #2a2a2a;
         }
         .card-body {
             flex-grow: 1;
@@ -102,6 +106,15 @@
             color: #ffaaaa;
             border-color: #800000;
         }
+
+        /* --- ✅ תיקון רספונסיביות: הצגת 4 כרטיסים בשורה ברזולוציות רחבות --- */
+        @media (min-width: 768px) {
+            .col-md-4 {
+                /* 100% / 4 = 25% */
+                flex: 0 0 auto;
+                width: 25%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -109,9 +122,10 @@
 <div class="container">
     <h1 class="text-center mb-2 main-header">M-SOLUTIONS</h1> 
     
-    <img src="img/MSolutions.png" 
-    alt="M-SOLUTIONS Logo" 
-    class="img-fluid main-logo">
+    <div class="logo-container">
+        <img src="img/MSolutions.png" 
+             alt="M-SOLUTIONS Logo" 
+             class="img-fluid main-logo">
     </div>
     
     <div id="product-list" class="row">
@@ -200,7 +214,7 @@
 
                 if (finalLink && title && (imageUrl || price)) { 
                     
-                    // תיקון המטבע: הסרת כל סימן קיים והוספת סימן השקל (₪)
+                    // ✅ תיקון המטבע: הוספת סימן השקל (₪)
                     if (price && price.toString().trim() !== '') {
                         price = price.toString().replace('$', '').replace('₪', '').replace(/[\(\)]/g, '').trim();
                         price = `₪${price}`; 
@@ -208,7 +222,7 @@
                         price = "₪XX.XX (עדכן)";
                     }
                     
-                    // שימוש ב-placehold.co כפי שתוקן בעבר
+                    // שימוש ב-placehold.co במקרה של תמונה חסרה
                     const imageOnError = "this.onerror=null; this.src='https://placehold.co/250x250?text=No+Image'";
 
                     const cardHtml = `
