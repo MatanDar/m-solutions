@@ -21,6 +21,7 @@
             display: flex;
             flex-direction: column;
             text-align: right;
+            border-radius: 10px; /* ✅ עיגול פינות לכרטיס כולו */
         }
         .product-card:hover {
             transform: translateY(-5px);
@@ -38,6 +39,7 @@
             overflow: hidden;
             font-size: 0.9rem;
             color: #aaaaaa;
+            line-height: 1.5; /* ✅ הוספת רווח שורה (Line Height) */
         }
         .product-price {
             font-size: 1.5rem;
@@ -84,7 +86,7 @@
             height: 100%;
             /* ✅ תיקון חיתוך: מציג את כל התמונה */
             object-fit: contain; 
-            padding: 10px; 
+            padding: 1px; 
             background-color: #2a2a2a;
         }
         .card-body {
@@ -113,6 +115,17 @@
                 /* 100% / 4 = 25% */
                 flex: 0 0 auto;
                 width: 25%;
+            }
+        }
+        /* --- ✅ תיקון: הקטנת רוחב ומרכוז בסלולר (עד 576px) --- */
+        @media (max-width: 575.98px) {
+            .col-sm-6 {
+                /* נרצה שהכרטיס יהיה פחות רחב במרכז המסך */
+                flex: 0 0 auto;
+                width: 85%; 
+                /* דוחף את הכרטיס למרכז המסך */
+                margin-left: auto;
+                margin-right: auto;
             }
         }
     </style>
