@@ -21,7 +21,7 @@
             display: flex;
             flex-direction: column;
             text-align: right;
-            border-radius: 10px; /* ✅ עיגול פינות לכרטיס כולו */
+            border-radius: 10px; /* עיגול פינות לכרטיס כולו */
         }
         .product-card:hover {
             transform: translateY(-5px);
@@ -39,7 +39,7 @@
             overflow: hidden;
             font-size: 0.9rem;
             color: #aaaaaa;
-            line-height: 1.5; /* ✅ הוספת רווח שורה (Line Height) */
+            line-height: 1.5; /* רווח שורה מוגדל */
         }
         .product-price {
             font-size: 1.5rem;
@@ -49,13 +49,7 @@
             /* שומר על יישור שמאלי למטבע ומחיר */
             direction: ltr; 
         }
-        .main-header { /* ✅ קלאס זה כבר לא בשימוש ישיר */
-            color: #ffffff !important;
-            font-size: 2.5rem;
-            font-weight: bold;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-        }
-
+        
         /* --- סגנונות לוגו עליון (ב-Navbar) --- */
         .navbar-brand-logo {
             height: 40px; /* גובה הלוגו ב-Navbar */
@@ -65,19 +59,9 @@
             color: #ffffff;
             font-weight: bold;
         }
-        .navbar-dark .navbar-nav .nav-link {
-            color: rgba(255, 255, 255, 0.75);
-        }
-        .navbar-dark .navbar-nav .nav-link:hover {
-            color: #ffffff;
-        }
-
         /* ✅ הסרת סגנונות הלוגו הגדול הישן */
-        .logo-container { 
+        .logo-container, .main-logo, .main-header { 
             display: none; 
-        }
-        .main-logo {
-            display: none;
         }
         
         /* --- סגנונות תמונה (מוצר) --- */
@@ -96,7 +80,7 @@
         .product-image img {
             width: 100%;
             height: 100%;
-            /* ✅ תיקון חיתוך: מציג את כל התמונה */
+            /* מציג את כל התמונה ללא חיתוך */
             object-fit: contain; 
             padding: 10px; 
             background-color: #2a2a2a;
@@ -121,7 +105,7 @@
             border-color: #800000;
         }
 
-        /* --- ✅ תיקון רספונסיביות: הצגת 4 כרטיסים בשורה ברזולוציות רחבות --- */
+        /* --- הצגת 4 כרטיסים בשורה ברזולוציות רחבות (מ-768px ומעלה) --- */
         @media (min-width: 768px) {
             .col-md-4 {
                 /* 100% / 4 = 25% */
@@ -130,7 +114,7 @@
             }
         }
 
-        /* --- ✅ תיקון: הקטנת רוחב ומרכוז בסלולר (עד 576px) --- */
+        /* --- הקטנת רוחב ומרכוז בסלולר (עד 575.98px) --- */
         @media (max-width: 575.98px) {
             .col-sm-6 {
                 flex: 0 0 auto;
@@ -153,18 +137,14 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto"> <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="#">אביזרים למחשב</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">בית חכם</a>
-                    </li>
-                    <li class="nav-item">
+                <ul class="navbar-nav me-auto"> 
+                    
+                    <li class="nav-item" style="direction: ltr;">
                         <a class="nav-link" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
                             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
                           </svg></a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" style="direction: ltr;">
                         <a class="nav-link" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bag" viewBox="0 0 16 16">
                             <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
                           </svg></a>
@@ -174,7 +154,8 @@
         </div>
     </nav>
     
-    <div class="container mt-4"> <div id="product-list" class="row">
+    <div class="container mt-4"> 
+        <div id="product-list" class="row">
         </div>
     </div>
 
@@ -253,7 +234,7 @@
                 if (imageUrl) {
                     // הסרת סיומת AVIF ובדיקות תקינות
                     imageUrl = imageUrl.toString().replace('.avif', ''); 
-                    if (imageUrl.includes('<') || imageUrl.includes('<') || imageUrl.includes('>')) { // תיקנתי >
+                    if (imageUrl.includes('<') || imageUrl.includes('>')) {
                         imageUrl = ''; 
                     }
                 }
