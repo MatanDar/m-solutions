@@ -171,16 +171,26 @@
                 let price = product['PRICE'];
                 
                 let imageUrl = product['IMAGE_URL'];
-                // התיקון לבעיית AVIF: מסיר את הסיומת .avif מהקישור
-                if (imageUrl && imageUrl.endsWith('.avif')) {
-                    imageUrl = imageUrl.replace('.avif', '');
+                // 🏆 תיקון התמונה: מוודא שהקישור אינו מכיל סיומת AVIF או קוד שבור
+                if (imageUrl) {
+                    // הסרת סיומת AVIF
+                    imageUrl = imageUrl.toString().replace('.avif', ''); 
+                    // בדיקה נוספת למקרה שהטקסט מכיל קוד HTML שבור
+                    if (imageUrl.includes('<') || imageUrl.includes('>')) {
+                        imageUrl = ''; // מנקה את ה-URL כדי להשתמש ב-Placeholder
+                    }
                 }
 
-                if (finalLink && title && imageUrl) {
+
+                if (finalLink && title && (imageUrl || price)) { // מוודא שיש לפחות מחיר או תמונה תקינים
                     
-                    // 🏆 התיקון הקריטי: החלפת '$' ל-'₪' 
-                    if (price && !price.toString().startsWith('₪') && price.toString().trim() !== '') {
+                    // 🏆 תיקון המטבע: הסרת כל סימן קיים והוספת סימן השקל (₪)
+                    if (price && price.toString().trim() !== '') {
+                        // הסר $ ו-₪ אם קיימים, ואז הוסף ₪
+                        price = price.toString().replace('$', '').replace('₪', '').replace(/[\(\)]/g, '').trim();
                         price = `₪${price}`; 
+                    } else {
+                        price = "₪XX.XX (עדכן)";
                     }
                     
                     // שימוש ב-placehold.co כפי שתוקן בעבר
