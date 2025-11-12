@@ -11,6 +11,20 @@
             background-color: #000000;
             color: #ffffff;
         }
+        
+        /* --- סגנונות לרקע העליון (Header) --- */
+        .main-header-bg {
+            height: 350px; /* גובה הסקשן. שנה לפי הצורך! */
+            width: 100%;
+            /* ✅ עדכן כאן את הנתיב לתמונת הרקע החדשה שלך */
+            background-image: url('img/header-bg.jpg'); 
+            background-size: cover; 
+            background-position: center center;
+            background-repeat: no-repeat; 
+            margin-bottom: 20px;
+        }
+
+        /* --- סגנונות כרטיס מוצר --- */
         .product-card {
             border: 1px solid #333333;
             background-color: #1a1a1a;
@@ -21,7 +35,7 @@
             display: flex;
             flex-direction: column;
             text-align: right;
-            border-radius: 10px; /* עיגול פינות לכרטיס כולו */
+            border-radius: 10px; 
         }
         .product-card:hover {
             transform: translateY(-5px);
@@ -52,16 +66,12 @@
         
         /* --- סגנונות לוגו עליון (ב-Navbar) --- */
         .navbar-brand-logo {
-            height: 40px; /* גובה הלוגו ב-Navbar */
+            height: 40px; 
             margin-left: 10px;
         }
         .navbar-dark .navbar-brand {
             color: #ffffff;
             font-weight: bold;
-        }
-        /* ✅ הסרת סגנונות הלוגו הגדול הישן */
-        .logo-container, .main-logo, .main-header { 
-            display: none; 
         }
         
         /* --- סגנונות תמונה (מוצר) --- */
@@ -80,8 +90,7 @@
         .product-image img {
             width: 100%;
             height: 100%;
-            /* מציג את כל התמונה ללא חיתוך */
-            object-fit: contain; 
+            object-fit: contain; /* מציג את כל התמונה ללא חיתוך */
             padding: 10px; 
             background-color: #2a2a2a;
         }
@@ -99,30 +108,22 @@
             background-color: #e03c15;
             border-color: #e03c15;
         }
-        .alert-danger {
-            background-color: #330000;
-            color: #ffaaaa;
-            border-color: #800000;
-        }
 
-        /* --- הצגת 4 כרטיסים בשורה ברזולוציות רחבות (מ-768px ומעלה) --- */
+        /* --- רספונסיביות: 4 כרטיסים בשורה ברזולוציות רחבות --- */
         @media (min-width: 768px) {
             .col-md-4 {
-                /* 100% / 4 = 25% */
-                flex: 0 0 auto;
                 width: 25%;
-                margin-top: 20px;
+                margin-top: 20px
             }
         }
 
-        /* --- הקטנת רוחב ומרכוז בסלולר (עד 575.98px) --- */
+        /* --- רספונסיביות: הקטנת רוחב ומרכוז בסלולר --- */
         @media (max-width: 575.98px) {
             .col-sm-6 {
-                flex: 0 0 auto;
                 width: 85%; 
                 margin-left: auto;
                 margin-right: auto;
-                margin-top: 20px;
+                margin-top: 20px
             }
         }
     </style>
@@ -155,6 +156,8 @@
             </div>
         </div>
     </nav>
+    
+    <header class="main-header-bg"></header> 
     
     <div class="container mt-4"> 
         <div id="product-list" class="row">
