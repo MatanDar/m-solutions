@@ -101,10 +101,8 @@
 </div>
 
 <script>
-    // 🏆 קישור CSV מעודכן (כולל ה-GID המדויק ששלחת) 🏆
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv'; 
     
-    // ⚠️ שמות הטורים באנגלית פשוטה (חובה להתאים בגיליון!) ⚠️
     const HEADERS = [
         "PRODUCT_URL", 
         "TITLE", 
@@ -114,7 +112,6 @@
         "AFFILIATE_LINK" 
     ];
 
-    // פונקציה לניתוח CSV
     function parseCSV(csvText, headers) {
         const products = [];
         const lines = csvText.trim().split('\n');
@@ -141,7 +138,6 @@
     async function loadProducts() {
         const productList = document.getElementById('product-list');
         
-        // הגנה מפני שגיאת null אם ה-ID לא נמצא (מה שפתרנו עם DOMContentLoaded)
         if (!productList) {
             console.error("Error: Element with ID 'product-list' not found.");
             return;
@@ -172,16 +168,19 @@
                 const title = product['TITLE'];
                 const description = product['DESCRIPTION'];
                 let price = product['PRICE'];
-                const imageUrl = product['IMAGE_URL'];
+                
+                let imageUrl = product['IMAGE_URL'];
+                // 🏆 התיקון לבעיית AVIF: מסיר את הסיומת .avif מהקישור
+                if (imageUrl && imageUrl.endsWith('.avif')) {
+                    imageUrl = imageUrl.replace('.avif', '');
+                }
 
-                // מוודא שיש נתונים מינימליים להצגה
                 if (finalLink && title && imageUrl) {
                     
                     if (price && !price.toString().startsWith('$') && price.toString().trim() !== '') {
                         price = `$${price}`;
                     }
                     
-                    // 🏆 תיקון ה-Placeholder ל-placehold.co (פתרון שגיאת ERR_NAME_NOT_RESOLVED)
                     const imageOnError = "this.onerror=null; this.src='https://placehold.co/250x250?text=No+Image'";
 
                     const cardHtml = `
@@ -217,7 +216,6 @@
         }
     }
 
-    // 🏆 התיקון הקריטי לשגיאת ה-null: הפעלת הפונקציה רק לאחר טעינת ה-HTML
     document.addEventListener('DOMContentLoaded', () => {
         loadProducts();
     });
