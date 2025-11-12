@@ -49,23 +49,35 @@
             /* שומר על יישור שמאלי למטבע ומחיר */
             direction: ltr; 
         }
-        .main-header {
+        .main-header { /* ✅ קלאס זה כבר לא בשימוש ישיר */
             color: #ffffff !important;
             font-size: 2.5rem;
             font-weight: bold;
             text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
         }
 
-        /* --- סגנונות לוגו --- */
-        .logo-container {
-            text-align: center;
-            margin-bottom: 40px; 
+        /* --- סגנונות לוגו עליון (ב-Navbar) --- */
+        .navbar-brand-logo {
+            height: 40px; /* גובה הלוגו ב-Navbar */
+            margin-left: 10px;
+        }
+        .navbar-dark .navbar-brand {
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .navbar-dark .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.75);
+        }
+        .navbar-dark .navbar-nav .nav-link:hover {
+            color: #ffffff;
+        }
+
+        /* ✅ הסרת סגנונות הלוגו הגדול הישן */
+        .logo-container { 
+            display: none; 
         }
         .main-logo {
-            /* ✅ תיקון רספונסיביות: הגדלת הגודל המקסימלי */
-            max-width: 100%; 
-            width: 90%;
-            height: auto;
+            display: none;
         }
         
         /* --- סגנונות תמונה (מוצר) --- */
@@ -86,7 +98,7 @@
             height: 100%;
             /* ✅ תיקון חיתוך: מציג את כל התמונה */
             object-fit: contain; 
-            padding: 1px; 
+            padding: 10px; 
             background-color: #2a2a2a;
         }
         .card-body {
@@ -115,38 +127,58 @@
                 /* 100% / 4 = 25% */
                 flex: 0 0 auto;
                 width: 25%;
-                margin-top: 20px;
             }
         }
+
         /* --- ✅ תיקון: הקטנת רוחב ומרכוז בסלולר (עד 576px) --- */
         @media (max-width: 575.98px) {
             .col-sm-6 {
-                /* נרצה שהכרטיס יהיה פחות רחב במרכז המסך */
                 flex: 0 0 auto;
                 width: 85%; 
-                /* דוחף את הכרטיס למרכז המסך */
                 margin-left: auto;
                 margin-right: auto;
-                margin-top: 22.5px;
             }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1 class="text-center mb-2 main-header">M-SOLUTIONS</h1> 
-    
-    <div class="logo-container">
-        <img src="img/MSolutions.png" 
-             alt="M-SOLUTIONS Logo" 
-             class="img-fluid main-logo">
-    </div>
-    
-    <div id="product-list" class="row">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="img/MSolutions.png" alt="M-SOLUTIONS Logo" class="navbar-brand-logo">
+                M-SOLUTIONS
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto"> <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">אביזרים למחשב</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">בית חכם</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                          </svg></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bag" viewBox="0 0 16 16">
+                            <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                          </svg></a>
+                    </li>
+                </ul>
+            </div>
         </div>
-</div>
+    </nav>
+    
+    <div class="container mt-4"> <div id="product-list" class="row">
+        </div>
+    </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv'; 
     
@@ -221,7 +253,7 @@
                 if (imageUrl) {
                     // הסרת סיומת AVIF ובדיקות תקינות
                     imageUrl = imageUrl.toString().replace('.avif', ''); 
-                    if (imageUrl.includes('<') || imageUrl.includes('>')) {
+                    if (imageUrl.includes('<') || imageUrl.includes('<') || imageUrl.includes('>')) { // תיקנתי >
                         imageUrl = ''; 
                     }
                 }
