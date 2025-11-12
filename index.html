@@ -54,7 +54,19 @@
             text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
         }
 
-        /* --- סגנונות תמונה --- */
+        /* --- סגנונות לוגו חדשים --- */
+        .logo-container {
+            text-align: center;
+            margin-bottom: 40px; 
+        }
+        .main-logo {
+            /* גודל מקסימלי על מסך גדול */
+            max-width: 300px; 
+            height: auto;
+            border-radius: 10px; /* אופציונלי: מעט עיגול פינות */
+        }
+        
+        /* --- סגנונות תמונה (מוצר) --- */
         .product-image {
             height: 250px;
             overflow: hidden;
@@ -96,7 +108,13 @@
 <body>
 
 <div class="container">
-    <h1 class="text-center mb-4 main-header">M-SOLUTIONS</h1> 
+    <h1 class="text-center mb-2 main-header">M-SOLUTIONS</h1> 
+    
+    <div class="logo-container">
+        <img src="Gemini_Generated_Image_8rs6ei8rs6ei8rs6.jpg" 
+             alt="M-SOLUTIONS Logo" 
+             class="img-fluid main-logo">
+    </div>
     <div id="product-list" class="row">
         </div>
 </div>
@@ -171,22 +189,20 @@
                 let price = product['PRICE'];
                 
                 let imageUrl = product['IMAGE_URL'];
-                // 🏆 תיקון התמונה: מוודא שהקישור אינו מכיל סיומת AVIF או קוד שבור
+                
                 if (imageUrl) {
-                    // הסרת סיומת AVIF
+                    // הסרת סיומת AVIF ובדיקות תקינות
                     imageUrl = imageUrl.toString().replace('.avif', ''); 
-                    // בדיקה נוספת למקרה שהטקסט מכיל קוד HTML שבור
                     if (imageUrl.includes('<') || imageUrl.includes('>')) {
-                        imageUrl = ''; // מנקה את ה-URL כדי להשתמש ב-Placeholder
+                        imageUrl = ''; 
                     }
                 }
 
 
-                if (finalLink && title && (imageUrl || price)) { // מוודא שיש לפחות מחיר או תמונה תקינים
+                if (finalLink && title && (imageUrl || price)) { 
                     
-                    // 🏆 תיקון המטבע: הסרת כל סימן קיים והוספת סימן השקל (₪)
+                    // תיקון המטבע: הסרת כל סימן קיים והוספת סימן השקל (₪)
                     if (price && price.toString().trim() !== '') {
-                        // הסר $ ו-₪ אם קיימים, ואז הוסף ₪
                         price = price.toString().replace('$', '').replace('₪', '').replace(/[\(\)]/g, '').trim();
                         price = `₪${price}`; 
                     } else {
