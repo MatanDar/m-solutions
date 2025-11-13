@@ -6,565 +6,530 @@
     <title>M-SOLUTIONS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        /* --- סגנונות כלליים למצב כהה --- */
         body {
             background-color: #0a0a0a;
             color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
-        /* Sidebar */
-        .sidebar {
-            position: fixed;
-            right: 0;
-            top: 0;
-            width: 280px;
-            height: 100vh;
-            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1e 100%);
-            padding: 30px 20px;
-            overflow-y: auto;
-            z-index: 1000;
-            box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+        /* --- סגנונות לרקע העליון (Header) --- */
+        .main-header-bg {
+            height: 350px;
+            width: 100%;
+            background-image: url('img/header-bg.png'); 
+            background-size: cover; 
+            background-position: center center;
+            background-repeat: no-repeat; 
+            margin-bottom: 20px;
         }
-        
-        .sidebar-logo {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+
+        /* --- סגנונות Navbar חדש --- */
+        .top-navbar {
+            background-color: #000000;
+            padding: 15px 0;
+            border-bottom: 1px solid #222;
         }
-        
-        .sidebar-logo h2 {
-            color: #5b86e5;
-            font-size: 24px;
-            font-weight: 700;
-            margin-top: 10px;
-        }
-        
-        .sidebar-logo img {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-        }
-        
-        .filter-section {
-            margin-bottom: 30px;
-        }
-        
-        .filter-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #8b8b8b;
-            text-transform: uppercase;
-            margin-bottom: 15px;
-            letter-spacing: 1px;
-        }
-        
-        .filter-option {
-            padding: 10px 15px;
-            margin-bottom: 8px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-        
-        .filter-option:hover {
-            background: rgba(91,134,229,0.2);
-            transform: translateX(-3px);
-        }
-        
-        .filter-option.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .price-range {
+        .navbar-container {
             display: flex;
-            gap: 10px;
             align-items: center;
-            margin-top: 10px;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
-        
-        .price-input {
-            width: 100px;
-            padding: 8px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 6px;
-            color: white;
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .navbar-brand-logo {
+            height: 45px;
+        }
+        .brand-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffffff;
+            margin: 0;
+        }
+        .search-section {
+            flex-grow: 1;
+            max-width: 500px;
+            margin: 0 30px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 25px;
+            border: 1px solid #333;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-size: 0.95rem;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #4dc2ff;
+            background-color: #222;
+        }
+        .search-input::placeholder {
+            color: #888;
+        }
+
+        /* --- סגנונות פילטרים --- */
+        .filters-section {
+            background-color: #1a1a1a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+        .filter-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 250px;
+        }
+        .filter-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        .price-range-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .price-slider {
+            flex-grow: 1;
+            height: 6px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #4dc2ff, #4dc2ff);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .price-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4dc2ff;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(77, 194, 255, 0.5);
+        }
+        .price-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4dc2ff;
+            cursor: pointer;
+            border: none;
+        }
+        .price-display {
+            color: #4dc2ff;
+            font-weight: bold;
+            min-width: 80px;
             text-align: center;
         }
-        
-        .filter-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 10px 20px;
+        .sort-select {
+            padding: 10px 15px;
             border-radius: 8px;
+            border: 1px solid #333;
+            background-color: #222;
+            color: #ffffff;
+            font-size: 0.95rem;
             cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-            font-weight: 600;
         }
-        
-        .clear-filters {
-            background: rgba(255,59,48,0.2);
-            color: #ff3b30;
-            border: 1px solid #ff3b30;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .clear-filters:hover {
-            background: #ff3b30;
-            color: white;
-        }
-        
-        /* Main Content */
-        .main-content {
-            margin-right: 280px;
-            padding: 30px;
-        }
-        
-        /* Search Bar */
-        .search-container {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(102,126,234,0.3);
-        }
-        
-        .search-box {
-            display: flex;
-            background: white;
-            border-radius: 50px;
-            overflow: hidden;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .search-input {
-            flex: 1;
-            border: none;
-            padding: 15px 25px;
-            font-size: 16px;
+        .sort-select:focus {
             outline: none;
+            border-color: #4dc2ff;
         }
-        
-        .search-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            padding: 15px 35px;
-            color: white;
-            font-weight: 600;
+        .reset-btn {
+            padding: 8px 20px;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            transition: all 0.3s;
         }
-        
-        /* Product Cards - Bootstrap Grid */
+        .reset-btn:hover {
+            background-color: #333;
+            color: #fff;
+            border-color: #555;
+        }
+
+        /* --- סגנונות כרטיס מוצר --- */
         .product-card {
             border: 1px solid #333333;
-            background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            transition: transform 0.3s;
-            margin-bottom: 25px;
+            background-color: #1a1a1a;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s;
+            margin-bottom: 20px;
             height: 100%;
             display: flex;
             flex-direction: column;
             text-align: right;
-            border-radius: 15px;
+            border-radius: 10px; 
         }
-        
         .product-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(102,126,234,0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(255, 255, 255, 0.3);
         }
-        
         .card-title {
-            color: #e0e0e0;
-            font-size: 1.1rem;
+            color: #f8f9fa;
+            font-size: 1.25rem;
             font-weight: 600;
             height: 50px;
             overflow: hidden;
         }
-        
         .card-text {
             height: 70px;
             overflow: hidden;
             font-size: 0.9rem;
-            color: #8b8b8b;
+            color: #aaaaaa;
             line-height: 1.5;
         }
-        
         .product-price {
             font-size: 1.5rem;
             font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #4dc2ff;
             margin-bottom: 10px;
-            direction: ltr;
+            direction: ltr; 
         }
         
+        /* --- סגנונות תמונה (מוצר) --- */
         .product-image {
             height: 250px;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
-            position: relative;
         }
-        
         .product-image a {
             display: block;
             height: 100%;
             width: 100%;
         }
-        
         .product-image img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            padding: 10px;
-            transition: transform 0.3s ease;
+            padding: 10px; 
+            background-color: #2a2a2a;
         }
-        
-        .product-card:hover .product-image img {
-            transform: scale(1.05);
-        }
-        
         .card-body {
             flex-grow: 1;
             padding: 15px;
         }
-        
         .btn-buy {
             width: 100%;
-            font-size: 1rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            padding: 12px;
-            border-radius: 25px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            background-color: #ff471a;
+            border-color: #ff471a;
         }
-        
         .btn-buy:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(102,126,234,0.5);
+            background-color: #e03c15;
+            border-color: #e03c15;
         }
 
-        /* Bootstrap Grid Adjustments */
+        /* --- רספונסיביות: 4 כרטיסים בשורה ברזולוציות רחבות --- */
         @media (min-width: 768px) {
             .col-md-4 {
-                width: 33.333%;
+                width: 25%;
+                margin-top: 20px;
             }
         }
 
-        @media (min-width: 992px) {
-            .col-md-4 {
-                width: 33.333%;
-            }
-        }
-
+        /* --- רספונסיביות: הקטנת רוחב ומרכוז בסלולר --- */
         @media (max-width: 575.98px) {
             .col-sm-6 {
-                width: 100%;
+                width: 85%; 
                 margin-left: auto;
                 margin-right: auto;
+                margin-top: 20px;
+            }
+            .navbar-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .search-section {
+                margin: 0;
+                max-width: 100%;
+            }
+            .filter-row {
+                flex-direction: column;
             }
         }
-        
-        /* Mobile */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-            }
-            
-            .main-content {
-                margin-right: 0;
-                padding: 15px;
-            }
-            
-            .search-container {
-                padding: 20px;
-            }
+
+        /* --- מרווח 20px בין שורות --- */
+        #product-list {
+            row-gap: 20px;
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-logo">
-            <img src="img/MSolutions.png" alt="M-SOLUTIONS" onerror="this.style.display='none'">
-            <h2>M SOLUTIONS</h2>
-        </div>
-        
-        <div class="filter-section">
-            <div class="filter-title">טווח מחירים</div>
-            <div class="price-range">
-                <input type="number" class="price-input" id="minPrice" placeholder="מינ׳">
-                <span>-</span>
-                <input type="number" class="price-input" id="maxPrice" placeholder="מקס׳">
+
+    <!-- Navbar חדש -->
+    <nav class="top-navbar">
+        <div class="navbar-container">
+            <div class="logo-section">
+                <img src="img/MSolutions.png" alt="M-SOLUTIONS Logo" class="navbar-brand-logo">
+                <h1 class="brand-text">M-SOLUTIONS</h1>
             </div>
-            <button class="filter-btn" onclick="applyFilters()">סנן</button>
+            <div class="search-section">
+                <input type="text" id="searchInput" class="search-input" placeholder="חפש מוצרים...">
+            </div>
+        </div>
+    </nav>
+    
+    <header class="main-header-bg"></header> 
+    
+    <div class="container mt-4">
+        <!-- סקשן פילטרים -->
+        <div class="filters-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">טווח מחירים: <span id="priceValue">0-1000</span> ₪</label>
+                    <div class="price-range-container">
+                        <span class="price-display">₪0</span>
+                        <input type="range" id="minPrice" class="price-slider" min="0" max="1000" value="0">
+                        <input type="range" id="maxPrice" class="price-slider" min="0" max="1000" value="1000">
+                        <span class="price-display">₪1000</span>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">מיון לפי:</label>
+                    <select id="sortSelect" class="sort-select">
+                        <option value="default">ברירת מחדל</option>
+                        <option value="name-asc">שם (א-ת)</option>
+                        <option value="name-desc">שם (ת-א)</option>
+                        <option value="price-asc">מחיר (נמוך לגבוה)</option>
+                        <option value="price-desc">מחיר (גבוה לנמוך)</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group" style="flex: 0;">
+                    <label class="filter-label">&nbsp;</label>
+                    <button id="resetBtn" class="reset-btn">אפס פילטרים</button>
+                </div>
+            </div>
         </div>
         
-        <div class="filter-section" id="categoryFilters">
-            <div class="filter-title">קטגוריות</div>
+        <div id="product-list" class="row">
         </div>
-        
-        <button class="clear-filters" onclick="clearFilters()">נקה פילטרים</button>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="search-container">
-            <div class="search-box">
-                <input type="text" class="search-input" id="searchInput" placeholder="חפש מוצרים...">
-                <button class="search-btn" onclick="searchProducts()">חיפוש</button>
-            </div>
-        </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv'; 
+    
+    const HEADERS = [
+        "PRODUCT_URL", 
+        "TITLE", 
+        "DESCRIPTION", 
+        "PRICE", 
+        "IMAGE_URL", 
+        "AFFILIATE_LINK" 
+    ];
 
-        <div class="container mt-4"> 
-            <div id="product-list" class="row">
-            </div>
-        </div>
-    </div>
+    let allProducts = [];
+    let filteredProducts = [];
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv'; 
+    function parseCSV(csvText, headers) {
+        const products = [];
+        const lines = csvText.trim().split('\n');
         
-        const HEADERS = [
-            "PRODUCT_URL", 
-            "TITLE", 
-            "DESCRIPTION", 
-            "PRICE", 
-            "IMAGE_URL", 
-            "AFFILIATE_LINK" 
-        ];
-
-        let allProducts = [];
-        let categories = new Set();
-
-        function parseCSV(csvText, headers) {
-            const products = [];
-            const lines = csvText.trim().split('\n');
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].match(/(?:"[^"]*"|[^,])+/g); 
             
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].match(/(?:"[^"]*"|[^,])+/g); 
-                
-                if (values && values.length >= headers.length) {
-                    let product = {};
-                    headers.forEach((header, index) => {
-                        let value = values[index] ? values[index].trim() : '';
-                        if (value.startsWith('"') && value.endsWith('"')) {
-                            value = value.slice(1, -1);
-                        }
-                        product[header] = value;
-                    });
-                    products.push(product);
-                }
+            if (values && values.length >= headers.length) {
+                let product = {};
+                headers.forEach((header, index) => {
+                    let value = values[index] ? values[index].trim() : '';
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        value = value.slice(1, -1);
+                    }
+                    product[header] = value;
+                });
+                products.push(product);
             }
-            return products;
+        }
+        return products;
+    }
+
+    function extractPrice(priceStr) {
+        if (!priceStr) return 0;
+        const numStr = priceStr.toString().replace(/[^\d.]/g, '');
+        return parseFloat(numStr) || 0;
+    }
+
+    function applyFilters() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const minPrice = parseFloat(document.getElementById('minPrice').value);
+        const maxPrice = parseFloat(document.getElementById('maxPrice').value);
+        const sortBy = document.getElementById('sortSelect').value;
+
+        // פילטור
+        filteredProducts = allProducts.filter(product => {
+            const title = (product['TITLE'] || '').toLowerCase();
+            const description = (product['DESCRIPTION'] || '').toLowerCase();
+            const priceStr = (product['PRICE'] || '').toString();
+            const price = extractPrice(priceStr);
+
+            // חיפוש טקסט
+            const matchesSearch = !searchTerm || 
+                title.includes(searchTerm) || 
+                description.includes(searchTerm) ||
+                priceStr.includes(searchTerm);
+
+            // טווח מחירים
+            const matchesPrice = price >= minPrice && price <= maxPrice;
+
+            return matchesSearch && matchesPrice;
+        });
+
+        // מיון
+        if (sortBy === 'name-asc') {
+            filteredProducts.sort((a, b) => (a['TITLE'] || '').localeCompare(b['TITLE'] || '', 'he'));
+        } else if (sortBy === 'name-desc') {
+            filteredProducts.sort((a, b) => (b['TITLE'] || '').localeCompare(a['TITLE'] || '', 'he'));
+        } else if (sortBy === 'price-asc') {
+            filteredProducts.sort((a, b) => extractPrice(a['PRICE']) - extractPrice(b['PRICE']));
+        } else if (sortBy === 'price-desc') {
+            filteredProducts.sort((a, b) => extractPrice(b['PRICE']) - extractPrice(a['PRICE']));
         }
 
-        function extractCategory(title, description) {
-            const text = (title + ' ' + description).toLowerCase();
-            
-            if (text.includes('טלוויזיה') || text.includes('tv') || text.includes('מסך')) return 'טלוויזיות';
-            if (text.includes('אוזניות') || text.includes('אודיו') || text.includes('earbuds')) return 'אודיו';
-            if (text.includes('רובוט') || text.includes('שואב')) return 'ניקיון';
-            if (text.includes('מטען') || text.includes('כבל') || text.includes('charger')) return 'אביזרים';
-            if (text.includes('שעון') || text.includes('watch')) return 'שעונים';
-            if (text.includes('מקרן') || text.includes('projector')) return 'מקרנים';
-            
-            return 'אחר';
+        displayProducts();
+    }
+
+    function displayProducts() {
+        const productList = document.getElementById('product-list');
+        productList.innerHTML = '';
+
+        if (filteredProducts.length === 0) {
+            productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים התואמים לחיפוש.</div>`;
+            return;
         }
 
-        function renderProducts(products) {
-            const productList = document.getElementById('product-list');
+        filteredProducts.forEach(product => {
+            const affiliateLink = product['AFFILIATE_LINK'];
+            const regularLink = product['PRODUCT_URL'];
+            const finalLink = affiliateLink && affiliateLink.length > 5 ? affiliateLink : regularLink;
             
-            if (!productList) {
-                console.error("Error: Element with ID 'product-list' not found.");
-                return;
-            }
-
-            productList.innerHTML = '';
+            const title = product['TITLE'];
+            const description = product['DESCRIPTION'];
+            let price = product['PRICE'];
+            let imageUrl = product['IMAGE_URL'];
             
-            if (products.length === 0) {
-                productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה.</div>`;
-                return;
-            }
-
-            products.forEach(product => {
-                const affiliateLink = product['AFFILIATE_LINK'];
-                const regularLink = product['PRODUCT_URL'];
-                const finalLink = affiliateLink && affiliateLink.length > 5 ? affiliateLink : regularLink;
-                
-                const title = product['TITLE'];
-                const description = product['DESCRIPTION'];
-                let price = product['PRICE'];
-                let imageUrl = product['IMAGE_URL'];
-                
-                if (imageUrl) {
-                    imageUrl = imageUrl.toString().replace('.avif', ''); 
-                    if (imageUrl.includes('<') || imageUrl.includes('>')) {
-                        imageUrl = ''; 
-                    }
+            if (imageUrl) {
+                imageUrl = imageUrl.toString().replace('.avif', ''); 
+                if (imageUrl.includes('<') || imageUrl.includes('>')) {
+                    imageUrl = ''; 
                 }
+            }
 
-                if (finalLink && title && (imageUrl || price)) { 
-                    if (price && price.toString().trim() !== '') {
-                        price = price.toString().replace('$', '').replace('₪', '').replace(/[\(\)]/g, '').trim();
-                        price = `₪${price}`; 
-                    } else {
-                        price = "₪XX.XX (עדכן)";
-                    }
-                    
-                    const imageOnError = "this.onerror=null; this.src='https://placehold.co/250x250?text=No+Image'";
+            if (finalLink && title && (imageUrl || price)) { 
+                if (price && price.toString().trim() !== '') {
+                    price = price.toString().replace('$', '').replace('₪', '').replace(/[\(\)]/g, '').trim();
+                    price = `₪${price}`; 
+                } else {
+                    price = "₪XX.XX (עדכן)";
+                }
+                
+                const imageOnError = "this.onerror=null; this.src='https://placehold.co/250x250?text=No+Image'";
 
-                    const cardHtml = `
-                        <div class="col-md-4 col-sm-6">
-                            <div class="product-card">
-                                <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" style="text-decoration: none; color: inherit;">
-                                    <div class="product-image">
-                                        <img src="${imageUrl}" alt="${title} - תמונה" onerror="${imageOnError}">
-                                    </div>
-                                </a>
-
-                                <div class="card-body">
-                                    <h5 class="card-title">${title}</h5>
-                                    <p class="card-text">${description || 'אין תיאור.'}</p>
-                                    <div class="product-price">${price}</div>
-                                    <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" class="btn btn-primary btn-buy">SHOP NOW</a>
+                const cardHtml = `
+                    <div class="col-md-4 col-sm-6">
+                        <div class="product-card">
+                            <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" style="text-decoration: none; color: inherit;">
+                                <div class="product-image">
+                                    <img src="${imageUrl}" alt="${title} - תמונה" onerror="${imageOnError}">
                                 </div>
+                            </a>
+                            <div class="card-body">
+                                <h5 class="card-title">${title}</h5>
+                                <p class="card-text">${description || 'אין תיאור.'}</p>
+                                <div class="product-price">${price}</div>
+                                <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" class="btn btn-primary btn-buy">קנה עכשיו בעלי אקספרס</a>
                             </div>
                         </div>
-                    `;
-                    productList.innerHTML += cardHtml;
-                }
-            });
-        }
-
-        function buildCategories() {
-            allProducts.forEach(product => {
-                const category = extractCategory(product['TITLE'], product['DESCRIPTION']);
-                categories.add(category);
-            });
-            
-            const container = document.getElementById('categoryFilters');
-            container.innerHTML = '<div class="filter-title">קטגוריות</div>';
-            
-            categories.forEach(category => {
-                const option = document.createElement('div');
-                option.className = 'filter-option';
-                option.textContent = category;
-                option.onclick = () => filterByCategory(category, option);
-                container.appendChild(option);
-            });
-        }
-
-        function filterByCategory(category, element) {
-            document.querySelectorAll('.filter-option').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-            
-            const filtered = allProducts.filter(p => {
-                const cat = extractCategory(p['TITLE'], p['DESCRIPTION']);
-                return cat === category;
-            });
-            renderProducts(filtered);
-        }
-
-        function applyFilters() {
-            const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
-            const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
-            
-            const filtered = allProducts.filter(product => {
-                const priceStr = product['PRICE'] || '0';
-                const price = parseFloat(priceStr.replace(/[^0-9.]/g, ''));
-                return price >= minPrice && price <= maxPrice;
-            });
-            
-            renderProducts(filtered);
-        }
-
-        function clearFilters() {
-            document.getElementById('minPrice').value = '';
-            document.getElementById('maxPrice').value = '';
-            document.getElementById('searchInput').value = '';
-            document.querySelectorAll('.filter-option').forEach(el => el.classList.remove('active'));
-            renderProducts(allProducts);
-        }
-
-        function searchProducts() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            
-            if (!query) {
-                renderProducts(allProducts);
-                return;
+                    </div>
+                `;
+                productList.innerHTML += cardHtml;
             }
-            
-            const filtered = allProducts.filter(product => 
-                (product['TITLE'] || '').toLowerCase().includes(query) ||
-                (product['DESCRIPTION'] || '').toLowerCase().includes(query)
-            );
-            
-            renderProducts(filtered);
-        }
-
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchProducts();
         });
+    }
 
-        async function loadProducts() {
-            const productList = document.getElementById('product-list');
-            
-            if (!productList) {
-                console.error("Error: Element with ID 'product-list' not found.");
-                return;
-            }
-
-            productList.innerHTML = 'טוען מוצרים...';
-
-            try {
-                const response = await fetch(SHEET_URL);
-                const csvText = await response.text();
-                
-                allProducts = parseCSV(csvText, HEADERS);
-                
-                if (allProducts.length === 0) {
-                    productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה.</div>`;
-                    return;
-                }
-
-                buildCategories();
-                renderProducts(allProducts);
-                
-            } catch (error) {
-                productList.innerHTML = `<div class="alert alert-danger" role="alert" dir="rtl">
-                                            שגיאה בטעינת הנתונים מה-CSV. ודא שהקישור נכון.
-                                            <br>פרטי שגיאה: ${error.message}
-                                        </div>`;
-                console.error('Error loading products:', error);
-            }
+    async function loadProducts() {
+        const productList = document.getElementById('product-list');
+        
+        if (!productList) {
+            console.error("Error: Element with ID 'product-list' not found.");
+            return;
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProducts();
+        productList.innerHTML = 'טוען מוצרים...';
+
+        try {
+            const response = await fetch(SHEET_URL);
+            const csvText = await response.text();
+            
+            allProducts = parseCSV(csvText, HEADERS);
+            filteredProducts = [...allProducts];
+            
+            displayProducts();
+            
+        } catch (error) {
+            productList.innerHTML = `<div class="alert alert-danger" role="alert" dir="rtl">
+                                        שגיאה בטעינת הנתונים מה-CSV. ודא שהקישור נכון.
+                                        <br>פרטי שגיאה: ${error.message}
+                                    </div>`;
+            console.error('Error loading products:', error);
+        }
+    }
+
+    // עדכון תצוגת טווח מחירים
+    function updatePriceDisplay() {
+        const minPrice = document.getElementById('minPrice').value;
+        const maxPrice = document.getElementById('maxPrice').value;
+        document.getElementById('priceValue').textContent = `${minPrice}-${maxPrice}`;
+        document.querySelectorAll('.price-display')[0].textContent = `₪${minPrice}`;
+        document.querySelectorAll('.price-display')[1].textContent = `₪${maxPrice}`;
+    }
+
+    // אפס פילטרים
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('minPrice').value = 0;
+        document.getElementById('maxPrice').value = 1000;
+        document.getElementById('sortSelect').value = 'default';
+        updatePriceDisplay();
+        applyFilters();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadProducts();
+
+        // מאזינים לפילטרים
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('minPrice').addEventListener('input', () => {
+            updatePriceDisplay();
+            applyFilters();
         });
-    </script>
+        document.getElementById('maxPrice').addEventListener('input', () => {
+            updatePriceDisplay();
+            applyFilters();
+        });
+        document.getElementById('sortSelect').addEventListener('change', applyFilters);
+        document.getElementById('resetBtn').addEventListener('click', resetFilters);
+    });
+</script>
 </body>
 </html>
