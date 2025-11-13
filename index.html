@@ -6,248 +6,427 @@
     <title>M-SOLUTIONS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* --- סגנונות כלליים למצב כהה --- */
         body {
-            background-color: #000000;
+            background-color: #0a0a0a;
             color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
-        /* --- סגנונות לרקע העליון (Header) --- */
-        .main-header-bg {
-            height: 350px; /* גובה הסקשן. שנה לפי הצורך! */
-            width: 100%;
-            /* ✅ עדכן כאן את הנתיב לתמונת הרקע החדשה שלך */
-            background-image: url('img/header-bg.png'); 
-            background-size: cover; 
-            background-position: center center;
-            background-repeat: no-repeat; 
-            margin-bottom: 20px;
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1e 100%);
+            padding: 30px 20px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.5);
         }
-
-        /* --- סגנונות כרטיס מוצר --- */
+        
+        .sidebar-logo {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-logo h2 {
+            color: #5b86e5;
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+        
+        .sidebar-logo img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+        }
+        
+        .filter-section {
+            margin-bottom: 30px;
+        }
+        
+        .filter-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #8b8b8b;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        
+        .filter-option {
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .filter-option:hover {
+            background: rgba(91,134,229,0.2);
+            transform: translateX(-3px);
+        }
+        
+        .filter-option.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .price-range {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .price-input {
+            width: 100px;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: white;
+            text-align: center;
+        }
+        
+        .filter-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        
+        .clear-filters {
+            background: rgba(255,59,48,0.2);
+            color: #ff3b30;
+            border: 1px solid #ff3b30;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .clear-filters:hover {
+            background: #ff3b30;
+            color: white;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-right: 280px;
+            padding: 30px;
+        }
+        
+        /* Search Bar */
+        .search-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+        }
+        
+        .search-box {
+            display: flex;
+            background: white;
+            border-radius: 50px;
+            overflow: hidden;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .search-input {
+            flex: 1;
+            border: none;
+            padding: 15px 25px;
+            font-size: 16px;
+            outline: none;
+        }
+        
+        .search-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 15px 35px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        /* Product Cards - Bootstrap Grid */
         .product-card {
             border: 1px solid #333333;
-            background-color: #1a1a1a;
-            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
-            transition: transform 0.2s;
-            margin-bottom: 20px;
+            background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+            margin-bottom: 25px;
             height: 100%;
             display: flex;
             flex-direction: column;
             text-align: right;
-            border-radius: 10px; 
+            border-radius: 15px;
         }
+        
         .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(255, 255, 255, 0.3);
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(102,126,234,0.4);
         }
+        
         .card-title {
-            color: #f8f9fa;
-            font-size: 1.25rem;
+            color: #e0e0e0;
+            font-size: 1.1rem;
             font-weight: 600;
             height: 50px;
             overflow: hidden;
         }
+        
         .card-text {
             height: 70px;
             overflow: hidden;
             font-size: 0.9rem;
-            color: #aaaaaa;
-            line-height: 1.5; /* רווח שורה מוגדל */
+            color: #8b8b8b;
+            line-height: 1.5;
         }
+        
         .product-price {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #4dc2ff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 10px;
-            /* שומר על יישור שמאלי למטבע ומחיר */
-            direction: ltr; 
+            direction: ltr;
         }
         
-        /* --- סגנונות לוגו עליון (ב-Navbar) --- */
-        .navbar-brand-logo {
-            height: 40px; 
-            margin-left: 10px;
-        }
-        .navbar-dark .navbar-brand {
-            color: #ffffff;
-            font-weight: bold;
-        }
-        
-        /* --- סגנונות תמונה (מוצר) --- */
         .product-image {
             height: 250px;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            position: relative;
         }
+        
         .product-image a {
             display: block;
             height: 100%;
             width: 100%;
         }
+        
         .product-image img {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* מציג את כל התמונה ללא חיתוך */
-            padding: 10px; 
-            background-color: #2a2a2a;
+            object-fit: contain;
+            padding: 10px;
+            transition: transform 0.3s ease;
         }
+        
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+        
         .card-body {
             flex-grow: 1;
             padding: 15px;
         }
+        
         .btn-buy {
             width: 100%;
-            font-size: 1.1rem;
-            background-color: #ff471a;
-            border-color: #ff471a;
+            font-size: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
+        
         .btn-buy:hover {
-            background-color: #e03c15;
-            border-color: #e03c15;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.5);
         }
 
-        /* --- רספונסיביות: 4 כרטיסים בשורה ברזולוציות רחבות --- */
+        /* Bootstrap Grid Adjustments */
         @media (min-width: 768px) {
             .col-md-4 {
-                width: 25%;
-                margin-top: 20px
+                width: 33.333%;
             }
         }
 
-        /* --- רספונסיביות: הקטנת רוחב ומרכוז בסלולר --- */
+        @media (min-width: 992px) {
+            .col-md-4 {
+                width: 33.333%;
+            }
+        }
+
         @media (max-width: 575.98px) {
             .col-sm-6 {
-                width: 85%; 
+                width: 100%;
                 margin-left: auto;
                 margin-right: auto;
-                margin-top: 20px
+            }
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-right: 0;
+                padding: 15px;
+            }
+            
+            .search-container {
+                padding: 20px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img src="img/MSolutions.png" alt="M-SOLUTIONS" onerror="this.style.display='none'">
+            <h2>M SOLUTIONS</h2>
+        </div>
+        
+        <div class="filter-section">
+            <div class="filter-title">טווח מחירים</div>
+            <div class="price-range">
+                <input type="number" class="price-input" id="minPrice" placeholder="מינ׳">
+                <span>-</span>
+                <input type="number" class="price-input" id="maxPrice" placeholder="מקס׳">
+            </div>
+            <button class="filter-btn" onclick="applyFilters()">סנן</button>
+        </div>
+        
+        <div class="filter-section" id="categoryFilters">
+            <div class="filter-title">קטגוריות</div>
+        </div>
+        
+        <button class="clear-filters" onclick="clearFilters()">נקה פילטרים</button>
+    </div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <img src="img/MSolutions.png" alt="M-SOLUTIONS Logo" class="navbar-brand-logo">
-                M-SOLUTIONS
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto"> 
-                    
-                    <li class="nav-item" style="direction: ltr;">
-                        <a class="nav-link" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
-                            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-                          </svg></a>
-                    </li>
-                    <li class="nav-item" style="direction: ltr;">
-                        <a class="nav-link" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bag" viewBox="0 0 16 16">
-                            <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
-                          </svg></a>
-                    </li>
-                </ul>
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="חפש מוצרים...">
+                <button class="search-btn" onclick="searchProducts()">חיפוש</button>
             </div>
         </div>
-    </nav>
-    
-    <header class="main-header-bg"></header> 
-    
-    <div class="container mt-4"> 
-        <div id="product-list" class="row">
+
+        <div class="container mt-4"> 
+            <div id="product-list" class="row">
+            </div>
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv'; 
-    
-    const HEADERS = [
-        "PRODUCT_URL", 
-        "TITLE", 
-        "DESCRIPTION", 
-        "PRICE", 
-        "IMAGE_URL", 
-        "AFFILIATE_LINK" 
-    ];
-
-    function parseCSV(csvText, headers) {
-        const products = [];
-        const lines = csvText.trim().split('\n');
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv'; 
         
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].match(/(?:"[^"]*"|[^,])+/g); 
+        const HEADERS = [
+            "PRODUCT_URL", 
+            "TITLE", 
+            "DESCRIPTION", 
+            "PRICE", 
+            "IMAGE_URL", 
+            "AFFILIATE_LINK" 
+        ];
+
+        let allProducts = [];
+        let categories = new Set();
+
+        function parseCSV(csvText, headers) {
+            const products = [];
+            const lines = csvText.trim().split('\n');
             
-            if (values && values.length >= headers.length) {
-                let product = {};
-                headers.forEach((header, index) => {
-                    let value = values[index] ? values[index].trim() : '';
-                    if (value.startsWith('"') && value.endsWith('"')) {
-                        value = value.slice(1, -1);
-                    }
-                    product[header] = value;
-                });
-                products.push(product);
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].match(/(?:"[^"]*"|[^,])+/g); 
+                
+                if (values && values.length >= headers.length) {
+                    let product = {};
+                    headers.forEach((header, index) => {
+                        let value = values[index] ? values[index].trim() : '';
+                        if (value.startsWith('"') && value.endsWith('"')) {
+                            value = value.slice(1, -1);
+                        }
+                        product[header] = value;
+                    });
+                    products.push(product);
+                }
             }
-        }
-        return products;
-    }
-
-
-    async function loadProducts() {
-        const productList = document.getElementById('product-list');
-        
-        if (!productList) {
-            console.error("Error: Element with ID 'product-list' not found.");
-            return;
+            return products;
         }
 
-        productList.innerHTML = 'טוען מוצרים...';
+        function extractCategory(title, description) {
+            const text = (title + ' ' + description).toLowerCase();
+            
+            if (text.includes('טלוויזיה') || text.includes('tv') || text.includes('מסך')) return 'טלוויזיות';
+            if (text.includes('אוזניות') || text.includes('אודיו') || text.includes('earbuds')) return 'אודיו';
+            if (text.includes('רובוט') || text.includes('שואב')) return 'ניקיון';
+            if (text.includes('מטען') || text.includes('כבל') || text.includes('charger')) return 'אביזרים';
+            if (text.includes('שעון') || text.includes('watch')) return 'שעונים';
+            if (text.includes('מקרן') || text.includes('projector')) return 'מקרנים';
+            
+            return 'אחר';
+        }
 
-        try {
-            const response = await fetch(SHEET_URL);
-            const csvText = await response.text();
+        function renderProducts(products) {
+            const productList = document.getElementById('product-list');
             
-            const products = parseCSV(csvText, HEADERS);
-            
-            productList.innerHTML = ''; 
+            if (!productList) {
+                console.error("Error: Element with ID 'product-list' not found.");
+                return;
+            }
+
+            productList.innerHTML = '';
             
             if (products.length === 0) {
-                 productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה.</div>`;
-                 return;
+                productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה.</div>`;
+                return;
             }
 
             products.forEach(product => {
-                
                 const affiliateLink = product['AFFILIATE_LINK'];
                 const regularLink = product['PRODUCT_URL'];
-
                 const finalLink = affiliateLink && affiliateLink.length > 5 ? affiliateLink : regularLink;
                 
                 const title = product['TITLE'];
                 const description = product['DESCRIPTION'];
                 let price = product['PRICE'];
-                
                 let imageUrl = product['IMAGE_URL'];
                 
                 if (imageUrl) {
-                    // הסרת סיומת AVIF ובדיקות תקינות
                     imageUrl = imageUrl.toString().replace('.avif', ''); 
                     if (imageUrl.includes('<') || imageUrl.includes('>')) {
                         imageUrl = ''; 
                     }
                 }
 
-
                 if (finalLink && title && (imageUrl || price)) { 
-                    
-                    // ✅ תיקון המטבע: הוספת סימן השקל (₪)
                     if (price && price.toString().trim() !== '') {
                         price = price.toString().replace('$', '').replace('₪', '').replace(/[\(\)]/g, '').trim();
                         price = `₪${price}`; 
@@ -255,13 +434,11 @@
                         price = "₪XX.XX (עדכן)";
                     }
                     
-                    // שימוש ב-placehold.co במקרה של תמונה חסרה
                     const imageOnError = "this.onerror=null; this.src='https://placehold.co/250x250?text=No+Image'";
 
                     const cardHtml = `
                         <div class="col-md-4 col-sm-6">
                             <div class="product-card">
-                                
                                 <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" style="text-decoration: none; color: inherit;">
                                     <div class="product-image">
                                         <img src="${imageUrl}" alt="${title} - תמונה" onerror="${imageOnError}">
@@ -272,8 +449,7 @@
                                     <h5 class="card-title">${title}</h5>
                                     <p class="card-text">${description || 'אין תיאור.'}</p>
                                     <div class="product-price">${price}</div>
-                                    
-                                    <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" class="btn btn-primary btn-buy">קנה עכשיו בעלי אקספרס</a>
+                                    <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" class="btn btn-primary btn-buy">SHOP NOW</a>
                                 </div>
                             </div>
                         </div>
@@ -281,19 +457,114 @@
                     productList.innerHTML += cardHtml;
                 }
             });
-            
-        } catch (error) {
-            productList.innerHTML = `<div class="alert alert-danger" role="alert" dir="rtl">
-                                        שגיאה בטעינת הנתונים מה-CSV. ודא שהקישור נכון.
-                                        <br>פרטי שגיאה: ${error.message}
-                                    </div>`;
-            console.error('Error loading products:', error);
         }
-    }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadProducts();
-    });
-</script>
+        function buildCategories() {
+            allProducts.forEach(product => {
+                const category = extractCategory(product['TITLE'], product['DESCRIPTION']);
+                categories.add(category);
+            });
+            
+            const container = document.getElementById('categoryFilters');
+            container.innerHTML = '<div class="filter-title">קטגוריות</div>';
+            
+            categories.forEach(category => {
+                const option = document.createElement('div');
+                option.className = 'filter-option';
+                option.textContent = category;
+                option.onclick = () => filterByCategory(category, option);
+                container.appendChild(option);
+            });
+        }
+
+        function filterByCategory(category, element) {
+            document.querySelectorAll('.filter-option').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            
+            const filtered = allProducts.filter(p => {
+                const cat = extractCategory(p['TITLE'], p['DESCRIPTION']);
+                return cat === category;
+            });
+            renderProducts(filtered);
+        }
+
+        function applyFilters() {
+            const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
+            const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
+            
+            const filtered = allProducts.filter(product => {
+                const priceStr = product['PRICE'] || '0';
+                const price = parseFloat(priceStr.replace(/[^0-9.]/g, ''));
+                return price >= minPrice && price <= maxPrice;
+            });
+            
+            renderProducts(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('minPrice').value = '';
+            document.getElementById('maxPrice').value = '';
+            document.getElementById('searchInput').value = '';
+            document.querySelectorAll('.filter-option').forEach(el => el.classList.remove('active'));
+            renderProducts(allProducts);
+        }
+
+        function searchProducts() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!query) {
+                renderProducts(allProducts);
+                return;
+            }
+            
+            const filtered = allProducts.filter(product => 
+                (product['TITLE'] || '').toLowerCase().includes(query) ||
+                (product['DESCRIPTION'] || '').toLowerCase().includes(query)
+            );
+            
+            renderProducts(filtered);
+        }
+
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchProducts();
+        });
+
+        async function loadProducts() {
+            const productList = document.getElementById('product-list');
+            
+            if (!productList) {
+                console.error("Error: Element with ID 'product-list' not found.");
+                return;
+            }
+
+            productList.innerHTML = 'טוען מוצרים...';
+
+            try {
+                const response = await fetch(SHEET_URL);
+                const csvText = await response.text();
+                
+                allProducts = parseCSV(csvText, HEADERS);
+                
+                if (allProducts.length === 0) {
+                    productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים להצגה.</div>`;
+                    return;
+                }
+
+                buildCategories();
+                renderProducts(allProducts);
+                
+            } catch (error) {
+                productList.innerHTML = `<div class="alert alert-danger" role="alert" dir="rtl">
+                                            שגיאה בטעינת הנתונים מה-CSV. ודא שהקישור נכון.
+                                            <br>פרטי שגיאה: ${error.message}
+                                        </div>`;
+                console.error('Error loading products:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProducts();
+        });
+    </script>
 </body>
 </html>
