@@ -12,22 +12,14 @@
             color: #ffffff;
         }
         
-        /* --- סגנונות לרקע העליון (Header) --- */
-        .main-header-bg {
-            height: 350px;
-            width: 100%;
-            background-image: url('img/header-bg.png'); 
-            background-size: cover; 
-            background-position: center center;
-            background-repeat: no-repeat; 
-            margin-bottom: 20px;
-        }
+        /* --- הסרת הרקע הגדול --- */
 
         /* --- סגנונות Navbar חדש --- */
         .top-navbar {
-            background-color: #000000;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             padding: 15px 0;
-            border-bottom: 1px solid #222;
+            border-bottom: 2px solid #533483;
+            box-shadow: 0 4px 6px rgba(83, 52, 131, 0.3);
         }
         .navbar-container {
             display: flex;
@@ -36,6 +28,7 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
+            flex-direction: row-reverse; /* הופך את הסדר */
         }
         .logo-section {
             display: flex;
@@ -48,27 +41,31 @@
         .brand-text {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #ffffff;
+            background: linear-gradient(45deg, #8e44ad, #a569bd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin: 0;
         }
         .search-section {
             flex-grow: 1;
             max-width: 500px;
-            margin: 0 30px;
+            margin-left: 30px; /* שינוי מימין לשמאל */
         }
         .search-input {
             width: 100%;
             padding: 10px 15px;
             border-radius: 25px;
-            border: 1px solid #333;
-            background-color: #1a1a1a;
+            border: 1px solid #533483;
+            background-color: #1a1a2e;
             color: #ffffff;
             font-size: 0.95rem;
         }
         .search-input:focus {
             outline: none;
-            border-color: #4dc2ff;
-            background-color: #222;
+            border-color: #8e44ad;
+            background-color: #16213e;
+            box-shadow: 0 0 10px rgba(142, 68, 173, 0.3);
         }
         .search-input::placeholder {
             color: #888;
@@ -76,38 +73,48 @@
 
         /* --- סגנונות פילטרים --- */
         .filters-section {
-            background-color: #1a1a1a;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 10px;
-            border: 1px solid #333;
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 12px;
+            border: 1px solid #533483;
+            box-shadow: 0 4px 15px rgba(83, 52, 131, 0.2);
         }
         .filter-row {
             display: flex;
-            gap: 20px;
-            align-items: center;
+            gap: 30px;
+            align-items: flex-start;
             flex-wrap: wrap;
         }
         .filter-group {
             flex: 1;
-            min-width: 250px;
+            min-width: 200px;
+        }
+        .filter-group.price-filter {
+            min-width: 280px;
         }
         .filter-label {
             display: block;
-            margin-bottom: 8px;
-            color: #aaa;
-            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: #a569bd;
+            font-size: 0.95rem;
+            font-weight: 600;
         }
         .price-range-container {
             display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .price-slider-row {
+            display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
         .price-slider {
             flex-grow: 1;
             height: 6px;
             border-radius: 5px;
-            background: linear-gradient(to right, #4dc2ff, #4dc2ff);
+            background: linear-gradient(to right, #533483, #8e44ad);
             outline: none;
             -webkit-appearance: none;
         }
@@ -117,59 +124,66 @@
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            background: #4dc2ff;
+            background: #8e44ad;
             cursor: pointer;
-            box-shadow: 0 0 5px rgba(77, 194, 255, 0.5);
+            box-shadow: 0 0 8px rgba(142, 68, 173, 0.6);
         }
         .price-slider::-moz-range-thumb {
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            background: #4dc2ff;
+            background: #8e44ad;
             cursor: pointer;
             border: none;
         }
-        .price-display {
-            color: #4dc2ff;
-            font-weight: bold;
+        .price-label {
+            color: #888;
+            font-size: 0.85rem;
             min-width: 80px;
-            text-align: center;
+        }
+        .price-display {
+            color: #a569bd;
+            font-weight: bold;
+            min-width: 90px;
+            text-align: left;
+            font-size: 0.95rem;
         }
         .sort-select {
             padding: 10px 15px;
             border-radius: 8px;
-            border: 1px solid #333;
-            background-color: #222;
+            border: 1px solid #533483;
+            background-color: #1a1a2e;
             color: #ffffff;
             font-size: 0.95rem;
             cursor: pointer;
         }
         .sort-select:focus {
             outline: none;
-            border-color: #4dc2ff;
+            border-color: #8e44ad;
+            box-shadow: 0 0 8px rgba(142, 68, 173, 0.3);
         }
         .reset-btn {
             padding: 8px 20px;
-            background-color: #2a2a2a;
-            border: 1px solid #444;
-            color: #aaa;
+            background-color: #1a1a2e;
+            border: 1px solid #533483;
+            color: #a569bd;
             border-radius: 8px;
             cursor: pointer;
             font-size: 0.85rem;
             transition: all 0.3s;
         }
         .reset-btn:hover {
-            background-color: #333;
+            background-color: #16213e;
             color: #fff;
-            border-color: #555;
+            border-color: #8e44ad;
         }
 
         /* --- סגנונות כרטיס מוצר --- */
         .product-card {
-            border: 1px solid #333333;
-            background-color: #1a1a1a;
-            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
-            transition: transform 0.2s;
+            border: 1px solid #533483;
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            box-shadow: 0 4px 8px rgba(83, 52, 131, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
             margin-bottom: 20px;
             height: 100%;
             display: flex;
@@ -179,7 +193,8 @@
         }
         .product-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.4);
+            border-color: #8e44ad;
         }
         .card-title {
             color: #f8f9fa;
@@ -198,7 +213,7 @@
         .product-price {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #4dc2ff;
+            color: #a569bd;
             margin-bottom: 10px;
             direction: ltr; 
         }
@@ -230,12 +245,14 @@
         .btn-buy {
             width: 100%;
             font-size: 1.1rem;
-            background-color: #ff471a;
-            border-color: #ff471a;
+            background: linear-gradient(135deg, #8e44ad, #533483);
+            border: none;
+            transition: all 0.3s;
         }
         .btn-buy:hover {
-            background-color: #e03c15;
-            border-color: #e03c15;
+            background: linear-gradient(135deg, #a569bd, #8e44ad);
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4);
         }
 
         /* --- רספונסיביות: 4 כרטיסים בשורה ברזולוציות רחבות --- */
@@ -288,19 +305,25 @@
         </div>
     </nav>
     
-    <header class="main-header-bg"></header> 
+    <header class="main-header-bg" style="display: none;"></header> 
     
     <div class="container mt-4">
         <!-- סקשן פילטרים -->
         <div class="filters-section">
             <div class="filter-row">
-                <div class="filter-group">
-                    <label class="filter-label">טווח מחירים: <span id="priceValue">0-1000</span> ₪</label>
+                <div class="filter-group price-filter">
+                    <label class="filter-label">טווח מחירים</label>
                     <div class="price-range-container">
-                        <span class="price-display">₪0</span>
-                        <input type="range" id="minPrice" class="price-slider" min="0" max="1000" value="0">
-                        <input type="range" id="maxPrice" class="price-slider" min="0" max="1000" value="1000">
-                        <span class="price-display">₪1000</span>
+                        <div class="price-slider-row">
+                            <span class="price-label">מינימום:</span>
+                            <input type="range" id="minPrice" class="price-slider" min="0" max="1000" value="0">
+                            <span class="price-display" id="minPriceDisplay">₪0</span>
+                        </div>
+                        <div class="price-slider-row">
+                            <span class="price-label">מקסימום:</span>
+                            <input type="range" id="maxPrice" class="price-slider" min="0" max="1000" value="1000">
+                            <span class="price-display" id="maxPriceDisplay">₪1000</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -499,9 +522,8 @@
     function updatePriceDisplay() {
         const minPrice = document.getElementById('minPrice').value;
         const maxPrice = document.getElementById('maxPrice').value;
-        document.getElementById('priceValue').textContent = `${minPrice}-${maxPrice}`;
-        document.querySelectorAll('.price-display')[0].textContent = `₪${minPrice}`;
-        document.querySelectorAll('.price-display')[1].textContent = `₪${maxPrice}`;
+        document.getElementById('minPriceDisplay').textContent = `₪${minPrice}`;
+        document.getElementById('maxPriceDisplay').textContent = `₪${maxPrice}`;
     }
 
     // אפס פילטרים
