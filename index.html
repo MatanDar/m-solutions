@@ -226,14 +226,26 @@
                 margin-top: 20px;
             }
         }
+        
+        @media (min-width: 576px) and (max-width: 767.98px) {
+            .col-sm-6 {
+                width: 48%;
+                margin-top: 20px;
+            }
+            #product-list {
+                justify-content: space-between;
+            }
+        }
 
         /* --- רספונסיביות: הקטנת רוחב ומרכוז בסלולר --- */
         @media (max-width: 575.98px) {
             .col-sm-6 {
-                width: 85%; 
-                margin-left: auto;
-                margin-right: auto;
+                width: 48%;
                 margin-top: 20px;
+            }
+            #product-list {
+                justify-content: space-between;
+                padding: 0 5px;
             }
             .navbar-container {
                 flex-direction: column;
@@ -249,6 +261,24 @@
             }
             .filter-row {
                 gap: 10px;
+            }
+            .product-card {
+                font-size: 0.85rem;
+            }
+            .card-title {
+                font-size: 1rem;
+                height: 40px;
+            }
+            .card-text {
+                font-size: 0.8rem;
+                height: 60px;
+            }
+            .btn-buy {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+            .product-image {
+                height: 180px;
             }
         }
 
