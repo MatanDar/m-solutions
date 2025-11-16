@@ -149,7 +149,7 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
-            margin-bottom: 8px;
+            margin-bottom: 0;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -222,38 +222,38 @@
         /* --- רספונסיביות: 4 כרטיסים בשורה ברזולוציות רחבות --- */
         @media (min-width: 768px) {
             .col-md-4 {
-                width: 25%;
+                width: calc(25% - 2.25px);
                 margin-top: 0;
             }
             #product-list {
-                row-gap: 15px;
-                column-gap: 15px;
+                row-gap: 3px;
+                column-gap: 3px;
             }
         }
         
         @media (min-width: 576px) and (max-width: 767.98px) {
             .col-sm-6 {
-                width: calc(50% - 4px);
+                width: calc(50% - 1.5px);
                 margin-top: 0;
             }
             #product-list {
                 justify-content: space-between;
-                row-gap: 8px;
-                column-gap: 8px;
+                row-gap: 3px;
+                column-gap: 3px;
             }
         }
 
         /* --- רספונסיביות: הקטנת רוחב ומרכוז בסלולר --- */
         @media (max-width: 575.98px) {
             .col-sm-6 {
-                width: calc(50% - 4px);
+                width: calc(50% - 1.5px);
                 margin-top: 0;
             }
             #product-list {
                 justify-content: space-between;
                 padding: 0 8px;
-                row-gap: 8px;
-                column-gap: 8px;
+                row-gap: 3px;
+                column-gap: 3px;
             }
             .navbar-container {
                 flex-direction: column;
@@ -291,10 +291,10 @@
             }
         }
 
-        /* --- מרווח קטן בין שורות --- */
+        /* --- מרווח קטן מאוד בין כרטיסים --- */
         #product-list {
-            row-gap: 8px;
-            column-gap: 8px;
+            row-gap: 3px;
+            column-gap: 3px;
         }
 
         /* --- טקסט תוצאות חיפוש --- */
