@@ -11,8 +11,6 @@
             background-color: #0a0a0a;
             color: #ffffff;
         }
-        
-        /* --- הסרת הרקע הגדול --- */
 
         /* --- סגנונות Navbar חדש --- */
         .top-navbar {
@@ -28,13 +26,13 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
-            flex-direction: row-reverse; /* הופך את הסדר */
+            flex-direction: row-reverse;
         }
         .logo-section {
             display: flex;
             align-items: center;
             gap: 15px;
-            flex-direction: row-reverse; /* הופך את הסדר - תמונה שמאלה, טקסט ימינה */
+            flex-direction: row-reverse;
         }
         .navbar-brand-logo {
             height: 45px;
@@ -51,7 +49,7 @@
         .search-section {
             flex-grow: 1;
             max-width: 500px;
-            margin-left: 30px; /* שינוי מימין לשמאל */
+            margin-left: 30px;
         }
         .search-input {
             width: 100%;
@@ -91,63 +89,12 @@
             flex: 1;
             min-width: 200px;
         }
-        .filter-group.price-filter {
-            min-width: 280px;
-        }
         .filter-label {
             display: block;
             margin-bottom: 12px;
             color: #764def;
             font-size: 0.95rem;
             font-weight: 600;
-        }
-        .price-range-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .price-slider-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .price-slider {
-            flex-grow: 1;
-            height: 6px;
-            border-radius: 5px;
-            background: linear-gradient(to right, #5d64f2, #764def);
-            outline: none;
-            -webkit-appearance: none;
-        }
-        .price-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #764def;
-            cursor: pointer;
-            box-shadow: 0 0 8px rgba(118, 77, 239, 0.6);
-        }
-        .price-slider::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #764def;
-            cursor: pointer;
-            border: none;
-        }
-        .price-label {
-            color: #888;
-            font-size: 0.85rem;
-            min-width: 80px;
-        }
-        .price-display {
-            color: #764def;
-            font-weight: bold;
-            min-width: 90px;
-            text-align: left;
-            font-size: 0.95rem;
         }
         .sort-select {
             padding: 10px 15px;
@@ -210,13 +157,6 @@
             font-size: 0.9rem;
             color: #aaaaaa;
             line-height: 1.5;
-        }
-        .product-price {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #764def;
-            margin-bottom: 10px;
-            direction: ltr; 
         }
         
         /* --- סגנונות תמונה (מוצר) --- */
@@ -327,30 +267,12 @@
         <!-- סקשן פילטרים -->
         <div class="filters-section">
             <div class="filter-row">
-                <div class="filter-group price-filter">
-                    <label class="filter-label">טווח מחירים</label>
-                    <div class="price-range-container">
-                        <div class="price-slider-row">
-                            <span class="price-label">מינימום:</span>
-                            <input type="range" id="minPrice" class="price-slider" min="0" max="1000" value="0">
-                            <span class="price-display" id="minPriceDisplay">₪0</span>
-                        </div>
-                        <div class="price-slider-row">
-                            <span class="price-label">מקסימום:</span>
-                            <input type="range" id="maxPrice" class="price-slider" min="0" max="1000" value="1000">
-                            <span class="price-display" id="maxPriceDisplay">₪1000</span>
-                        </div>
-                    </div>
-                </div>
-                
                 <div class="filter-group">
                     <label class="filter-label">מיון לפי:</label>
                     <select id="sortSelect" class="sort-select">
                         <option value="default">ברירת מחדל</option>
                         <option value="name-asc">שם (א-ת)</option>
                         <option value="name-desc">שם (ת-א)</option>
-                        <option value="price-asc">מחיר (נמוך לגבוה)</option>
-                        <option value="price-desc">מחיר (גבוה לנמוך)</option>
                     </select>
                 </div>
                 
@@ -406,35 +328,21 @@
         return products;
     }
 
-    function extractPrice(priceStr) {
-        if (!priceStr) return 0;
-        const numStr = priceStr.toString().replace(/[^\d.]/g, '');
-        return parseFloat(numStr) || 0;
-    }
-
     function applyFilters() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const minPrice = parseFloat(document.getElementById('minPrice').value);
-        const maxPrice = parseFloat(document.getElementById('maxPrice').value);
         const sortBy = document.getElementById('sortSelect').value;
 
         // פילטור
         filteredProducts = allProducts.filter(product => {
             const title = (product['TITLE'] || '').toLowerCase();
             const description = (product['DESCRIPTION'] || '').toLowerCase();
-            const priceStr = (product['PRICE'] || '').toString();
-            const price = extractPrice(priceStr);
 
             // חיפוש טקסט
             const matchesSearch = !searchTerm || 
                 title.includes(searchTerm) || 
-                description.includes(searchTerm) ||
-                priceStr.includes(searchTerm);
+                description.includes(searchTerm);
 
-            // טווח מחירים
-            const matchesPrice = price >= minPrice && price <= maxPrice;
-
-            return matchesSearch && matchesPrice;
+            return matchesSearch;
         });
 
         // מיון
@@ -442,10 +350,6 @@
             filteredProducts.sort((a, b) => (a['TITLE'] || '').localeCompare(b['TITLE'] || '', 'he'));
         } else if (sortBy === 'name-desc') {
             filteredProducts.sort((a, b) => (b['TITLE'] || '').localeCompare(a['TITLE'] || '', 'he'));
-        } else if (sortBy === 'price-asc') {
-            filteredProducts.sort((a, b) => extractPrice(a['PRICE']) - extractPrice(b['PRICE']));
-        } else if (sortBy === 'price-desc') {
-            filteredProducts.sort((a, b) => extractPrice(b['PRICE']) - extractPrice(a['PRICE']));
         }
 
         displayProducts();
@@ -471,7 +375,6 @@
             
             const title = product['TITLE'];
             const description = product['DESCRIPTION'];
-            let price = product['PRICE'];
             let imageUrl = product['IMAGE_URL'];
             
             if (imageUrl) {
@@ -481,14 +384,7 @@
                 }
             }
 
-            if (finalLink && title && (imageUrl || price)) { 
-                if (price && price.toString().trim() !== '') {
-                    price = price.toString().replace('$', '').replace('₪', '').replace(/[\(\)]/g, '').trim();
-                    price = `₪${price}`; 
-                } else {
-                    price = "₪XX.XX (עדכן)";
-                }
-                
+            if (finalLink && title && imageUrl) { 
                 const imageOnError = "this.onerror=null; this.src='https://placehold.co/250x250?text=No+Image'";
 
                 const cardHtml = `
@@ -502,7 +398,6 @@
                             <div class="card-body">
                                 <h5 class="card-title">${title}</h5>
                                 <p class="card-text">${description || 'אין תיאור.'}</p>
-                                <div class="product-price">${price}</div>
                                 <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" class="btn btn-primary btn-buy">קנה עכשיו בעלי אקספרס</a>
                             </div>
                         </div>
@@ -541,21 +436,10 @@
         }
     }
 
-    // עדכון תצוגת טווח מחירים
-    function updatePriceDisplay() {
-        const minPrice = document.getElementById('minPrice').value;
-        const maxPrice = document.getElementById('maxPrice').value;
-        document.getElementById('minPriceDisplay').textContent = `₪${minPrice}`;
-        document.getElementById('maxPriceDisplay').textContent = `₪${maxPrice}`;
-    }
-
     // אפס פילטרים
     function resetFilters() {
         document.getElementById('searchInput').value = '';
-        document.getElementById('minPrice').value = 0;
-        document.getElementById('maxPrice').value = 1000;
         document.getElementById('sortSelect').value = 'default';
-        updatePriceDisplay();
         applyFilters();
     }
 
@@ -564,14 +448,6 @@
 
         // מאזינים לפילטרים
         document.getElementById('searchInput').addEventListener('input', applyFilters);
-        document.getElementById('minPrice').addEventListener('input', () => {
-            updatePriceDisplay();
-            applyFilters();
-        });
-        document.getElementById('maxPrice').addEventListener('input', () => {
-            updatePriceDisplay();
-            applyFilters();
-        });
         document.getElementById('sortSelect').addEventListener('change', applyFilters);
         document.getElementById('resetBtn').addEventListener('click', resetFilters);
     });
