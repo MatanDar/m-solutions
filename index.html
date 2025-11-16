@@ -14,10 +14,11 @@
 
         /* --- סגנונות Navbar חדש --- */
         .top-navbar {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(15px);
             padding: 15px 0;
-            border-bottom: 2px solid #5d64f2;
-            box-shadow: 0 4px 6px rgba(93, 100, 242, 0.3);
+            border-bottom: 1px solid rgba(93, 100, 242, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
         }
         .navbar-container {
             display: flex;
@@ -55,16 +56,18 @@
             width: 100%;
             padding: 10px 15px;
             border-radius: 25px;
-            border: 1px solid #5d64f2;
-            background-color: #1a1a2e;
+            border: 1px solid rgba(93, 100, 242, 0.3);
+            background: rgba(20, 20, 30, 0.7);
+            backdrop-filter: blur(10px);
             color: #ffffff;
             font-size: 0.95rem;
+            transition: all 0.3s;
         }
         .search-input:focus {
             outline: none;
             border-color: #764def;
-            background-color: #16213e;
-            box-shadow: 0 0 10px rgba(118, 77, 239, 0.3);
+            background: rgba(20, 20, 30, 0.9);
+            box-shadow: 0 0 20px rgba(118, 77, 239, 0.4);
         }
         .search-input::placeholder {
             color: #888;
@@ -72,77 +75,91 @@
 
         /* --- סגנונות פילטרים --- */
         .filters-section {
-            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
-            padding: 25px;
-            margin: 30px 0;
-            border-radius: 12px;
-            border: 1px solid #5d64f2;
-            box-shadow: 0 4px 15px rgba(93, 100, 242, 0.2);
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            margin: 20px auto;
+            max-width: 600px;
+            border-radius: 50px;
+            border: 1px solid rgba(93, 100, 242, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
         .filter-row {
             display: flex;
-            gap: 30px;
-            align-items: flex-start;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
             flex-wrap: wrap;
         }
         .filter-group {
-            flex: 1;
-            min-width: 200px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .filter-label {
-            display: block;
-            margin-bottom: 12px;
-            color: #764def;
-            font-size: 0.95rem;
-            font-weight: 600;
+            color: #888;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin: 0;
+            white-space: nowrap;
         }
         .sort-select {
-            padding: 10px 15px;
-            border-radius: 8px;
-            border: 1px solid #5d64f2;
-            background-color: #1a1a2e;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(93, 100, 242, 0.4);
+            background: rgba(26, 26, 46, 0.6);
             color: #ffffff;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             cursor: pointer;
+            transition: all 0.3s;
         }
         .sort-select:focus {
             outline: none;
             border-color: #764def;
-            box-shadow: 0 0 8px rgba(118, 77, 239, 0.3);
+            background: rgba(26, 26, 46, 0.9);
+            box-shadow: 0 0 15px rgba(118, 77, 239, 0.4);
+        }
+        .sort-select:hover {
+            border-color: #5d64f2;
+            background: rgba(26, 26, 46, 0.8);
         }
         .reset-btn {
-            padding: 8px 20px;
-            background-color: #1a1a2e;
-            border: 1px solid #5d64f2;
-            color: #764def;
-            border-radius: 8px;
+            padding: 8px 18px;
+            background: rgba(26, 26, 46, 0.6);
+            border: 1px solid rgba(93, 100, 242, 0.4);
+            color: #888;
+            border-radius: 20px;
             cursor: pointer;
             font-size: 0.85rem;
             transition: all 0.3s;
+            white-space: nowrap;
         }
         .reset-btn:hover {
-            background-color: #16213e;
-            color: #fff;
+            background: rgba(118, 77, 239, 0.2);
+            color: #764def;
             border-color: #764def;
+            box-shadow: 0 0 15px rgba(118, 77, 239, 0.3);
         }
 
         /* --- סגנונות כרטיס מוצר --- */
         .product-card {
-            border: 1px solid #5d64f2;
-            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
-            box-shadow: 0 4px 8px rgba(93, 100, 242, 0.2);
-            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(93, 100, 242, 0.2);
+            background: rgba(15, 15, 25, 0.8);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
             margin-bottom: 20px;
             height: 100%;
             display: flex;
             flex-direction: column;
             text-align: right;
-            border-radius: 10px; 
+            border-radius: 15px; 
         }
         .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(118, 77, 239, 0.4);
-            border-color: #764def;
+            transform: translateY(-8px);
+            box-shadow: 0 12px 35px rgba(118, 77, 239, 0.5);
+            border-color: rgba(118, 77, 239, 0.6);
         }
         .card-title {
             color: #f8f9fa;
@@ -166,8 +183,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #f8f9fa;
-            border-radius: 10px 10px 0 0;
+            background: rgba(240, 240, 245, 0.95);
+            border-radius: 15px 15px 0 0;
             padding: 15px;
         }
         .product-image a {
@@ -226,8 +243,12 @@
                 margin: 0;
                 max-width: 100%;
             }
+            .filters-section {
+                max-width: 90%;
+                padding: 12px 15px;
+            }
             .filter-row {
-                flex-direction: column;
+                gap: 10px;
             }
         }
 
@@ -268,17 +289,16 @@
         <div class="filters-section">
             <div class="filter-row">
                 <div class="filter-group">
-                    <label class="filter-label">מיון לפי:</label>
+                    <label class="filter-label">מיון:</label>
                     <select id="sortSelect" class="sort-select">
                         <option value="default">ברירת מחדל</option>
-                        <option value="name-asc">שם (א-ת)</option>
-                        <option value="name-desc">שם (ת-א)</option>
+                        <option value="name-asc">א-ת</option>
+                        <option value="name-desc">ת-א</option>
                     </select>
                 </div>
                 
-                <div class="filter-group" style="flex: 0;">
-                    <label class="filter-label">&nbsp;</label>
-                    <button id="resetBtn" class="reset-btn">אפס פילטרים</button>
+                <div class="filter-group">
+                    <button id="resetBtn" class="reset-btn">אפס</button>
                 </div>
             </div>
         </div>
