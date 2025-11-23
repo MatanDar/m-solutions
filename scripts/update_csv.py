@@ -1,48 +1,34 @@
 import os
 import csv
 import hashlib
-import hmac
 import time
 import requests
 import sys
 import json
 from datetime import datetime
+from urllib.parse import urlencode
 
 # AliExpress API configuration
 APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
 APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
-TRACKING_ID = os.environ.get('ALIEXPRESS_TRACKING_ID', 'default')
+TRACKING_ID = os.environ.get('ALIEXPRESS_TRACKING_ID', 'matan')
 
 # CSV file path
 CSV_FILE = 'products.csv'
 
-def generate_sign_md5(params, secret):
-    """Generate signature using MD5 method (AliExpress standard)"""
+def generate_sign(api_path, params, secret):
+    """Generate signature for AliExpress REST API"""
     # Sort parameters by key
     sorted_params = sorted(params.items())
     
-    # Build sign string: secret + key1value1key2value2... + secret
-    sign_string = secret
-    for key, value in sorted_params:
-        if key != 'sign':  # Exclude sign parameter itself
-            sign_string += str(key) + str(value)
-    sign_string += secret
-    
-    # Generate MD5 hash and return uppercase
-    return hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
-
-def generate_sign_hmac(params, secret):
-    """Generate signature using HMAC-SHA256 method"""
-    # Sort parameters by key
-    sorted_params = sorted(params.items())
-    
-    # Build sign string: key1value1key2value2...
-    sign_string = ""
+    # Build sign string: api_path + key1value1key2value2...
+    sign_string = api_path
     for key, value in sorted_params:
         if key != 'sign':
             sign_string += str(key) + str(value)
     
     # Generate HMAC-SHA256 hash
+    import hmac
     return hmac.new(
         secret.encode('utf-8'),
         sign_string.encode('utf-8'),
@@ -50,45 +36,40 @@ def generate_sign_hmac(params, secret):
     ).hexdigest().upper()
 
 def fetch_hot_products(page_size=20):
-    """Fetch hot/bestselling products from AliExpress"""
+    """Fetch hot/bestselling products from AliExpress using REST API"""
     
     if not APP_KEY or not APP_SECRET:
         print("❌ Error: API credentials not found!")
         print("Please set ALIEXPRESS_APP_KEY and ALIEXPRESS_APP_SECRET in GitHub Secrets")
         return []
     
-    # API endpoint
-    api_url = "https://api-sg.aliexpress.com/sync"
-    
-    # API method
-    api_name = "aliexpress.affiliate.hotproduct.query"
+    # REST API endpoint for hot products
+    api_path = "/aliexpress/affiliate/hotproduct/query"
+    api_url = f"https://api-sg.aliexpress.com/rest{api_path}"
     
     # Request parameters
     timestamp = str(int(time.time() * 1000))
-    
-    # Try with MD5 signature first (most common for AliExpress)
     params = {
         'app_key': APP_KEY,
-        'method': api_name,
         'timestamp': timestamp,
-        'format': 'json',
-        'v': '2.0',
-        'sign_method': 'md5',
+        'sign_method': 'sha256',
         'target_currency': 'USD',
         'target_language': 'EN',
         'tracking_id': TRACKING_ID,
         'page_size': str(page_size)
     }
     
-    # Generate MD5 signature
-    sign = generate_sign_md5(params, APP_SECRET)
+    # Generate signature with api_path
+    sign = generate_sign(api_path, params, APP_SECRET)
     params['sign'] = sign
     
     try:
         print(f"🔍 Fetching hot products from AliExpress...")
-        print(f"📡 Using App Key: {APP_KEY[:8]}...")
-        print(f"🔐 Sign method: md5")
+        print(f"📡 Using REST API endpoint: {api_url}")
+        print(f"📡 App Key: {APP_KEY[:3]}***")
+        print(f"🔐 Sign method: sha256")
         
+        # Make GET request with all params in URL
         response = requests.get(api_url, params=params, timeout=30)
         
         print(f"📊 Response Status: {response.status_code}")
@@ -100,65 +81,38 @@ def fetch_hot_products(page_size=20):
         
         data = response.json()
         
-        # Check for signature error and try HMAC-SHA256 if MD5 failed
-        if 'error_response' in data:
-            error = data['error_response']
-            error_code = error.get('code', '')
-            
-            if 'Signature' in error_code or 'signature' in error.get('msg', '').lower():
-                print(f"⚠️  MD5 signature failed, trying HMAC-SHA256...")
-                
-                # Try with HMAC-SHA256
-                params['sign_method'] = 'sha256'
-                sign = generate_sign_hmac(params, APP_SECRET)
-                params['sign'] = sign
-                
-                print(f"🔐 Sign method: sha256")
-                response = requests.get(api_url, params=params, timeout=30)
-                print(f"📊 Response Status: {response.status_code}")
-                
-                if response.status_code != 200:
-                    print(f"❌ HTTP Error: {response.status_code}")
-                    return []
-                
-                data = response.json()
-        
-        # Check for errors again
+        # Check for errors
         if 'error_response' in data:
             error = data['error_response']
             error_code = error.get('code', 'unknown')
             error_msg = error.get('msg', 'Unknown error')
             print(f"❌ API Error [{error_code}]: {error_msg}")
             print(f"📄 Full response: {json.dumps(data, indent=2)[:500]}")
-            
-            # Additional troubleshooting
-            print("\n🔍 Debug Information:")
-            print(f"   - App Key length: {len(APP_KEY)}")
-            print(f"   - App Secret length: {len(APP_SECRET)}")
-            print(f"   - Timestamp: {timestamp}")
-            
             return []
         
-        # Extract products
+        # Extract products from response
         if 'aliexpress_affiliate_hotproduct_query_response' in data:
             resp_result = data['aliexpress_affiliate_hotproduct_query_response'].get('resp_result')
             
             if resp_result:
-                result = resp_result.get('result', {})
-                products = result.get('products', {}).get('product', [])
+                result_data = resp_result.get('result', {})
+                products = result_data.get('products', {}).get('product', [])
                 
                 if products:
                     print(f"✅ Found {len(products)} hot products!")
                     return products
                 else:
-                    print("⚠️  No products returned in response")
+                    print("⚠️  No products in response")
+                    print(f"📄 Response structure: {json.dumps(data, indent=2)[:800]}")
                     return []
             else:
                 print("⚠️  No resp_result in response")
                 return []
         else:
-            print("❌ Unexpected API response format")
+            print("ℹ️  Different response format, checking alternatives...")
+            # Sometimes the response format is different
             print(f"📄 Response keys: {list(data.keys())}")
+            print(f"📄 Full response: {json.dumps(data, indent=2)[:800]}")
             return []
             
     except requests.exceptions.RequestException as e:
@@ -166,10 +120,10 @@ def fetch_hot_products(page_size=20):
         return []
     except json.JSONDecodeError as e:
         print(f"❌ JSON decode error: {e}")
-        print(f"Response text: {response.text[:200]}")
+        print(f"Response text: {response.text[:500]}")
         return []
     except Exception as e:
-        print(f"❌ Error fetching products: {e}")
+        print(f"❌ Unexpected error: {e}")
         import traceback
         traceback.print_exc()
         return []
@@ -279,7 +233,7 @@ def update_csv(products):
 def main():
     """Main function"""
     print("=" * 60)
-    print("🔥 AliExpress Hot Products Updater")
+    print("🔥 AliExpress Hot Products Updater v3 (REST API)")
     print("=" * 60)
     print(f"📅 Running at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
@@ -288,12 +242,12 @@ def main():
     products = fetch_hot_products(page_size=20)
     
     if not products:
-        print("\n⚠️  No products fetched. Please check your API credentials.")
+        print("\n⚠️  No products fetched.")
         print("\n🔍 Troubleshooting:")
-        print("   1. Verify your App Key and App Secret in GitHub Secrets")
-        print("   2. Make sure your app is 'Online' in AliExpress Open Platform")
-        print("   3. Check if your app has 'Affiliate API' permissions")
-        print("   4. Verify there are no extra spaces in the secrets")
+        print("   1. Verify API credentials in GitHub Secrets")
+        print("   2. Make sure app is 'Online' in AliExpress Open Platform")
+        print("   3. Check if app has 'Affiliate API' permissions")
+        print("   4. Verify Tracking ID is correct")
         sys.exit(1)
     
     # Update CSV
