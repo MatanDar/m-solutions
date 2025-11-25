@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AliExpress to Google Sheets Automation - Standard API Version
-מערכת אוטומטית למשיכת Best Deals מ-AliExpress וכתיבה ל-Google Sheets
+AliExpress to Google Sheets Automation - Affiliate Table Version
+כותב ל-Affiliate Table עם 5 עמודות בלבד
 """
 
 import os
@@ -15,10 +15,9 @@ from datetime import datetime
 from google.oauth2.service_account import Credentials
 import json
 
-# ========== הגדרות ולוגים ==========
+# ========== לוגים ==========
 
 def log(message, level="INFO"):
-    """פונקציה להדפסת לוגים עם timestamp"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     emoji_map = {
         "INFO": "ℹ️",
@@ -31,10 +30,10 @@ def log(message, level="INFO"):
     print(f"[{timestamp}] {emoji} {message}")
     sys.stdout.flush()
 
-# ========== Google Sheets Connection ==========
+# ========== Google Sheets ==========
 
 def connect_to_google_sheets():
-    """מתחבר ל-Google Sheets באמצעות Service Account"""
+    """מתחבר ל-Affiliate Table"""
     try:
         log("מתחבר ל-Google Sheets...", "STEP")
         
@@ -57,23 +56,24 @@ def connect_to_google_sheets():
         
         spreadsheet = client.open_by_key(sheet_id)
         
+        # ========== שינוי: כתיבה ל-Affiliate Table ==========
         try:
-            worksheet = spreadsheet.worksheet("Sheet1")
+            worksheet = spreadsheet.worksheet("Affiliate Table")
+            log("התחברנו לטאב: Affiliate Table", "SUCCESS")
         except gspread.exceptions.WorksheetNotFound:
-            worksheet = spreadsheet.add_worksheet(title="Sheet1", rows="1000", cols="20")
-            log("נוצר worksheet חדש: Sheet1", "SUCCESS")
+            # אם לא קיים, ניצור אותו
+            worksheet = spreadsheet.add_worksheet(title="Affiliate Table", rows="1000", cols="5")
+            log("נוצר טאב חדש: Affiliate Table", "SUCCESS")
         
-        log(f"התחברנו בהצלחה לגיליון: {spreadsheet.title}", "SUCCESS")
         return worksheet
         
     except Exception as e:
-        log(f"שגיאה בהתחברות ל-Google Sheets: {str(e)}", "ERROR")
+        log(f"שגיאה בהתחברות: {str(e)}", "ERROR")
         raise
 
-# ========== AliExpress Standard API ==========
+# ========== AliExpress API ==========
 
 def generate_signature(app_secret, params):
-    """יוצר חתימה (signature) לבקשת API"""
     sorted_params = sorted(params.items())
     sign_string = app_secret
     for key, value in sorted_params:
@@ -84,12 +84,9 @@ def generate_signature(app_secret, params):
 
 
 def fetch_aliexpress_products(num_products=30):
-    """
-    מושך מוצרים מ-AliExpress באמצעות Standard API
-    משתמש ב-aliexpress.affiliate.product.query (Standard API - Active)
-    """
+    """מושך מוצרים עם לינקי אפיליאייט"""
     try:
-        log(f"מושך {num_products} מוצרים מ-AliExpress (Standard API)...", "STEP")
+        log(f"מושך {num_products} מוצרים מ-AliExpress...", "STEP")
         
         app_key = os.environ.get('ALIEXPRESS_APP_KEY')
         app_secret = os.environ.get('ALIEXPRESS_APP_SECRET')
@@ -100,10 +97,9 @@ def fetch_aliexpress_products(num_products=30):
         
         timestamp = str(int(time.time() * 1000))
         
-        # ========== שימוש ב-Standard API ==========
         params = {
             'app_key': app_key,
-            'method': 'aliexpress.affiliate.product.query',  # Standard API
+            'method': 'aliexpress.affiliate.product.query',
             'timestamp': timestamp,
             'format': 'json',
             'v': '2.0',
@@ -112,7 +108,7 @@ def fetch_aliexpress_products(num_products=30):
             'target_language': 'EN',
             'tracking_id': tracking_id,
             'page_size': str(num_products),
-            'sort': 'SALE_PRICE_ASC',  # ממיין לפי מחיר נמוך לגבוה
+            'sort': 'SALE_PRICE_ASC',
             'ship_to_country': 'US'
         }
         
@@ -121,28 +117,24 @@ def fetch_aliexpress_products(num_products=30):
         
         url = 'https://api-sg.aliexpress.com/sync'
         
-        log("שולח בקשה ל-AliExpress Standard API...", "STEP")
+        log("שולח בקשה ל-AliExpress API...", "STEP")
         response = requests.get(url, params=params, timeout=30)
         
         log(f"קוד תגובה: {response.status_code}", "INFO")
         
         if response.status_code != 200:
             log(f"שגיאת HTTP: {response.status_code}", "ERROR")
-            log(f"תוכן התגובה: {response.text}", "ERROR")
             return []
         
         data = response.json()
         
-        # בדיקת שגיאות
         if 'error_response' in data:
             error_info = data['error_response']
             log(f"שגיאת API: {error_info.get('msg', 'Unknown')}", "ERROR")
-            log(f"קוד שגיאה: {error_info.get('code', 'Unknown')}", "ERROR")
             return []
         
-        # חילוץ מוצרים
         if 'aliexpress_affiliate_product_query_response' not in data:
-            log(f"מבנה תגובה לא צפוי: {list(data.keys())}", "ERROR")
+            log(f"מבנה תגובה לא צפוי", "ERROR")
             return []
         
         response_data = data['aliexpress_affiliate_product_query_response']
@@ -154,7 +146,7 @@ def fetch_aliexpress_products(num_products=30):
         result = response_data['resp_result']
         
         if 'result' not in result or 'products' not in result['result']:
-            log("לא נמצאו מוצרים בתגובה", "WARNING")
+            log("לא נמצאו מוצרים", "WARNING")
             return []
         
         products = result['result']['products']['product']
@@ -164,77 +156,87 @@ def fetch_aliexpress_products(num_products=30):
         
     except Exception as e:
         log(f"שגיאה במשיכת מוצרים: {str(e)}", "ERROR")
-        import traceback
-        log(f"Traceback: {traceback.format_exc()}", "ERROR")
         return []
 
 
 def process_and_write_products(worksheet, products):
-    """מעבד ומעדכן את המוצרים ב-Google Sheets"""
+    """
+    מעבד ומוסיף מוצרים ל-Affiliate Table
+    5 עמודות בלבד: PRODUCT_URL | TITLE | DESCRIPTION | IMAGE_URL | AFFILIATE_LINK
+    """
     try:
         log(f"מעבד {len(products)} מוצרים...", "STEP")
         
-        headers = [
-            'Name', 'Category', 'Original Price', 'Sale Price', 
-            'Discount', 'Rating', 'Sold', 'Shipping', 
-            'Image', 'Link', 'Added Date'
-        ]
+        # ========== בדיקה אם יש כותרות ==========
+        existing_data = worksheet.get_all_values()
         
-        rows = [headers]
+        if not existing_data or existing_data[0] != ['PRODUCT_URL', 'TITLE', 'DESCRIPTION', 'IMAGE_URL', 'AFFILIATE_LINK']:
+            # אם אין כותרות, נוסיף אותן
+            log("מוסיף כותרות לטבלה...", "STEP")
+            worksheet.update('A1:E1', [['PRODUCT_URL', 'TITLE', 'DESCRIPTION', 'IMAGE_URL', 'AFFILIATE_LINK']])
+            next_row = 2
+        else:
+            # מוצא את השורה הריקה הבאה
+            next_row = len(existing_data) + 1
+        
+        log(f"מתחיל לכתוב משורה {next_row}", "INFO")
+        
+        # ========== מכין נתונים - 5 עמודות בלבד ==========
+        rows = []
         
         for product in products:
             try:
-                name = product.get('product_title', 'N/A')
-                category = product.get('first_level_category_name', 'N/A')
+                # URL של המוצר המקורי
+                product_url = product.get('product_detail_url', 'N/A')
                 
-                original_price = product.get('original_price', 'N/A')
-                sale_price = product.get('sale_price', 'N/A')
+                # כותרת
+                title = product.get('product_title', 'N/A')
                 
-                try:
-                    if original_price != 'N/A' and sale_price != 'N/A':
-                        discount = round(((float(original_price) - float(sale_price)) / float(original_price)) * 100, 1)
-                        discount = f"{discount}%"
-                    else:
-                        discount = 'N/A'
-                except:
-                    discount = 'N/A'
+                # תיאור - משתמש בכותרת כי AliExpress לא נותן description מלא
+                description = product.get('product_title', 'N/A')
                 
-                rating = product.get('evaluate_rate', 'N/A')
-                sold = product.get('volume', 'N/A')
-                shipping = "Free" if product.get('is_free_shipping', False) else "Paid"
+                # תמונה
+                image_url = product.get('product_main_image_url', 'N/A')
                 
-                image_url = product.get('product_main_image_url', '')
-                product_url = product.get('promotion_link', '')
+                # ========== לינק אפיליאייט ==========
+                # promotion_link = זה הלינק עם ה-tracking ID שלך!
+                affiliate_link = product.get('promotion_link', 'N/A')
                 
-                added_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+                # בדיקה שזה לינק אפיליאייט אמיתי
+                if affiliate_link == 'N/A' or 'aff_' not in affiliate_link:
+                    log(f"אזהרה: מוצר {title[:30]} ללא לינק אפיליאייט תקין", "WARNING")
                 
-                row = [
-                    name, category, original_price, sale_price,
-                    discount, rating, sold, shipping,
-                    image_url, product_url, added_date
-                ]
-                
+                row = [product_url, title, description, image_url, affiliate_link]
                 rows.append(row)
                 
             except Exception as e:
                 log(f"שגיאה בעיבוד מוצר: {str(e)}", "WARNING")
                 continue
         
-        log("כותב נתונים ל-Google Sheets...", "STEP")
-        worksheet.clear()
-        worksheet.update('A1', rows)
-        
-        log(f"נכתבו {len(rows)-1} מוצרים בהצלחה!", "SUCCESS")
+        # ========== כתיבה לגיליון - מוסיף בסוף! ==========
+        if rows:
+            log(f"כותב {len(rows)} מוצרים ל-Affiliate Table...", "STEP")
+            
+            # חישוב הטווח
+            start_cell = f'A{next_row}'
+            end_cell = f'E{next_row + len(rows) - 1}'
+            cell_range = f'{start_cell}:{end_cell}'
+            
+            worksheet.update(cell_range, rows)
+            
+            log(f"✅ נוספו {len(rows)} מוצרים לשורות {next_row}-{next_row + len(rows) - 1}!", "SUCCESS")
+        else:
+            log("לא נמצאו מוצרים לכתיבה", "WARNING")
         
     except Exception as e:
-        log(f"שגיאה בכתיבה ל-Sheets: {str(e)}", "ERROR")
+        log(f"שגיאה בכתיבה: {str(e)}", "ERROR")
         raise
 
 
 def main():
     """פונקציה ראשית"""
     try:
-        log("🚀 מתחיל תהליך (Standard API Version)", "INFO")
+        log("🚀 מתחיל תהליך - Affiliate Table Version", "INFO")
         log("=" * 60, "INFO")
         
         worksheet = connect_to_google_sheets()
@@ -242,7 +244,6 @@ def main():
         
         if not products:
             log("לא הצלחנו למשוך מוצרים", "ERROR")
-            log("💡 אם Advanced API עדיין Pending, פתח ticket ב-AliExpress", "WARNING")
             sys.exit(1)
         
         process_and_write_products(worksheet, products)
