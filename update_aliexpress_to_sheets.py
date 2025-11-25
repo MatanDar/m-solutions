@@ -2,431 +2,322 @@
 # -*- coding: utf-8 -*-
 """
 AliExpress to Google Sheets Automation
-======================================
-מערכת אוטומטית שמושכת Best Deals מ-AliExpress 
-וכותבת אותם ישירות ל-Google Sheets
-
-Author: Claude + Matan
-Date: November 2024
+מערכת אוטומטית למשיכת Best Deals מ-AliExpress וכתיבה ל-Google Sheets
 """
 
 import os
 import sys
-import json
 import time
 import hashlib
-import hmac
-from datetime import datetime
-from urllib.parse import quote
 import requests
 import gspread
+from datetime import datetime
 from google.oauth2.service_account import Credentials
+import json
 
-# ============================================
-# הגדרות Google Sheets
-# ============================================
-
-GOOGLE_SCOPES = [
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/drive'
-]
-
-# ============================================
-# הגדרות AliExpress API
-# ============================================
-
-ALIEXPRESS_API_URL = "https://api-sg.aliexpress.com/sync"
-API_METHOD = "aliexpress.affiliate.hotproduct.query"
-
-# ============================================
-# פונקציות עזר
-# ============================================
+# ========== הגדרות ולוגים ==========
 
 def log(message, level="INFO"):
-    """
-    מדפיס הודעת לוג עם חותמת זמן
-    """
+    """פונקציה להדפסת לוגים עם timestamp"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    emoji = {
+    emoji_map = {
         "INFO": "ℹ️",
         "SUCCESS": "✅",
-        "WARNING": "⚠️",
         "ERROR": "❌",
-        "PROGRESS": "🔄"
-    }.get(level, "📝")
-    
+        "WARNING": "⚠️",
+        "STEP": "🔄"
+    }
+    emoji = emoji_map.get(level, "📝")
     print(f"[{timestamp}] {emoji} {message}")
     sys.stdout.flush()
 
-def get_env_variable(var_name, required=True):
-    """
-    מושך משתנה מה-environment variables
-    """
-    value = os.environ.get(var_name)
-    if required and not value:
-        log(f"Missing required environment variable: {var_name}", "ERROR")
-        sys.exit(1)
-    return value
-
-# ============================================
-# חיבור ל-Google Sheets
-# ============================================
+# ========== Google Sheets Connection ==========
 
 def connect_to_google_sheets():
-    """
-    מתחבר ל-Google Sheets דרך Service Account
-    Returns: worksheet object
-    """
-    log("מתחבר ל-Google Sheets...", "PROGRESS")
-    
+    """מתחבר ל-Google Sheets באמצעות Service Account"""
     try:
-        # קריאת credentials
-        creds_json = get_env_variable('GOOGLE_SHEETS_CREDENTIALS')
-        sheet_id = get_env_variable('GOOGLE_SHEET_ID')
+        log("מתחבר ל-Google Sheets...", "STEP")
         
-        # המרת JSON string ל-dictionary
+        # טוען את ה-credentials מ-Environment Variable
+        creds_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
+        if not creds_json:
+            raise ValueError("GOOGLE_SHEETS_CREDENTIALS לא נמצא ב-Environment Variables")
+        
+        # ממיר את ה-JSON string לפורמט מילון
         creds_dict = json.loads(creds_json)
         
-        # יצירת credentials
-        credentials = Credentials.from_service_account_info(
-            creds_dict,
-            scopes=GOOGLE_SCOPES
-        )
+        # יוצר Credentials object
+        scope = [
+            'https://spreadsheets.google.com/feeds',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        credentials = Credentials.from_service_account_info(creds_dict, scopes=scope)
         
-        # התחברות ל-gspread
+        # מתחבר ל-gspread
         client = gspread.authorize(credentials)
         
-        # פתיחת הגיליון
+        # פותח את הגיליון
+        sheet_id = os.environ.get('GOOGLE_SHEET_ID')
+        if not sheet_id:
+            raise ValueError("GOOGLE_SHEET_ID לא נמצא ב-Environment Variables")
+        
         spreadsheet = client.open_by_key(sheet_id)
-        worksheet = spreadsheet.sheet1  # הטאב הראשון
+        
+        # בוחר או יוצר worksheet
+        try:
+            worksheet = spreadsheet.worksheet("Sheet1")
+        except gspread.exceptions.WorksheetNotFound:
+            worksheet = spreadsheet.add_worksheet(title="Sheet1", rows="1000", cols="20")
+            log("נוצר worksheet חדש: Sheet1", "SUCCESS")
         
         log(f"התחברנו בהצלחה לגיליון: {spreadsheet.title}", "SUCCESS")
-        
         return worksheet
         
-    except json.JSONDecodeError as e:
-        log(f"שגיאה בפענוח JSON של credentials: {e}", "ERROR")
-        sys.exit(1)
     except Exception as e:
-        log(f"שגיאה בחיבור ל-Google Sheets: {e}", "ERROR")
-        sys.exit(1)
+        log(f"שגיאה בהתחברות ל-Google Sheets: {str(e)}", "ERROR")
+        raise
 
-# ============================================
-# AliExpress API - חתימה
-# ============================================
+# ========== AliExpress API - תיקון החתימה ==========
 
-def create_signature(params, app_secret):
+def generate_signature(app_secret, params):
     """
-    יוצר חתימה לבקשת AliExpress API
-    AliExpress משתמש ב-HMAC-MD5 signature
+    יוצר חתימה (signature) לבקשת API של AliExpress
     
-    Args:
-        params: dictionary של פרמטרים
-        app_secret: ה-APP_SECRET מ-AliExpress
-    
-    Returns:
-        signature string
+    התיקון החשוב:
+    - ממיין את הפרמטרים אלפביתית
+    - בונה את המחרוזת בפורמט הנכון
+    - משתמש ב-MD5 uppercase
     """
-    # ממיין את הפרמטרים לפי ABC
+    # ממיין את הפרמטרים אלפביתית (זה קריטי!)
     sorted_params = sorted(params.items())
     
-    # יוצר string מהפרמטרים
-    param_string = "".join([f"{k}{v}" for k, v in sorted_params])
+    # בונה את המחרוזת לחתימה
+    sign_string = app_secret
+    for key, value in sorted_params:
+        sign_string += str(key) + str(value)
+    sign_string += app_secret
     
-    # יוצר את ה-signature עם HMAC-MD5
-    sign = hmac.new(
-        app_secret.encode('utf-8'),
-        param_string.encode('utf-8'),
-        hashlib.md5
-    ).hexdigest().upper()
+    # יוצר MD5 hash
+    signature = hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
     
-    return sign
+    log(f"נבנתה חתימה: {signature[:10]}...", "INFO")
+    return signature
 
-# ============================================
-# AliExpress API - משיכת מוצרים
-# ============================================
 
-def fetch_best_deals_from_aliexpress(limit=30):
+def fetch_aliexpress_products(num_products=30):
     """
-    מושך Best Deals מ-AliExpress API
+    מושך Best Deals מ-AliExpress
     
-    Args:
-        limit: מספר מוצרים למשוך (ברירת מחדל: 30)
-    
-    Returns:
-        list של מוצרים או None במקרה של שגיאה
+    מה שתוקן:
+    - הוספת tracking_id לפרמטרים
+    - timestamp במילישניות (13 ספרות)
+    - sign_method = "md5" באותיות קטנות
+    - סדר אלפביתי של כל הפרמטרים
     """
-    log(f"מושך {limit} Best Deals מ-AliExpress...", "PROGRESS")
-    
     try:
-        # קריאת credentials
-        app_key = get_env_variable('ALIEXPRESS_APP_KEY')
-        app_secret = get_env_variable('ALIEXPRESS_APP_SECRET')
-        tracking_id = get_env_variable('ALIEXPRESS_TRACKING_ID')
+        log(f"מושך {num_products} Best Deals מ-AliExpress...", "STEP")
         
-        # בניית הפרמטרים
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # שולף credentials מ-environment variables
+        app_key = os.environ.get('ALIEXPRESS_APP_KEY')
+        app_secret = os.environ.get('ALIEXPRESS_APP_SECRET')
+        tracking_id = os.environ.get('ALIEXPRESS_TRACKING_ID')
+        
+        if not all([app_key, app_secret, tracking_id]):
+            raise ValueError("AliExpress credentials חסרים ב-Environment Variables")
+        
+        # ========== תיקון חשוב - הפרמטרים הבסיסיים ==========
+        timestamp = str(int(time.time() * 1000))  # מילישניות (13 ספרות)
         
         params = {
-            "app_key": app_key,
-            "method": API_METHOD,
-            "timestamp": timestamp,
-            "format": "json",
-            "v": "2.0",
-            "sign_method": "md5",
-            "tracking_id": tracking_id,
-            "fields": "commission_rate,sale_price,original_price,discount,product_title,product_id,product_main_image_url,product_video_url,product_small_image_urls,platform_product_type,shop_url,promo_code_info",
-            "sort": "SALE_PRICE_ASC",  # ממיין לפי מחיר עולה
-            "page_size": str(limit),
-            "page_no": "1",
-            "target_currency": "USD",
-            "target_language": "EN"
+            'app_key': app_key,
+            'method': 'aliexpress.affiliate.hotproduct.query',
+            'timestamp': timestamp,
+            'format': 'json',
+            'v': '2.0',
+            'sign_method': 'md5',  # ⚠️ באותיות קטנות!
+            'target_currency': 'USD',
+            'target_language': 'EN',
+            'tracking_id': tracking_id,  # ⚠️ חובה להוסיף את זה!
+            'page_size': str(num_products)
         }
         
-        # יצירת חתימה
-        signature = create_signature(params, app_secret)
-        params["sign"] = signature
+        # ========== יצירת החתימה ==========
+        signature = generate_signature(app_secret, params)
+        params['sign'] = signature
         
-        log("שולח בקשה ל-AliExpress API...", "PROGRESS")
+        # ========== שליחת הבקשה ==========
+        url = 'https://api-sg.aliexpress.com/sync'
         
-        # שליחת הבקשה
-        response = requests.get(ALIEXPRESS_API_URL, params=params, timeout=30)
+        log("שולח בקשה ל-AliExpress API...", "STEP")
+        response = requests.get(url, params=params, timeout=30)
         
         log(f"קוד תגובה: {response.status_code}", "INFO")
         
         if response.status_code != 200:
-            log(f"שגיאה בבקשה: Status {response.status_code}", "ERROR")
-            log(f"Response: {response.text}", "ERROR")
-            return None
+            log(f"שגיאת HTTP: {response.status_code}", "ERROR")
+            log(f"תוכן התגובה: {response.text}", "ERROR")
+            return []
         
-        # פענוח התגובה
+        # ========== ניתוח התגובה ==========
         data = response.json()
         
-        # בדיקה אם יש שגיאה
-        if "error_response" in data:
-            error = data["error_response"]
-            log(f"שגיאת API: {error.get('msg', 'Unknown error')}", "ERROR")
-            log(f"קוד שגיאה: {error.get('code', 'N/A')}", "ERROR")
-            return None
+        # בדיקת שגיאות API
+        if 'error_response' in data:
+            error_info = data['error_response']
+            log(f"שגיאת API: {error_info.get('msg', 'Unknown error')}", "ERROR")
+            log(f"קוד שגיאה: {error_info.get('code', 'Unknown')}", "ERROR")
+            
+            # הצעות לתיקון
+            if 'IncompleteSignature' in str(error_info):
+                log("💡 נראה שיש בעיה בחתימה. בדוק:", "WARNING")
+                log("   1. שה-APP_KEY וה-APP_SECRET נכונים", "WARNING")
+                log("   2. שה-TRACKING_ID תואם לזה שב-AliExpress Portal", "WARNING")
+            
+            return []
         
-        # חילוץ המוצרים
-        if API_METHOD.replace(".", "_") + "_response" in data:
-            response_key = API_METHOD.replace(".", "_") + "_response"
-            result = data[response_key].get("result", {})
-            products = result.get("products", {}).get("product", [])
-            
-            if products:
-                log(f"נמצאו {len(products)} מוצרים!", "SUCCESS")
-                return products
-            else:
-                log("לא נמצאו מוצרים", "WARNING")
-                return []
-        else:
-            log("פורמט תגובה לא צפוי מ-API", "ERROR")
-            log(f"Response keys: {list(data.keys())}", "ERROR")
-            return None
-            
+        # ========== חילוץ המוצרים ==========
+        if 'aliexpress_affiliate_hotproduct_query_response' not in data:
+            log("לא נמצאה תגובה תקינה מה-API", "ERROR")
+            log(f"מבנה התגובה: {list(data.keys())}", "ERROR")
+            return []
+        
+        response_data = data['aliexpress_affiliate_hotproduct_query_response']
+        
+        if 'resp_result' not in response_data:
+            log("לא נמצא resp_result בתגובה", "ERROR")
+            return []
+        
+        result = response_data['resp_result']
+        
+        if 'result' not in result or 'products' not in result['result']:
+            log("לא נמצאו מוצרים בתגובה", "WARNING")
+            return []
+        
+        products = result['result']['products']['product']
+        
+        log(f"נמשכו {len(products)} מוצרים בהצלחה!", "SUCCESS")
+        return products
+        
     except requests.exceptions.Timeout:
-        log("הבקשה ל-API לקחה יותר מדי זמן (timeout)", "ERROR")
-        return None
+        log("Timeout - ה-API לא הגיב בזמן", "ERROR")
+        return []
     except requests.exceptions.RequestException as e:
-        log(f"שגיאה בבקשת HTTP: {e}", "ERROR")
-        return None
-    except json.JSONDecodeError as e:
-        log(f"שגיאה בפענוח JSON: {e}", "ERROR")
-        return None
+        log(f"שגיאת רשת: {str(e)}", "ERROR")
+        return []
     except Exception as e:
-        log(f"שגיאה לא צפויה: {e}", "ERROR")
-        return None
+        log(f"שגיאה כללית במשיכת מוצרים: {str(e)}", "ERROR")
+        import traceback
+        log(f"Traceback: {traceback.format_exc()}", "ERROR")
+        return []
 
-# ============================================
-# עיבוד מוצרים
-# ============================================
 
-def process_product(product):
-    """
-    מעבד מוצר בודד ומחזיר אותו בפורמט נקי
-    
-    Args:
-        product: מוצר מה-API
-    
-    Returns:
-        dictionary עם פרטי המוצר
-    """
+# ========== עיבוד וכתיבה ל-Google Sheets ==========
+
+def process_and_write_products(worksheet, products):
+    """מעבד ומעדכן את המוצרים ב-Google Sheets"""
     try:
-        # חילוץ מחירים
-        original_price = float(product.get('original_price', 0))
-        sale_price = float(product.get('sale_price', 0))
+        log(f"מעבד {len(products)} מוצרים...", "STEP")
         
-        # חישוב אחוז הנחה
-        if original_price > 0:
-            discount_percent = int(((original_price - sale_price) / original_price) * 100)
-        else:
-            discount_percent = 0
+        # כותרות
+        headers = [
+            'Name', 'Category', 'Original Price', 'Sale Price', 
+            'Discount', 'Rating', 'Sold', 'Shipping', 
+            'Image', 'Link', 'Added Date'
+        ]
         
-        # חילוץ תמונה ראשית
-        image_url = product.get('product_main_image_url', '')
-        if not image_url:
-            small_images = product.get('product_small_image_urls', {}).get('string', [])
-            if small_images:
-                image_url = small_images[0] if isinstance(small_images, list) else small_images
+        # מכין את הנתונים
+        rows = [headers]
         
-        # בניית לינק affiliate
-        product_id = product.get('product_id', '')
-        tracking_id = get_env_variable('ALIEXPRESS_TRACKING_ID', required=False) or 'default'
-        affiliate_link = f"https://www.aliexpress.com/item/{product_id}.html?aff_fcid=&aff_fsk=&aff_platform=&aff_trace_key={tracking_id}"
-        
-        # חילוץ קטגוריה
-        category = product.get('first_level_category_name', 'General')
-        
-        return {
-            'name': product.get('product_title', 'No Title'),
-            'category': category,
-            'original_price': f"${original_price:.2f}",
-            'sale_price': f"${sale_price:.2f}",
-            'discount': f"{discount_percent}%",
-            'rating': product.get('evaluate_rate', 'N/A'),
-            'sold': product.get('volume', '0'),
-            'shipping': 'Free Shipping' if product.get('is_free_shipping', False) else 'Paid Shipping',
-            'image': image_url,
-            'link': affiliate_link,
-            'added_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-    
-    except Exception as e:
-        log(f"שגיאה בעיבוד מוצר: {e}", "WARNING")
-        return None
-
-# ============================================
-# כתיבה ל-Google Sheets
-# ============================================
-
-def write_products_to_sheet(worksheet, products):
-    """
-    כותב מוצרים ל-Google Sheets
-    
-    Args:
-        worksheet: אובייקט worksheet של gspread
-        products: רשימת מוצרים לכתוב
-    
-    Returns:
-        מספר המוצרים שנכתבו
-    """
-    log(f"כותב {len(products)} מוצרים ל-Google Sheets...", "PROGRESS")
-    
-    try:
-        # בדיקה אם יש כותרות
-        try:
-            existing_data = worksheet.get_all_values()
-            has_headers = len(existing_data) > 0 and existing_data[0]
-        except:
-            has_headers = False
-        
-        # אם אין כותרות, נוסיף
-        if not has_headers:
-            headers = [
-                "Name",
-                "Category",
-                "Original Price",
-                "Sale Price",
-                "Discount",
-                "Rating",
-                "Sold",
-                "Shipping",
-                "Image",
-                "Link",
-                "Added Date"
-            ]
-            worksheet.append_row(headers)
-            log("הוספנו שורת כותרות", "INFO")
-        
-        # הוספת המוצרים
-        rows_added = 0
         for product in products:
-            if product:  # רק אם המוצר תקין
-                row = [
-                    product['name'],
-                    product['category'],
-                    product['original_price'],
-                    product['sale_price'],
-                    product['discount'],
-                    str(product['rating']),
-                    str(product['sold']),
-                    product['shipping'],
-                    product['image'],
-                    product['link'],
-                    product['added_date']
-                ]
-                worksheet.append_row(row)
-                rows_added += 1
+            try:
+                # חילוץ מידע בסיסי
+                name = product.get('product_title', 'N/A')
+                category = product.get('first_level_category_name', 'N/A')
                 
-                # המתנה קטנה בין שורות למנוע rate limiting
-                time.sleep(0.5)
+                # מחירים
+                original_price = product.get('original_price', 'N/A')
+                sale_price = product.get('sale_price', 'N/A')
+                
+                # חישוב הנחה
+                try:
+                    if original_price != 'N/A' and sale_price != 'N/A':
+                        discount = round(((float(original_price) - float(sale_price)) / float(original_price)) * 100, 1)
+                        discount = f"{discount}%"
+                    else:
+                        discount = 'N/A'
+                except:
+                    discount = 'N/A'
+                
+                # דירוג ומכירות
+                rating = product.get('evaluate_rate', 'N/A')
+                sold = product.get('volume', 'N/A')
+                
+                # משלוח
+                shipping = "Free Shipping" if product.get('is_free_shipping', False) else "Paid Shipping"
+                
+                # לינקים
+                image_url = product.get('product_main_image_url', '')
+                product_url = product.get('promotion_link', '')
+                
+                # תאריך
+                added_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+                
+                # הוספת שורה
+                row = [
+                    name, category, original_price, sale_price,
+                    discount, rating, sold, shipping,
+                    image_url, product_url, added_date
+                ]
+                
+                rows.append(row)
+                
+            except Exception as e:
+                log(f"שגיאה בעיבוד מוצר: {str(e)}", "WARNING")
+                continue
         
-        log(f"נכתבו {rows_added} מוצרים בהצלחה!", "SUCCESS")
-        return rows_added
+        # ניקוי ה-worksheet וכתיבת נתונים חדשים
+        log("כותב נתונים ל-Google Sheets...", "STEP")
+        worksheet.clear()
+        worksheet.update('A1', rows)
+        
+        log(f"נכתבו {len(rows)-1} מוצרים בהצלחה ל-Google Sheets!", "SUCCESS")
         
     except Exception as e:
-        log(f"שגיאה בכתיבה ל-Google Sheets: {e}", "ERROR")
-        return 0
+        log(f"שגיאה בכתיבה ל-Google Sheets: {str(e)}", "ERROR")
+        raise
 
-# ============================================
-# פונקציה ראשית
-# ============================================
+
+# ========== Main Execution ==========
 
 def main():
-    """
-    הפונקציה הראשית של התוכנית
-    """
-    log("🚀 מתחיל תהליך אוטומציה של AliExpress to Google Sheets", "INFO")
-    log("=" * 60, "INFO")
-    
-    # שלב 1: התחברות ל-Google Sheets
-    worksheet = connect_to_google_sheets()
-    
-    # שלב 2: משיכת מוצרים מ-AliExpress
-    raw_products = fetch_best_deals_from_aliexpress(limit=30)
-    
-    if not raw_products:
-        log("לא הצלחנו למשוך מוצרים מ-AliExpress", "ERROR")
-        log("בודק שה-API credentials נכונים ושה-App פעיל", "INFO")
-        sys.exit(1)
-    
-    # שלב 3: עיבוד המוצרים
-    log("מעבד את המוצרים...", "PROGRESS")
-    processed_products = []
-    for product in raw_products:
-        processed = process_product(product)
-        if processed:
-            processed_products.append(processed)
-    
-    log(f"עובדו {len(processed_products)} מוצרים בהצלחה", "SUCCESS")
-    
-    # שלב 4: כתיבה ל-Google Sheets
-    if processed_products:
-        rows_added = write_products_to_sheet(worksheet, processed_products)
+    """פונקציה ראשית"""
+    try:
+        log("🚀 מתחיל תהליך אוטומציה של AliExpress to Google Sheets", "INFO")
+        log("=" * 60, "INFO")
         
-        if rows_added > 0:
-            log("=" * 60, "INFO")
-            log(f"✅ התהליך הושלם בהצלחה! נוספו {rows_added} מוצרים חדשים", "SUCCESS")
-            log("=" * 60, "INFO")
-        else:
-            log("לא נוספו מוצרים חדשים", "WARNING")
-    else:
-        log("אין מוצרים לכתוב", "WARNING")
+        # 1. התחברות ל-Google Sheets
+        worksheet = connect_to_google_sheets()
+        
+        # 2. משיכת מוצרים מ-AliExpress
+        products = fetch_aliexpress_products(num_products=30)
+        
+        if not products:
+            log("לא הצלחנו למשוך מוצרים מ-AliExpress", "ERROR")
+            log("בודק שה-API credentials נכונים ושה-App פעיל", "INFO")
+            sys.exit(1)
+        
+        # 3. עיבוד וכתיבה
+        process_and_write_products(worksheet, products)
+        
+        log("=" * 60, "INFO")
+        log("🎉 התהליך הושלם בהצלחה!", "SUCCESS")
+        
+    except Exception as e:
+        log(f"שגיאה קריטית: {str(e)}", "ERROR")
+        import traceback
+        log(f"Traceback מלא: {traceback.format_exc()}", "ERROR")
+        sys.exit(1)
 
-# ============================================
-# הרצת התוכנית
-# ============================================
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        log("\nהתהליך הופסק על ידי המשתמש", "WARNING")
-        sys.exit(0)
-    except Exception as e:
-        log(f"שגיאה קריטית: {e}", "ERROR")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    main()
