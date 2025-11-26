@@ -13,3 +13,6 @@ requests==2.31.0
 
 # Additional dependencies
 urllib3==2.0.7
+
+
+google-api-python-client==2.108.0
