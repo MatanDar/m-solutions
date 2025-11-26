@@ -513,18 +513,50 @@
 </script>
 
 
-<!-- בסוף הקובץ, לפני </body> -->
+<!-- ========================================= -->
+<!-- הוסף את הקוד הזה ל-HTML הקיים שלך     -->
+<!-- העתק והדבק לפני תגית </body> הסוגרת   -->
+<!-- ========================================= -->
+
 <script>
-    // טיפול אוטומטי בתמונות שנכשלות
+    // תיקון אוטומטי לתמונות שנכשלות - ללא שינוי עיצוב!
     document.addEventListener('DOMContentLoaded', function() {
+        
+        // מצא את כל התמונות בדף
         const images = document.querySelectorAll('img');
         
-        images.forEach(img => {
+        images.forEach(function(img) {
+            
+            // שמור את ה-URL המקורי
+            const originalSrc = img.src;
+            
+            // פונקציה שמטפלת בשגיאה
             img.onerror = function() {
-                this.onerror = null; // מונע לולאה אינסופית
-                this.src = 'https://via.placeholder.com/300x300/cccccc/666666?text=No+Image';
-                this.alt = 'Image not available';
+                
+                // אם זה הניסיון הראשון
+                if (!this.dataset.tried) {
+                    this.dataset.tried = '1';
+                    
+                    // נסה דרך Proxy (עוקף חסימות של AliExpress)
+                    const proxyUrl = 'https://images.weserv.nl/?url=' + 
+                        originalSrc.replace('https://', '').replace('http://', '');
+                    
+                    console.log('ניסיון 2: Proxy -', proxyUrl);
+                    this.src = proxyUrl;
+                    
+                } else if (this.dataset.tried === '1') {
+                    this.dataset.tried = '2';
+                    
+                    // אם גם Proxy לא עבד - תמונת fallback
+                    this.src = 'https://via.placeholder.com/400x400/e0e0e0/666666?text=No+Image';
+                    console.log('ניסיון 3: Placeholder');
+                }
             };
+            
+            // אם התמונה כבר נכשלה בטעינה
+            if (img.complete && img.naturalHeight === 0) {
+                img.onerror();
+            }
         });
     });
     </script>

@@ -7,6 +7,7 @@ from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import json
+import re
 
 # הגדרות מתוך GitHub Secrets
 GOOGLE_SHEETS_CREDENTIALS = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
@@ -49,7 +50,7 @@ def fetch_hot_products():
         'method': 'aliexpress.affiliate.hotproduct.query',
         'format': 'json',
         'v': '2.0',
-        'page_size': '30',
+        'page_size': '50',  # יותר מוצרים = יותר סיכוי לתמונות טובות
         'page_no': '1',
         'sort': 'SALE_PRICE_ASC',
         'target_currency': 'USD',
@@ -88,37 +89,71 @@ def fetch_hot_products():
         print(f"❌ שגיאה במשיכת מוצרים: {str(e)}")
         return []
 
-def get_clean_image_url(product):
-    """מקבל URL תמונה נקי ועובד"""
-    # נסה למצוא את התמונה הטובה ביותר
-    image_url = product.get('product_main_image_url', '')
+def validate_image_url(url):
+    """בדיקה אם URL תקין ונגיש"""
+    if not url or url == 'NO_IMAGE':
+        return False
     
-    # אם אין תמונה ראשית, נסה תמונות קטנות
-    if not image_url:
-        image_url = product.get('product_small_image_urls', {}).get('string', [''])[0] if product.get('product_small_image_urls') else ''
+    # בדוק אם זה URL תקין
+    url_pattern = re.compile(r'^https?://')
+    if not url_pattern.match(url):
+        return False
     
-    # נקה את ה-URL - הסר פרמטרים מיותרים
-    if image_url and '?' in image_url:
-        image_url = image_url.split('?')[0]
+    # בדוק אם התמונה קיימת (timeout קצר)
+    try:
+        response = requests.head(url, timeout=3, allow_redirects=True)
+        return response.status_code == 200
+    except:
+        return False
+
+def get_best_image_url(product):
+    """מקבל את ה-URL הטוב ביותר עם fallback מובנה"""
     
-    # ודא שיש פרוטוקול
-    if image_url and not image_url.startswith('http'):
-        image_url = 'https:' + image_url if image_url.startswith('//') else 'https://' + image_url
+    # אפשרויות תמונה לפי סדר עדיפות
+    image_candidates = [
+        product.get('product_main_image_url', ''),
+        product.get('product_small_image_urls', {}).get('string', [''])[0] if product.get('product_small_image_urls') else '',
+    ]
     
-    return image_url if image_url else 'NO_IMAGE'
+    # נקה URLs
+    for idx, url in enumerate(image_candidates):
+        if url:
+            # הסר פרמטרים מיותרים
+            if '?' in url:
+                url = url.split('?')[0]
+            
+            # ודא פרוטוקול
+            if not url.startswith('http'):
+                url = 'https:' + url if url.startswith('//') else 'https://' + url
+            
+            image_candidates[idx] = url
+    
+    # נסה למצוא תמונה תקינה
+    for url in image_candidates:
+        if url and validate_image_url(url):
+            print(f"✅ תמונה תקינה: {url[:50]}...")
+            return url
+    
+    # אם אף תמונה לא עובדת - השתמש ב-imgbb proxy
+    first_url = image_candidates[0] if image_candidates[0] else ''
+    if first_url:
+        # נסה להשתמש ב-proxy
+        proxy_url = f"https://images.weserv.nl/?url={first_url.replace('https://', '').replace('http://', '')}"
+        print(f"⚠️ משתמש ב-proxy: {proxy_url[:50]}...")
+        return proxy_url
+    
+    print(f"❌ אין תמונה זמינה")
+    return 'https://via.placeholder.com/400x400/e0e0e0/666666?text=No+Image+Available'
 
 def get_product_description(product):
     """מקבל תיאור המוצר - לא URL של תמונה!"""
-    # נסה למצוא תיאור אמיתי
     title = product.get('product_title', 'No Description')
-    
-    # אם יש second_level_category_name, נשתמש בו כתיאור
     category = product.get('second_level_category_name', '')
-    if category:
-        return f"{category} - {title[:50]}"  # 50 תווים ראשונים מהכותרת
     
-    # אחרת, רק הכותרת
-    return title[:100]  # 100 תווים ראשונים
+    if category:
+        return f"{category} - {title[:80]}"
+    
+    return title[:120]
 
 def write_to_google_sheets(products):
     """כתיבת מוצרים ל-Google Sheets"""
@@ -154,8 +189,13 @@ def write_to_google_sheets(products):
         next_row = len(existing_data) + 1
         
         new_rows = []
+        valid_products = 0
+        
         for product in products:
-            # לינק אפיליאייט אמיתי
+            # בדוק אם יש תמונה תקינה
+            image_url = get_best_image_url(product)
+            
+            # לינק אפיליאייט
             promotion_link = product.get('promotion_link', '')
             if not promotion_link and product.get('product_detail_url'):
                 promotion_link = f"{product['product_detail_url']}?aff_trace_key={ALIEXPRESS_TRACKING_ID}"
@@ -168,16 +208,21 @@ def write_to_google_sheets(products):
                 except:
                     rating = 'N/A'
             
-            # ✅ תיקון הבעיה! עמודה C = DESCRIPTION (לא תמונה!)
             row = [
-                product.get('product_detail_url', ''),                # A: PRODUCT_URL
-                product.get('product_title', 'No Title'),             # B: TITLE
-                get_product_description(product),                     # C: DESCRIPTION ← תוקן!
-                get_clean_image_url(product),                         # D: IMAGE_URL ← שופר!
-                promotion_link,                                        # E: AFFILIATE_LINK
-                rating                                                 # F: RATING
+                product.get('product_detail_url', ''),      # A: PRODUCT_URL
+                product.get('product_title', 'No Title'),   # B: TITLE
+                get_product_description(product),           # C: DESCRIPTION
+                image_url,                                   # D: IMAGE_URL (מאומת!)
+                promotion_link,                              # E: AFFILIATE_LINK
+                rating                                       # F: RATING
             ]
+            
             new_rows.append(row)
+            valid_products += 1
+            
+            # הגבל ל-30 מוצרים הטובים ביותר
+            if valid_products >= 30:
+                break
         
         if new_rows:
             sheet.values().update(
@@ -187,7 +232,7 @@ def write_to_google_sheets(products):
                 body={'values': new_rows}
             ).execute()
             
-            print(f"✅ {len(new_rows)} מוצרים חמים נכתבו ל-Google Sheets בהצלחה!")
+            print(f"✅ {len(new_rows)} מוצרים עם תמונות תקינות נכתבו ל-Google Sheets!")
         else:
             print("⚠️ לא נמצאו מוצרים לכתיבה")
             
@@ -195,7 +240,7 @@ def write_to_google_sheets(products):
         print(f"❌ שגיאה בכתיבה ל-Google Sheets: {str(e)}")
 
 def main():
-    print("🚀 מתחיל משיכת מוצרים חמים מ-AliExpress...")
+    print("🚀 מתחיל משיכת מוצרים חמים עם בדיקת תמונות...")
     print(f"📅 תאריך: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"🎯 קטגוריות: אלקטרוניקה, אופנה, בית")
     
