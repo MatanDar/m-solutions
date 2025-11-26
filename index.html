@@ -511,5 +511,22 @@
         document.getElementById('resetBtn').addEventListener('click', resetFilters);
     });
 </script>
+
+
+<!-- בסוף הקובץ, לפני </body> -->
+<script>
+    // טיפול אוטומטי בתמונות שנכשלות
+    document.addEventListener('DOMContentLoaded', function() {
+        const images = document.querySelectorAll('img');
+        
+        images.forEach(img => {
+            img.onerror = function() {
+                this.onerror = null; // מונע לולאה אינסופית
+                this.src = 'https://via.placeholder.com/300x300/cccccc/666666?text=No+Image';
+                this.alt = 'Image not available';
+            };
+        });
+    });
+    </script>
 </body>
 </html>

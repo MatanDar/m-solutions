@@ -46,16 +46,16 @@ def fetch_hot_products():
         'app_key': ALIEXPRESS_APP_KEY,
         'timestamp': timestamp,
         'sign_method': 'md5',
-        'method': 'aliexpress.affiliate.hotproduct.query',  # שינוי ל-Hot Products!
+        'method': 'aliexpress.affiliate.hotproduct.query',
         'format': 'json',
         'v': '2.0',
         'page_size': '30',
         'page_no': '1',
-        'sort': 'SALE_PRICE_ASC',  # מיון לפי פופולריות
+        'sort': 'SALE_PRICE_ASC',
         'target_currency': 'USD',
         'target_language': 'EN',
         'tracking_id': ALIEXPRESS_TRACKING_ID,
-        'category_ids': ','.join(ALLOWED_CATEGORIES)  # סינון קטגוריות!
+        'category_ids': ','.join(ALLOWED_CATEGORIES)
     }
     
     params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
@@ -69,7 +69,6 @@ def fetch_hot_products():
         
         print(f"API Response: {json.dumps(data, indent=2)}")
         
-        # בדיקת תשובה מ-API
         if 'aliexpress_affiliate_hotproduct_query_response' in data:
             result = data['aliexpress_affiliate_hotproduct_query_response']['resp_result']
             result_data = json.loads(result['resp_code']) if isinstance(result['resp_code'], str) else result
@@ -89,6 +88,38 @@ def fetch_hot_products():
         print(f"❌ שגיאה במשיכת מוצרים: {str(e)}")
         return []
 
+def get_clean_image_url(product):
+    """מקבל URL תמונה נקי ועובד"""
+    # נסה למצוא את התמונה הטובה ביותר
+    image_url = product.get('product_main_image_url', '')
+    
+    # אם אין תמונה ראשית, נסה תמונות קטנות
+    if not image_url:
+        image_url = product.get('product_small_image_urls', {}).get('string', [''])[0] if product.get('product_small_image_urls') else ''
+    
+    # נקה את ה-URL - הסר פרמטרים מיותרים
+    if image_url and '?' in image_url:
+        image_url = image_url.split('?')[0]
+    
+    # ודא שיש פרוטוקול
+    if image_url and not image_url.startswith('http'):
+        image_url = 'https:' + image_url if image_url.startswith('//') else 'https://' + image_url
+    
+    return image_url if image_url else 'NO_IMAGE'
+
+def get_product_description(product):
+    """מקבל תיאור המוצר - לא URL של תמונה!"""
+    # נסה למצוא תיאור אמיתי
+    title = product.get('product_title', 'No Description')
+    
+    # אם יש second_level_category_name, נשתמש בו כתיאור
+    category = product.get('second_level_category_name', '')
+    if category:
+        return f"{category} - {title[:50]}"  # 50 תווים ראשונים מהכותרת
+    
+    # אחרת, רק הכותרת
+    return title[:100]  # 100 תווים ראשונים
+
 def write_to_google_sheets(products):
     """כתיבת מוצרים ל-Google Sheets"""
     try:
@@ -103,15 +134,13 @@ def write_to_google_sheets(products):
         
         sheet_name = "Affiliate Table"
         
-        # קריאת נתונים קיימים
         result = sheet.values().get(
             spreadsheetId=GOOGLE_SHEET_ID,
-            range=f"{sheet_name}!A:F"  # עכשיו 6 עמודות (עם RATING)
+            range=f"{sheet_name}!A:F"
         ).execute()
         
         existing_data = result.get('values', [])
         
-        # אם אין כותרות, ליצור אותן
         if not existing_data:
             headers = [['PRODUCT_URL', 'TITLE', 'DESCRIPTION', 'IMAGE_URL', 'AFFILIATE_LINK', 'RATING']]
             sheet.values().update(
@@ -122,10 +151,8 @@ def write_to_google_sheets(products):
             ).execute()
             existing_data = headers
         
-        # מציאת השורה הריקה הבאה
         next_row = len(existing_data) + 1
         
-        # הכנת נתונים חדשים
         new_rows = []
         for product in products:
             # לינק אפיליאייט אמיתי
@@ -133,7 +160,7 @@ def write_to_google_sheets(products):
             if not promotion_link and product.get('product_detail_url'):
                 promotion_link = f"{product['product_detail_url']}?aff_trace_key={ALIEXPRESS_TRACKING_ID}"
             
-            # דירוג (RATING) - חדש!
+            # דירוג
             rating = product.get('evaluate_rate', 'N/A')
             if rating and rating != 'N/A':
                 try:
@@ -141,18 +168,18 @@ def write_to_google_sheets(products):
                 except:
                     rating = 'N/A'
             
+            # ✅ תיקון הבעיה! עמודה C = DESCRIPTION (לא תמונה!)
             row = [
-                product.get('product_detail_url', ''),
-                product.get('product_title', 'No Title'),
-                product.get('product_main_image_url', ''),
-                product.get('product_main_image_url', ''),
-                promotion_link,
-                rating  # עמודה חדשה!
+                product.get('product_detail_url', ''),                # A: PRODUCT_URL
+                product.get('product_title', 'No Title'),             # B: TITLE
+                get_product_description(product),                     # C: DESCRIPTION ← תוקן!
+                get_clean_image_url(product),                         # D: IMAGE_URL ← שופר!
+                promotion_link,                                        # E: AFFILIATE_LINK
+                rating                                                 # F: RATING
             ]
             new_rows.append(row)
         
         if new_rows:
-            # כתיבה ל-Google Sheets
             sheet.values().update(
                 spreadsheetId=GOOGLE_SHEET_ID,
                 range=f"{sheet_name}!A{next_row}:F{next_row + len(new_rows) - 1}",
