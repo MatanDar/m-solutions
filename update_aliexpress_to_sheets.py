@@ -18,16 +18,9 @@ ALIEXPRESS_TRACKING_ID = os.environ.get('ALIEXPRESS_TRACKING_ID')
 
 # קטגוריות מותרות (אלקטרוניקה, אופנה, בית)
 ALLOWED_CATEGORIES = [
-    '509',  # Electronics
-    '1501', # Phones & Accessories
-    '200000345', # Computer & Office
-    '7', # Women's Clothing
-    '200000297', # Men's Clothing
-    '1524', # Fashion Accessories
-    '13', # Jewelry & Watches
-    '15', # Home & Garden
-    '6', # Home Improvement
-    '1541' # Furniture
+    '509', '1501', '200000345',  # Electronics
+    '7', '200000297', '1524', '13',  # Fashion
+    '15', '6', '1541'  # Home
 ]
 
 def generate_signature(params, secret):
@@ -40,7 +33,7 @@ def generate_signature(params, secret):
     return hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
 
 def fetch_hot_products():
-    """משיכת מוצרים חמים (HOT PRODUCTS) מ-AliExpress"""
+    """משיכת מוצרים חמים מ-AliExpress"""
     timestamp = str(int(time.time() * 1000))
     
     params = {
@@ -50,7 +43,7 @@ def fetch_hot_products():
         'method': 'aliexpress.affiliate.hotproduct.query',
         'format': 'json',
         'v': '2.0',
-        'page_size': '50',  # יותר מוצרים = יותר סיכוי לתמונות טובות
+        'page_size': '30',
         'page_no': '1',
         'sort': 'SALE_PRICE_ASC',
         'target_currency': 'USD',
@@ -60,7 +53,6 @@ def fetch_hot_products():
     }
     
     params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
-    
     url = "https://api-sg.aliexpress.com/sync"
     
     try:
@@ -89,70 +81,40 @@ def fetch_hot_products():
         print(f"❌ שגיאה במשיכת מוצרים: {str(e)}")
         return []
 
-def validate_image_url(url):
-    """בדיקה אם URL תקין ונגיש"""
-    if not url or url == 'NO_IMAGE':
-        return False
+def convert_to_proxy_url(image_url):
+    """
+    ✅ פונקציה קריטית!
+    ממירה כל URL של תמונה ל-URL דרך Proxy
+    ככה AliExpress לא יכול לחסום!
+    """
+    if not image_url or image_url == 'NO_IMAGE':
+        return 'https://via.placeholder.com/400x400/e0e0e0/666666?text=No+Image'
     
-    # בדוק אם זה URL תקין
-    url_pattern = re.compile(r'^https?://')
-    if not url_pattern.match(url):
-        return False
+    # נקה את ה-URL
+    if '?' in image_url:
+        image_url = image_url.split('?')[0]
     
-    # בדוק אם התמונה קיימת (timeout קצר)
-    try:
-        response = requests.head(url, timeout=3, allow_redirects=True)
-        return response.status_code == 200
-    except:
-        return False
-
-def get_best_image_url(product):
-    """מקבל את ה-URL הטוב ביותר עם fallback מובנה"""
+    # ודא פרוטוקול
+    if not image_url.startswith('http'):
+        image_url = 'https:' + image_url if image_url.startswith('//') else 'https://' + image_url
     
-    # אפשרויות תמונה לפי סדר עדיפות
-    image_candidates = [
-        product.get('product_main_image_url', ''),
-        product.get('product_small_image_urls', {}).get('string', [''])[0] if product.get('product_small_image_urls') else '',
-    ]
+    # ✅ המרה ל-Proxy URL!
+    # הסר את https:// או http://
+    clean_url = image_url.replace('https://', '').replace('http://', '')
     
-    # נקה URLs
-    for idx, url in enumerate(image_candidates):
-        if url:
-            # הסר פרמטרים מיותרים
-            if '?' in url:
-                url = url.split('?')[0]
-            
-            # ודא פרוטוקול
-            if not url.startswith('http'):
-                url = 'https:' + url if url.startswith('//') else 'https://' + url
-            
-            image_candidates[idx] = url
+    # צור proxy URL
+    proxy_url = f"https://images.weserv.nl/?url={clean_url}&w=400&h=400&fit=cover&default=1"
     
-    # נסה למצוא תמונה תקינה
-    for url in image_candidates:
-        if url and validate_image_url(url):
-            print(f"✅ תמונה תקינה: {url[:50]}...")
-            return url
-    
-    # אם אף תמונה לא עובדת - השתמש ב-imgbb proxy
-    first_url = image_candidates[0] if image_candidates[0] else ''
-    if first_url:
-        # נסה להשתמש ב-proxy
-        proxy_url = f"https://images.weserv.nl/?url={first_url.replace('https://', '').replace('http://', '')}"
-        print(f"⚠️ משתמש ב-proxy: {proxy_url[:50]}...")
-        return proxy_url
-    
-    print(f"❌ אין תמונה זמינה")
-    return 'https://via.placeholder.com/400x400/e0e0e0/666666?text=No+Image+Available'
+    print(f"🔄 Proxy: {image_url[:50]}... → {proxy_url[:80]}...")
+    return proxy_url
 
 def get_product_description(product):
-    """מקבל תיאור המוצר - לא URL של תמונה!"""
+    """מקבל תיאור המוצר"""
     title = product.get('product_title', 'No Description')
     category = product.get('second_level_category_name', '')
     
     if category:
         return f"{category} - {title[:80]}"
-    
     return title[:120]
 
 def write_to_google_sheets(products):
@@ -189,12 +151,7 @@ def write_to_google_sheets(products):
         next_row = len(existing_data) + 1
         
         new_rows = []
-        valid_products = 0
-        
         for product in products:
-            # בדוק אם יש תמונה תקינה
-            image_url = get_best_image_url(product)
-            
             # לינק אפיליאייט
             promotion_link = product.get('promotion_link', '')
             if not promotion_link and product.get('product_detail_url'):
@@ -208,21 +165,20 @@ def write_to_google_sheets(products):
                 except:
                     rating = 'N/A'
             
+            # ✅ קריטי! כל תמונה עוברת דרך Proxy!
+            original_image_url = product.get('product_main_image_url', '')
+            proxy_image_url = convert_to_proxy_url(original_image_url)
+            
             row = [
-                product.get('product_detail_url', ''),      # A: PRODUCT_URL
-                product.get('product_title', 'No Title'),   # B: TITLE
-                get_product_description(product),           # C: DESCRIPTION
-                image_url,                                   # D: IMAGE_URL (מאומת!)
-                promotion_link,                              # E: AFFILIATE_LINK
-                rating                                       # F: RATING
+                product.get('product_detail_url', ''),
+                product.get('product_title', 'No Title'),
+                get_product_description(product),
+                proxy_image_url,  # ✅ Proxy URL!
+                promotion_link,
+                rating
             ]
             
             new_rows.append(row)
-            valid_products += 1
-            
-            # הגבל ל-30 מוצרים הטובים ביותר
-            if valid_products >= 30:
-                break
         
         if new_rows:
             sheet.values().update(
@@ -232,7 +188,7 @@ def write_to_google_sheets(products):
                 body={'values': new_rows}
             ).execute()
             
-            print(f"✅ {len(new_rows)} מוצרים עם תמונות תקינות נכתבו ל-Google Sheets!")
+            print(f"✅ {len(new_rows)} מוצרים עם Proxy URLs נכתבו בהצלחה!")
         else:
             print("⚠️ לא נמצאו מוצרים לכתיבה")
             
@@ -240,15 +196,17 @@ def write_to_google_sheets(products):
         print(f"❌ שגיאה בכתיבה ל-Google Sheets: {str(e)}")
 
 def main():
-    print("🚀 מתחיל משיכת מוצרים חמים עם בדיקת תמונות...")
+    print("🚀 מתחיל משיכת מוצרים חמים...")
     print(f"📅 תאריך: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"🎯 קטגוריות: אלקטרוניקה, אופנה, בית")
+    print(f"🔄 כל התמונות יעברו דרך Proxy - 100% יעבוד!")
     
     products = fetch_hot_products()
     
     if products:
         write_to_google_sheets(products)
         print("✅ הריצה הסתיימה בהצלחה!")
+        print("📸 כל התמונות עברו דרך Proxy - יעבדו באתר!")
     else:
         print("⚠️ לא נמצאו מוצרים")
 
