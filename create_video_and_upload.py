@@ -81,7 +81,20 @@ def get_random_product():
 def download_image(image_url, output_path):
     """הורדת תמונת המוצר"""
     try:
-        response = requests.get(image_url, timeout=30)
+        # ✅ אם זה Proxy URL, נחלץ את ה-URL המקורי
+        if 'weserv.nl' in image_url:
+            # חילוץ URL המקורי מה-Proxy
+            # https://images.weserv.nl/?url=ORIGINAL_URL&...
+            original_url = image_url.split('url=')[1].split('&')[0]
+            image_url = f"https://{original_url}"
+        
+        # הורדה עם headers כדי לעקוף חסימות
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://www.aliexpress.com/'
+        }
+        
+        response = requests.get(image_url, headers=headers, timeout=30)
         response.raise_for_status()
         
         with open(output_path, 'wb') as f:
@@ -92,6 +105,7 @@ def download_image(image_url, output_path):
         
     except Exception as e:
         print(f"❌ שגיאה בהורדת תמונה: {str(e)}")
+        print(f"🔗 ניסיתי להוריד: {image_url}")
         return False
 
 # ========================================
