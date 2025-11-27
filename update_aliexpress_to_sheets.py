@@ -129,6 +129,69 @@ def translate_to_hebrew(text):
         print(f"⚠️ שגיאה בתרגום, משאיר באנגלית: {str(e)}")
         return text  # אם יש בעיה, נשאיר באנגלית
 
+def calculate_similarity(text1, text2):
+    """
+    ✅ חישוב אחוז דמיון בין שני טקסטים
+    מחזיר ערך בין 0 ל-1 (1 = זהים לגמרי)
+    """
+    text1 = text1.lower().strip()
+    text2 = text2.lower().strip()
+    
+    # אם זהים לגמרי
+    if text1 == text2:
+        return 1.0
+    
+    # חישוב דמיון לפי מילים משותפות
+    words1 = set(text1.split())
+    words2 = set(text2.split())
+    
+    if not words1 or not words2:
+        return 0.0
+    
+    common_words = words1.intersection(words2)
+    total_words = words1.union(words2)
+    
+    similarity = len(common_words) / len(total_words)
+    return similarity
+
+def is_duplicate(product, existing_data):
+    """
+    ✅ בדיקה אם המוצר כבר קיים
+    בודק 3 רמות:
+    1. URL זהה
+    2. כותרת זהה
+    3. כותרת דומה ב-80%+
+    """
+    product_url = product.get('product_detail_url', '')
+    product_title = product.get('product_title', '')
+    
+    # דלג על header
+    for row in existing_data[1:]:
+        if len(row) < 2:
+            continue
+        
+        existing_url = row[0] if len(row) > 0 else ''
+        existing_title = row[1] if len(row) > 1 else ''
+        
+        # בדיקה 1: URL זהה
+        if product_url and existing_url and product_url == existing_url:
+            print(f"⚠️ דילוג - URL כפול: {product_title[:50]}...")
+            return True
+        
+        # בדיקה 2: כותרת זהה
+        if product_title and existing_title and product_title.lower() == existing_title.lower():
+            print(f"⚠️ דילוג - כותרת זהה: {product_title[:50]}...")
+            return True
+        
+        # בדיקה 3: כותרת דומה מאוד (80%+)
+        if product_title and existing_title:
+            similarity = calculate_similarity(product_title, existing_title)
+            if similarity >= 0.8:
+                print(f"⚠️ דילוג - כותרת דומה ({similarity*100:.0f}%): {product_title[:50]}...")
+                return True
+    
+    return False
+
 def get_product_description(product):
     """
     ✅ עודכן!
@@ -149,7 +212,7 @@ def get_product_description(product):
     return description_he
 
 def write_to_google_sheets(products):
-    """כתיבת מוצרים ל-Google Sheets"""
+    """כתיבת מוצרים ל-Google Sheets עם סינון כפילויות"""
     try:
         credentials_dict = json.loads(GOOGLE_SHEETS_CREDENTIALS)
         credentials = service_account.Credentials.from_service_account_info(
@@ -182,7 +245,14 @@ def write_to_google_sheets(products):
         next_row = len(existing_data) + 1
         
         new_rows = []
+        duplicates_count = 0
+        
         for product in products:
+            # ✅ בדיקת כפילות!
+            if is_duplicate(product, existing_data):
+                duplicates_count += 1
+                continue
+            
             # לינק אפיליאייט
             promotion_link = product.get('promotion_link', '')
             if not promotion_link and product.get('product_detail_url'):
@@ -219,9 +289,11 @@ def write_to_google_sheets(products):
                 body={'values': new_rows}
             ).execute()
             
-            print(f"✅ {len(new_rows)} מוצרים עם Proxy URLs ותרגום לעברית נכתבו בהצלחה!")
+            print(f"✅ {len(new_rows)} מוצרים חדשים נוספו!")
+            print(f"⏭️ {duplicates_count} מוצרים כפולים דולגו")
+            print(f"📊 סה\"כ מוצרים בטבלה: {len(existing_data) + len(new_rows) - 1}")
         else:
-            print("⚠️ לא נמצאו מוצרים לכתיבה")
+            print(f"⚠️ לא נמצאו מוצרים חדשים (כל ה-{duplicates_count} היו כפולים)")
             
     except Exception as e:
         print(f"❌ שגיאה בכתיבה ל-Google Sheets: {str(e)}")
@@ -232,6 +304,7 @@ def main():
     print(f"🎯 קטגוריות: אלקטרוניקה, אופנה, בית")
     print(f"🔄 כל התמונות יעברו דרך Proxy - 100% יעבוד!")
     print(f"🔤 כל התיאורים יתורגמו לעברית!")
+    print(f"🚫 סינון כפילויות - רק מוצרים ייחודיים!")
     
     products = fetch_hot_products()
     
@@ -240,6 +313,7 @@ def main():
         print("✅ הריצה הסתיימה בהצלחה!")
         print("📸 כל התמונות עברו דרך Proxy - יעבדו באתר!")
         print("🇮🇱 כל התיאורים בעברית!")
+        print("🎯 ללא כפילויות - מוצרים ייחודיים בלבד!")
     else:
         print("⚠️ לא נמצאו מוצרים")
 
