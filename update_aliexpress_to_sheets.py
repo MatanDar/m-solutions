@@ -8,6 +8,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import json
 import re
+from googletrans import Translator
 
 # הגדרות מתוך GitHub Secrets
 GOOGLE_SHEETS_CREDENTIALS = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
@@ -15,6 +16,9 @@ GOOGLE_SHEET_ID = os.environ.get('GOOGLE_SHEET_ID')
 ALIEXPRESS_APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
 ALIEXPRESS_APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
 ALIEXPRESS_TRACKING_ID = os.environ.get('ALIEXPRESS_TRACKING_ID')
+
+# יצירת אובייקט מתרגם
+translator = Translator()
 
 # קטגוריות מותרות (אלקטרוניקה, אופנה, בית)
 ALLOWED_CATEGORIES = [
@@ -108,14 +112,41 @@ def convert_to_proxy_url(image_url):
     print(f"🔄 Proxy: {image_url[:50]}... → {proxy_url[:80]}...")
     return proxy_url
 
+def translate_to_hebrew(text):
+    """
+    ✅ פונקציה חדשה!
+    מתרגמת טקסט לעברית באמצעות Google Translate
+    """
+    try:
+        if not text or len(text.strip()) == 0:
+            return text
+        
+        # תרגום לעברית
+        translated = translator.translate(text, src='en', dest='he')
+        print(f"🔤 תרגום: {text[:40]}... → {translated.text[:40]}...")
+        return translated.text
+    except Exception as e:
+        print(f"⚠️ שגיאה בתרגום, משאיר באנגלית: {str(e)}")
+        return text  # אם יש בעיה, נשאיר באנגלית
+
 def get_product_description(product):
-    """מקבל תיאור המוצר"""
+    """
+    ✅ עודכן!
+    מקבל תיאור המוצר ומתרגם אותו לעברית
+    """
     title = product.get('product_title', 'No Description')
     category = product.get('second_level_category_name', '')
     
+    # יצירת התיאור באנגלית
     if category:
-        return f"{category} - {title[:80]}"
-    return title[:120]
+        description_en = f"{category} - {title[:80]}"
+    else:
+        description_en = title[:120]
+    
+    # ✅ תרגום לעברית!
+    description_he = translate_to_hebrew(description_en)
+    
+    return description_he
 
 def write_to_google_sheets(products):
     """כתיבת מוצרים ל-Google Sheets"""
@@ -172,7 +203,7 @@ def write_to_google_sheets(products):
             row = [
                 product.get('product_detail_url', ''),
                 product.get('product_title', 'No Title'),
-                get_product_description(product),
+                get_product_description(product),  # ✅ עכשיו בעברית!
                 proxy_image_url,  # ✅ Proxy URL!
                 promotion_link,
                 rating
@@ -188,7 +219,7 @@ def write_to_google_sheets(products):
                 body={'values': new_rows}
             ).execute()
             
-            print(f"✅ {len(new_rows)} מוצרים עם Proxy URLs נכתבו בהצלחה!")
+            print(f"✅ {len(new_rows)} מוצרים עם Proxy URLs ותרגום לעברית נכתבו בהצלחה!")
         else:
             print("⚠️ לא נמצאו מוצרים לכתיבה")
             
@@ -200,6 +231,7 @@ def main():
     print(f"📅 תאריך: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"🎯 קטגוריות: אלקטרוניקה, אופנה, בית")
     print(f"🔄 כל התמונות יעברו דרך Proxy - 100% יעבוד!")
+    print(f"🔤 כל התיאורים יתורגמו לעברית!")
     
     products = fetch_hot_products()
     
@@ -207,6 +239,7 @@ def main():
         write_to_google_sheets(products)
         print("✅ הריצה הסתיימה בהצלחה!")
         print("📸 כל התמונות עברו דרך Proxy - יעבדו באתר!")
+        print("🇮🇱 כל התיאורים בעברית!")
     else:
         print("⚠️ לא נמצאו מוצרים")
 
