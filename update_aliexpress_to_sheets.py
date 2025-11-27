@@ -27,6 +27,30 @@ ALLOWED_CATEGORIES = [
     '15', '6', '1541'  # Home
 ]
 
+# ✅ מילות מפתח למוצרים נפוצים
+# אם 2 מוצרים חולקים אותה מילת מפתח - רק אחד יישמר!
+PRODUCT_KEYWORDS = [
+    # Electronics
+    'cable', 'charger', 'adapter', 'mouse', 'keyboard', 'headphone', 'earphone', 'speaker',
+    'powerbank', 'battery', 'usb', 'hdmi', 'bluetooth', 'wireless', 'remote', 'controller',
+    'light', 'lamp', 'led', 'bulb', 'strip', 'lighter', 'torch', 'flashlight',
+    'watch', 'smartwatch', 'band', 'tracker', 'camera', 'tripod', 'lens', 'drone',
+    'phone', 'tablet', 'laptop', 'computer', 'monitor', 'screen', 'display',
+    
+    # Fashion
+    'shirt', 'tshirt', 'dress', 'skirt', 'pants', 'jeans', 'shorts', 'jacket', 'coat',
+    'sweater', 'hoodie', 'shoes', 'sneakers', 'boots', 'sandals', 'hat', 'cap',
+    'bag', 'backpack', 'wallet', 'belt', 'watch', 'bracelet', 'necklace', 'ring',
+    'socks', 'underwear', 'bra', 'bikini', 'swimsuit', 'gloves', 'scarf',
+    
+    # Home
+    'mug', 'cup', 'bottle', 'thermos', 'plate', 'bowl', 'spoon', 'fork', 'knife',
+    'pan', 'pot', 'cooker', 'blender', 'mixer', 'kettle', 'toaster', 'oven',
+    'pillow', 'blanket', 'sheet', 'curtain', 'towel', 'mat', 'rug', 'carpet',
+    'organizer', 'storage', 'box', 'basket', 'rack', 'shelf', 'holder', 'hanger',
+    'clock', 'mirror', 'frame', 'vase', 'plant', 'pot', 'garden', 'tool'
+]
+
 def generate_signature(params, secret):
     """יצירת חתימה דיגיטלית עבור API Request"""
     sorted_params = sorted(params.items())
@@ -129,6 +153,27 @@ def translate_to_hebrew(text):
         print(f"⚠️ שגיאה בתרגום, משאיר באנגלית: {str(e)}")
         return text  # אם יש בעיה, נשאיר באנגלית
 
+def extract_main_keyword(title):
+    """
+    ✅ מחלץ את מילת המפתח העיקרית מכותרת המוצר
+    לדוגמה: "USB Cable Fast Charging 3A" → "cable"
+    """
+    title_lower = title.lower()
+    
+    # חיפוש מילת מפתח מהרשימה
+    for keyword in PRODUCT_KEYWORDS:
+        if keyword in title_lower:
+            return keyword
+    
+    # אם לא נמצאה מילת מפתח, נשתמש במילה הראשונה המשמעותית
+    words = title_lower.split()
+    # דלג על מילים קצרות (<3 אותיות) כמו "for", "the", "new"
+    for word in words:
+        if len(word) >= 3:
+            return word
+    
+    return title_lower[:20]  # במקרה הגרוע - 20 תווים ראשונים
+
 def calculate_similarity(text1, text2):
     """
     ✅ חישוב אחוז דמיון בין שני טקסטים
@@ -156,14 +201,16 @@ def calculate_similarity(text1, text2):
 
 def is_duplicate(product, existing_data):
     """
-    ✅ בדיקה אם המוצר כבר קיים
-    בודק 3 רמות:
+    ✅ בדיקה חכמה אם המוצר כבר קיים
+    בודק 4 רמות:
     1. URL זהה
     2. כותרת זהה
     3. כותרת דומה ב-80%+
+    4. ✨ חדש! מילת מפתח זהה (למנוע 5 מצתים שונים)
     """
     product_url = product.get('product_detail_url', '')
     product_title = product.get('product_title', '')
+    product_keyword = extract_main_keyword(product_title)
     
     # דלג על header
     for row in existing_data[1:]:
@@ -172,6 +219,7 @@ def is_duplicate(product, existing_data):
         
         existing_url = row[0] if len(row) > 0 else ''
         existing_title = row[1] if len(row) > 1 else ''
+        existing_keyword = extract_main_keyword(existing_title)
         
         # בדיקה 1: URL זהה
         if product_url and existing_url and product_url == existing_url:
@@ -189,6 +237,12 @@ def is_duplicate(product, existing_data):
             if similarity >= 0.8:
                 print(f"⚠️ דילוג - כותרת דומה ({similarity*100:.0f}%): {product_title[:50]}...")
                 return True
+        
+        # ✅ בדיקה 4: מילת מפתח זהה (החדש!)
+        if product_keyword and existing_keyword and product_keyword == existing_keyword:
+            print(f"⚠️ דילוג - קטגוריה קיימת ('{product_keyword}'): {product_title[:50]}...")
+            print(f"   כבר יש: {existing_title[:50]}...")
+            return True
     
     return False
 
