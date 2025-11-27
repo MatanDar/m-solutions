@@ -6,8 +6,11 @@ import json
 import random
 import requests
 import subprocess
+import pickle
 from datetime import datetime
 from google.oauth2 import service_account
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -15,17 +18,60 @@ from googleapiclient.http import MediaFileUpload
 # 🔧 הגדרות
 # ========================================
 
-# Google Sheets
+# Google Sheets (Service Account - נשאר כמו שהיה!)
 GOOGLE_SHEETS_CREDENTIALS = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
 GOOGLE_SHEET_ID = os.environ.get('GOOGLE_SHEET_ID')
 
-# YouTube
-YOUTUBE_CREDENTIALS = os.environ.get('YOUTUBE_CREDENTIALS')
+# YouTube OAuth (חדש!)
+CLIENT_SECRET_FILE = 'client_secret.json'
+TOKEN_FILE = 'token.pickle'
 
 # נתיבים
 TEMP_DIR = '/tmp/youtube_videos'
 LOGO_PATH = 'logo.png'
 MUSIC_PATH = 'background_music.mp3'
+
+# ========================================
+# 🔐 אימות YouTube עם OAuth
+# ========================================
+
+def get_youtube_service():
+    """מתחבר ל-YouTube עם OAuth"""
+    SCOPES = ['https://www.googleapis.com/auth/youtube.upload']
+    
+    creds = None
+    
+    # בדיקה אם יש token שמור
+    if os.path.exists(TOKEN_FILE):
+        print("📂 טוען token קיים...")
+        with open(TOKEN_FILE, 'rb') as token:
+            creds = pickle.load(token)
+    
+    # אם אין token או שהוא לא תקף
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            print("🔄 מרענן token...")
+            creds.refresh(Request())
+        else:
+            print("🔐 נדרש אימות ראשוני...")
+            print("👉 דפדפן ייפתח - אשר את ההרשאות!")
+            
+            if not os.path.exists(CLIENT_SECRET_FILE):
+                print(f"❌ חסר קובץ: {CLIENT_SECRET_FILE}")
+                print("👉 הורד את client_secret.json מ-Google Cloud!")
+                return None
+            
+            flow = InstalledAppFlow.from_client_secrets_file(
+                CLIENT_SECRET_FILE, SCOPES)
+            creds = flow.run_local_server(port=8080)
+        
+        # שמירת token
+        print("💾 שומר token...")
+        with open(TOKEN_FILE, 'wb') as token:
+            pickle.dump(creds, token)
+        print("✅ Token נשמר!")
+    
+    return build('youtube', 'v3', credentials=creds)
 
 # ========================================
 # 📊 קריאת מוצר אקראי מ-Google Sheets
@@ -43,10 +89,9 @@ def get_random_product():
         service = build('sheets', 'v4', credentials=credentials)
         sheet = service.spreadsheets()
         
-        # קריאת כל המוצרים
         result = sheet.values().get(
             spreadsheetId=GOOGLE_SHEET_ID,
-            range='Affiliate Table!A2:F'  # מדלג על Header
+            range='Affiliate Table!A2:F'
         ).execute()
         
         products = result.get('values', [])
@@ -55,7 +100,6 @@ def get_random_product():
             print("❌ אין מוצרים בטבלה!")
             return None
         
-        # בחירה אקראית
         product = random.choice(products)
         
         product_data = {
@@ -81,14 +125,10 @@ def get_random_product():
 def download_image(image_url, output_path):
     """הורדת תמונת המוצר"""
     try:
-        # ✅ אם זה Proxy URL, נחלץ את ה-URL המקורי
         if 'weserv.nl' in image_url:
-            # חילוץ URL המקורי מה-Proxy
-            # https://images.weserv.nl/?url=ORIGINAL_URL&...
             original_url = image_url.split('url=')[1].split('&')[0]
             image_url = f"https://{original_url}"
         
-        # הורדה עם headers כדי לעקוף חסימות
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Referer': 'https://www.aliexpress.com/'
@@ -105,37 +145,58 @@ def download_image(image_url, output_path):
         
     except Exception as e:
         print(f"❌ שגיאה בהורדת תמונה: {str(e)}")
-        print(f"🔗 ניסיתי להוריד: {image_url}")
         return False
+
+# ========================================
+# 🎵 הורדת מוזיקת רקע
+# ========================================
+
+def download_background_music():
+    """הורדת מוזיקת רקע חינמית"""
+    if os.path.exists(MUSIC_PATH):
+        print(f"✅ מוזיקה כבר קיימת: {MUSIC_PATH}")
+        return True
+    
+    music_url = "https://www.bensound.com/bensound-music/bensound-energy.mp3"
+    
+    try:
+        response = requests.get(music_url, timeout=30)
+        response.raise_for_status()
+        
+        with open(MUSIC_PATH, 'wb') as f:
+            f.write(response.content)
+        
+        print(f"✅ מוזיקה הורדה: {MUSIC_PATH}")
+        return True
+        
+    except Exception as e:
+        print(f"⚠️ שקט במקום מוזיקה...")
+        subprocess.run([
+            'ffmpeg', '-y', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo',
+            '-t', '15', MUSIC_PATH
+        ], capture_output=True)
+        return True
 
 # ========================================
 # 🎬 יצירת סרטון עם FFmpeg
 # ========================================
 
 def create_video(product, image_path, output_path):
-    """יצירת סרטון 15 שניות עם אנימציות וטקסט"""
+    """יצירת סרטון 15 שניות"""
     
     title = product['title'][:80]
     rating = product['rating']
     
-    # הכנת הטקסטים
     text1 = f"😍 {title}"
     text2 = f"⭐ דירוג: {rating}"
     text3 = "🔥 מוצר חם!"
     text4 = "👇 לחצו על הלינק!"
     
-    # פקודת FFmpeg
-    # זה יוצר סרטון 15 שניות עם:
-    # - Zoom In/Out על התמונה
-    # - 4 טקסטים שמופיעים בזמנים שונים
-    # - הלוגו בפינה
-    # - מוזיקת רקע
-    
     ffmpeg_cmd = [
         'ffmpeg', '-y',
-        '-loop', '1', '-i', image_path,  # תמונת המוצר
-        '-i', LOGO_PATH,  # הלוגו
-        '-i', MUSIC_PATH,  # מוזיקה
+        '-loop', '1', '-i', image_path,
+        '-i', LOGO_PATH,
+        '-i', MUSIC_PATH,
         '-filter_complex',
         f"""
         [0:v]scale=1920:1080:force_original_aspect_ratio=decrease,
@@ -171,14 +232,14 @@ def create_video(product, image_path, output_path):
         enable='between(t,12,15)'[vout]
         """,
         '-map', '[vout]',
-        '-map', '2:a',  # אודיו מהמוזיקה
+        '-map', '2:a',
         '-c:v', 'libx264',
         '-preset', 'medium',
         '-crf', '23',
         '-c:a', 'aac',
         '-b:a', '192k',
         '-shortest',
-        '-t', '15',  # 15 שניות
+        '-t', '15',
         output_path
     ]
     
@@ -190,7 +251,7 @@ def create_video(product, image_path, output_path):
             print(f"✅ סרטון נוצר: {output_path}")
             return True
         else:
-            print(f"❌ שגיאה ביצירת סרטון: {result.stderr}")
+            print(f"❌ שגיאה: {result.stderr}")
             return False
             
     except Exception as e:
@@ -201,21 +262,11 @@ def create_video(product, image_path, output_path):
 # 📺 העלאה ליוטיוב
 # ========================================
 
-def upload_to_youtube(video_path, product):
+def upload_to_youtube(youtube, video_path, product):
     """העלאת הסרטון ליוטיוב"""
     try:
-        credentials_dict = json.loads(YOUTUBE_CREDENTIALS)
-        credentials = service_account.Credentials.from_service_account_info(
-            credentials_dict,
-            scopes=['https://www.googleapis.com/auth/youtube.upload']
-        )
-        
-        youtube = build('youtube', 'v3', credentials=credentials)
-        
-        # כותרת הסרטון
         title = f"💥 המוצר שכולם מחפשים! {product['title'][:50]}"
         
-        # תיאור הסרטון
         description = f"""🔥 {product['description']}
 ⭐ דירוג: {product['rating']}
 
@@ -225,13 +276,12 @@ def upload_to_youtube(video_path, product):
 #aliexpress #מוצרים #קניות #deals #shopping
 """
         
-        # העלאה
         body = {
             'snippet': {
                 'title': title,
                 'description': description,
                 'tags': ['aliexpress', 'shopping', 'deals', 'מוצרים', 'קניות'],
-                'categoryId': '22'  # People & Blogs
+                'categoryId': '22'
             },
             'status': {
                 'privacyStatus': 'public'
@@ -246,89 +296,75 @@ def upload_to_youtube(video_path, product):
             media_body=media
         )
         
+        print("📤 מעלה ליוטיוב...")
         response = request.execute()
         
         video_id = response['id']
         video_url = f"https://www.youtube.com/watch?v={video_id}"
         
-        print(f"✅ סרטון הועלה ליוטיוב: {video_url}")
+        print(f"✅ סרטון הועלה!")
+        print(f"🔗 {video_url}")
         return True
         
     except Exception as e:
-        print(f"❌ שגיאה בהעלאה ליוטיוב: {str(e)}")
+        print(f"❌ שגיאה בהעלאה: {str(e)}")
         return False
-
-# ========================================
-# 🎵 הורדת מוזיקת רקע חינמית
-# ========================================
-
-def download_background_music():
-    """הורדת מוזיקת רקע חינמית"""
-    # מוזיקה חינמית מ-YouTube Audio Library
-    # זו מוזיקה אנרגטית קצרה ללא זכויות יוצרים
-    music_url = "https://www.bensound.com/bensound-music/bensound-energy.mp3"
-    
-    try:
-        response = requests.get(music_url, timeout=30)
-        response.raise_for_status()
-        
-        with open(MUSIC_PATH, 'wb') as f:
-            f.write(response.content)
-        
-        print(f"✅ מוזיקה הורדה: {MUSIC_PATH}")
-        return True
-        
-    except Exception as e:
-        print(f"❌ שגיאה בהורדת מוזיקה: {str(e)}")
-        # אם לא מצליח להוריד, ניצור שקט
-        subprocess.run([
-            'ffmpeg', '-y', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo',
-            '-t', '15', MUSIC_PATH
-        ])
-        return True
 
 # ========================================
 # 🚀 Main
 # ========================================
 
 def main():
-    print("=" * 50)
-    print("🎬 יוצר סרטון ליוטיוב!")
+    print("=" * 60)
+    print("🎬 יוצר ומעלה סרטון ליוטיוב!")
     print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 50)
+    print("=" * 60)
     
     # יצירת תיקייה זמנית
     os.makedirs(TEMP_DIR, exist_ok=True)
     
-    # הורדת מוזיקת רקע (פעם אחת)
+    # הורדת מוזיקה
     if not os.path.exists(MUSIC_PATH):
         download_background_music()
     
-    # 1. בחירת מוצר אקראי
+    # חיבור ליוטיוב
+    print("\n🔐 מתחבר ליוטיוב...")
+    youtube = get_youtube_service()
+    if not youtube:
+        return
+    print("✅ מחובר ליוטיוב!")
+    
+    # בחירת מוצר
+    print("\n📦 בוחר מוצר...")
     product = get_random_product()
     if not product:
         return
     
-    # 2. הורדת תמונה
+    # הורדת תמונה
+    print("\n🖼️ מוריד תמונה...")
     image_path = os.path.join(TEMP_DIR, 'product_image.jpg')
     if not download_image(product['image_url'], image_path):
         return
     
-    # 3. יצירת סרטון
+    # יצירת סרטון
+    print("\n🎬 יוצר סרטון...")
     video_path = os.path.join(TEMP_DIR, 'output_video.mp4')
     if not create_video(product, image_path, video_path):
         return
     
-    # 4. העלאה ליוטיוב
-    if upload_to_youtube(video_path, product):
-        print("🎉 הכל הושלם בהצלחה!")
+    # העלאה ליוטיוב
+    print("\n📺 מעלה ליוטיוב...")
+    if upload_to_youtube(youtube, video_path, product):
+        print("\n🎉 הכל הושלם בהצלחה!")
     
     # ניקוי
-    print("🧹 מנקה קבצים זמניים...")
+    print("\n🧹 מנקה...")
     if os.path.exists(image_path):
         os.remove(image_path)
     if os.path.exists(video_path):
         os.remove(video_path)
+    
+    print("\n✅ סיימנו!")
 
 if __name__ == "__main__":
     main()
