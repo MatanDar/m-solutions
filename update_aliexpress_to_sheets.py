@@ -16,8 +16,8 @@ from googletrans import Translator
 # ===========================
 
 # AliExpress API
-ALIEXPRESS_API_KEY = os.environ.get('ALIEXPRESS_API_KEY')
-ALIEXPRESS_API_SECRET = os.environ.get('ALIEXPRESS_API_SECRET')
+ALIEXPRESS_API_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
+ALIEXPRESS_API_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
 ALIEXPRESS_TRACKING_ID = os.environ.get('ALIEXPRESS_TRACKING_ID')
 
 # Google Sheets
