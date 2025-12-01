@@ -75,7 +75,7 @@ def fetch_hot_products():
         'page_no': '1',
         'sort': 'SALE_PRICE_ASC',
         'target_currency': 'ILS',  # ✅ מחירים בשקלים!
-        'target_language': 'HE',   # ✅ עברית!
+        'target_language': 'EN',   # ✅ אנגלית - נתרגם בעצמנו!
         'tracking_id': ALIEXPRESS_TRACKING_ID,
         'category_ids': ','.join(ALLOWED_CATEGORIES),
         'ship_to_country': 'IL',   # ✅ משלוח לישראל בלבד!
