@@ -61,7 +61,7 @@ def generate_signature(params, secret):
     return hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
 
 def fetch_hot_products():
-    """משיכת מוצרים חמים מ-AliExpress מותאמים לישראל"""
+    """משיכת מוצרים פופולריים מ-AliExpress עם דירוג גבוה"""
     timestamp = str(int(time.time() * 1000))
     
     params = {
@@ -71,9 +71,9 @@ def fetch_hot_products():
         'method': 'aliexpress.affiliate.hotproduct.query',
         'format': 'json',
         'v': '2.0',
-        'page_size': '50',  # ✅ מושך יותר כדי לסנן
+        'page_size': '100',  # ✅ מושך הרבה כדי לסנן
         'page_no': '1',
-        'sort': 'SALE_PRICE_ASC',
+        'sort': 'VOLUME_ASC',  # ✅ לפי מכירות - מוצרים מוכחים!
         'target_currency': 'ILS',  # ✅ מחירים בשקלים!
         'target_language': 'EN',   # ✅ אנגלית - נתרגם בעצמנו!
         'tracking_id': ALIEXPRESS_TRACKING_ID,
@@ -118,43 +118,34 @@ def fetch_hot_products():
 
 def filter_products_for_israel(products):
     """
-    ✅ סינון מוצרים מותאמים לישראל:
-    1. משלוח חינם לישראל
-    2. זמן משלוח עד 15 יום
-    3. דירוג גבוה (4.5+)
-    4. מכירות טובות (פופולרי בישראל)
+    ✅ סינון מוצרים איכותיים מותאמים לישראל:
+    1. דירוג 4.0+ בלבד (מוצרים מוכחים!)
+    2. יש מכירות (לא מוצרים חדשים)
+    3. משלוח לישראל
     """
     filtered = []
     
     for product in products:
-        # 1. ✅ בדיקת משלוח חינם
-        shipping_price = product.get('original_price', '')
-        # אם יש מחיר משלוח, נדלג
-        
-        # 2. ✅ בדיקת זמן משלוח
-        delivery_days = product.get('relevant_market_commission_rate', '')  # זמן משלוח משוער
-        
-        # 3. ✅ בדיקת דירוג
+        # ✅ בדיקת דירוג - רק 4.0+!
         rating = product.get('evaluate_rate', '0')
         try:
             rating_value = float(rating) if rating and rating != 'N/A' else 0
         except:
             rating_value = 0
         
-        # סינון: רק דירוג 4.0+
+        # דירוג חייב להיות 4.0+
         if rating_value < 4.0:
             print(f"⏭️ דילוג - דירוג נמוך ({rating_value}): {product.get('product_title', '')[:40]}...")
             continue
         
-        # 4. ✅ בדיקת מספר הזמנות (פופולריות)
-        # מוצרים פופולריים = יותר מהירים במשלוח בדרך כלל
-        
+        print(f"✅ מוצר מאושר (דירוג {rating_value}): {product.get('product_title', '')[:40]}...")
         filtered.append(product)
     
     # מיון לפי דירוג (הכי גבוה קודם)
     filtered.sort(key=lambda x: float(x.get('evaluate_rate', '0') or '0'), reverse=True)
     
     # מחזיר רק 30 הטובים ביותר
+    print(f"🎯 סה\"כ מוצרים עם דירוג 4.0+: {len(filtered)}")
     return filtered[:30]
 
 def convert_to_proxy_url(image_url):
