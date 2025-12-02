@@ -10,41 +10,33 @@ from googleapiclient.discovery import build
 from aliexpress_api import AliexpressApi, models
 
 # ===========================
-# הגדרות AliExpress API
+# הגדרות
 # ===========================
 
 ALIEXPRESS_APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
 ALIEXPRESS_APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
 ALIEXPRESS_TRACKING_ID = 'Automation'
 
-# ===========================
-# הגדרות Google Sheets
-# ===========================
-
 SPREADSHEET_ID = '1oicbEsS2aU_G698uz-bd6ghUPKx7qt7dLUPFeaa4egU'
 SHEET_NAME = 'Affiliate Table'
 
 # ===========================
-# אתחול AliExpress API
+# פונקציות
 # ===========================
 
 def init_aliexpress_api():
-    """אתחול AliExpress API עם הספרייה המוכנה"""
+    """אתחול AliExpress API"""
     return AliexpressApi(
         ALIEXPRESS_APP_KEY,
         ALIEXPRESS_APP_SECRET,
-        models.Language.EN,  # עברית לא תמיד נתמכת
-        models.Currency.USD,  # ILS לא נתמך - נשתמש ב-USD
+        models.Language.EN,
+        models.Currency.USD,
         ALIEXPRESS_TRACKING_ID
     )
 
-# ===========================
-# פונקציות Google Sheets
-# ===========================
-
 def get_existing_products():
-    """קבלת מוצרים קיימים מהטבלה"""
-    print("📥 טוען מוצרים קיימים מהטבלה...")
+    """קבלת מוצרים קיימים"""
+    print("📥 טוען מוצרים קיימים...")
     
     try:
         credentials_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
@@ -55,8 +47,6 @@ def get_existing_products():
         )
         
         service = build('sheets', 'v4', credentials=credentials)
-        
-        # קריאת הטבלה
         result = service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
             range=f'{SHEET_NAME}!A:E'
@@ -65,10 +55,8 @@ def get_existing_products():
         values = result.get('values', [])
         
         if not values or len(values) < 2:
-            print("✅ הטבלה ריקה או יש רק כותרות")
             return []
         
-        # דילוג על שורת כותרות
         existing = []
         for row in values[1:]:
             if len(row) >= 2:
@@ -81,23 +69,23 @@ def get_existing_products():
         return existing
         
     except Exception as e:
-        print(f"⚠️ שגיאה בקריאת טבלה: {e}")
+        print(f"⚠️ שגיאה: {e}")
         return []
 
 def is_duplicate(product_url, existing_products):
-    """בדיקה אם מוצר כבר קיים"""
+    """בדיקת כפילויות"""
     for existing in existing_products:
         if existing['url'] in product_url or product_url in existing['url']:
             return True
     return False
 
 def add_products_to_sheet(new_products):
-    """הוספת מוצרים חדשים לטבלה"""
+    """הוספת מוצרים לטבלה"""
     if not new_products:
-        print("⚠️ אין מוצרים חדשים להוסיף")
+        print("⚠️ אין מוצרים להוסיף")
         return
     
-    print(f"\n📝 מוסיף {len(new_products)} מוצרים חדשים לטבלה...")
+    print(f"\n📝 מוסיף {len(new_products)} מוצרים...")
     
     try:
         credentials_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
@@ -109,7 +97,6 @@ def add_products_to_sheet(new_products):
         
         service = build('sheets', 'v4', credentials=credentials)
         
-        # הוספה בסוף הטבלה
         values = []
         for product in new_products:
             values.append([
@@ -120,7 +107,6 @@ def add_products_to_sheet(new_products):
                 product['affiliate_link']
             ])
         
-        # Append - הוספה ללא מחיקת קיימים
         service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID,
             range=f'{SHEET_NAME}!A:E',
@@ -129,126 +115,114 @@ def add_products_to_sheet(new_products):
             body={'values': values}
         ).execute()
         
-        print(f"✅ הוספו {len(new_products)} מוצרים בהצלחה!")
+        print(f"✅ הוספו {len(new_products)} מוצרים!")
         
     except Exception as e:
-        print(f"❌ שגיאה בהוספת מוצרים: {e}")
+        print(f"❌ שגיאה: {e}")
 
 # ===========================
 # תהליך ראשי
 # ===========================
 
 def main():
-    print("🚀 מתחיל תהליך עדכון מוצרים AliExpress")
+    print("🚀 AliExpress Products Updater")
     print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"🎯 Tracking ID: {ALIEXPRESS_TRACKING_ID}")
-    print("💵 מטבע: USD (ILS לא נתמך)")
-    print("➕ מוסיף מוצרים חדשים בלבד (לא מוחק קיימים)\n")
+    print(f"🎯 Tracking ID: {ALIEXPRESS_TRACKING_ID}\n")
     
-    # בדיקת API Keys
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
-        print("❌ חסרים API Keys! בדוק את GitHub Secrets")
+        print("❌ Missing API Keys!")
         return
     
     try:
-        # אתחול API
+        # אתחול
         api = init_aliexpress_api()
-        print("✅ התחברות ל-AliExpress API הצליחה!\n")
+        print("✅ Connected to AliExpress API\n")
         
-        # קבלת מוצרים קיימים
+        # מוצרים קיימים
         existing_products = get_existing_products()
         
-        # חיפוש מוצרים
-        search_keywords = [
+        # חיפוש
+        keywords = [
             'phone accessories',
-            'smart gadgets', 
+            'smart watch',
             'wireless earbuds',
-            'fitness tracker',
+            'phone case',
             'usb cable'
         ]
         
-        all_new_products = []
+        all_new = []
         
-        for keyword in search_keywords:
-            print(f"🔍 מחפש: '{keyword}'...")
+        for keyword in keywords:
+            print(f"🔍 Searching: '{keyword}'...")
             
             try:
-                # חיפוש מוצרים
                 response = api.get_hotproducts(
                     keywords=keyword,
                     page_size=20
                 )
                 
                 if not response or not hasattr(response, 'products'):
-                    print(f"⚠️ לא נמצאו מוצרים עבור '{keyword}'")
+                    print(f"⚠️ No products for '{keyword}'")
                     continue
                 
                 products = response.products
-                print(f"✅ נמצאו {len(products)} מוצרים")
+                print(f"✅ Found {len(products)} products")
                 
                 for product in products:
                     try:
-                        product_url = product.product_detail_url
+                        url = product.product_detail_url
                         title = product.product_title
                         
-                        # בדיקת כפילויות
-                        if is_duplicate(product_url, existing_products):
-                            print(f"⏭️ דילוג - קיים: {title[:40]}...")
+                        if is_duplicate(url, existing_products):
                             continue
                         
-                        # יצירת קישור שותפים
-                        print(f"🔗 יוצר קישור affiliate: {title[:40]}...")
-                        affiliate_links = api.get_affiliate_links([product_url])
-                        
-                        affiliate_link = product_url
+                        # Get affiliate link
+                        affiliate_links = api.get_affiliate_links([url])
+                        affiliate_link = url
                         if affiliate_links and len(affiliate_links) > 0:
                             affiliate_link = affiliate_links[0].promotion_link
                         
-                        # הוספה לרשימה
-                        all_new_products.append({
-                            'url': product_url,
+                        all_new.append({
+                            'url': url,
                             'title': title,
-                            'description': product.product_detail_url,
+                            'description': url,
                             'image': product.product_main_image_url,
                             'affiliate_link': affiliate_link
                         })
                         
-                        # הוספה לרשימת קיימים
-                        existing_products.append({'url': product_url, 'title': title})
+                        existing_products.append({'url': url, 'title': title})
                         
-                        print(f"✅ נוסף: {title[:40]}...")
+                        print(f"✅ Added: {title[:50]}...")
                         
-                        # הגבלה ל-30 מוצרים
-                        if len(all_new_products) >= 30:
-                            print("\n🎯 הגעתי ל-30 מוצרים חדשים - עוצר")
+                        if len(all_new) >= 30:
+                            print("\n🎯 Reached 30 products - stopping")
                             break
                         
                         time.sleep(0.3)
                         
                     except Exception as e:
-                        print(f"⚠️ שגיאה במוצר: {e}")
                         continue
                 
-                if len(all_new_products) >= 30:
+                if len(all_new) >= 30:
                     break
                 
                 time.sleep(1)
                 
             except Exception as e:
-                print(f"❌ שגיאה בחיפוש '{keyword}': {e}")
+                print(f"❌ Error searching '{keyword}': {e}")
                 continue
         
-        # הוספת מוצרים לטבלה
-        if all_new_products:
-            print(f"\n🎉 נמצאו {len(all_new_products)} מוצרים חדשים!")
-            add_products_to_sheet(all_new_products)
+        # הוספה לטבלה
+        if all_new:
+            print(f"\n🎉 Found {len(all_new)} new products!")
+            add_products_to_sheet(all_new)
         else:
-            print("\n⚠️ לא נמצאו מוצרים חדשים להוספה")
+            print("\n⚠️ No new products found")
         
-        print("\n✅ הושלם בהצלחה!")
+        print("\n✅ Done!")
         
     except Exception as e:
-        print(f"\n❌ שגיאה כללית: {e}")
+        print(f"\n❌ Error: {e}")
         import traceback
         traceback.print_exc()
 
