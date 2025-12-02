@@ -156,9 +156,10 @@ def main():
             print(f"🔍 Searching: '{keyword}'...")
             
             try:
-                response = api.get_hotproducts(
+                response = api.get_products(
                     keywords=keyword,
-                    page_size=20
+                    page_size=20,
+                    sort='SALE_PRICE_ASC'
                 )
                 
                 if not response or not hasattr(response, 'products'):
