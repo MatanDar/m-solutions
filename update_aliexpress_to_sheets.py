@@ -15,7 +15,7 @@ from aliexpress_api import AliexpressApi, models
 
 ALIEXPRESS_APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
 ALIEXPRESS_APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
-ALIEXPRESS_TRACKING_ID = 'Automation'
+ALIEXPRESS_TRACKING_ID = 'default'  # נסה עם default
 
 SPREADSHEET_ID = '1oicbEsS2aU_G698uz-bd6ghUPKx7qt7dLUPFeaa4egU'
 SHEET_NAME = 'Affiliate Table'
