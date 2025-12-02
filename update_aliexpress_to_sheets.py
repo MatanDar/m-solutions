@@ -33,8 +33,8 @@ def init_aliexpress_api():
     return AliexpressApi(
         ALIEXPRESS_APP_KEY,
         ALIEXPRESS_APP_SECRET,
-        models.Language.HE,
-        models.Currency.ILS,
+        models.Language.EN,  # עברית לא תמיד נתמכת
+        models.Currency.USD,  # ILS לא נתמך - נשתמש ב-USD
         ALIEXPRESS_TRACKING_ID
     )
 
@@ -142,7 +142,7 @@ def main():
     print("🚀 מתחיל תהליך עדכון מוצרים AliExpress")
     print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"🎯 Tracking ID: {ALIEXPRESS_TRACKING_ID}")
-    print("🇮🇱 מותאם לישראל (ILS, HE)")
+    print("💵 מטבע: USD (ILS לא נתמך)")
     print("➕ מוסיף מוצרים חדשים בלבד (לא מוחק קיימים)\n")
     
     # בדיקת API Keys
