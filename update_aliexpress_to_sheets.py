@@ -326,19 +326,22 @@ def main():
     # גריפה
     products = scrape_aliexpress_bestsellers()
     
-    # במקרה שהגריפה לא הצליחה
+    # 🚨 אם הגריפה נכשלה - לא לעדכן כלום!
     if len(products) < 5:
-        print("\n⚠️ לא מספיק מוצרים, משתמש במוצרי דוגמה...")
-        products = create_mock_products()
+        print("\n❌ הגריפה נכשלה - לא נמצאו מוצרים אמיתיים")
+        print("🛡️ הטבלה לא תשתנה כדי לשמור על הנתונים הקיימים")
+        return
     
     # סינון
     filtered = filter_products(products)
     
     if not filtered:
-        print("\n❌ לא נמצאו מוצרים מתאימים")
+        print("\n❌ לא נמצאו מוצרים מתאימים אחרי סינון")
+        print("🛡️ הטבלה לא תשתנה כדי לשמור על הנתונים הקיימים")
         return
     
-    # עדכון טבלה
+    # עדכון טבלה - רק אם יש מוצרים אמיתיים!
+    print(f"\n✅ נמצאו {len(filtered)} מוצרים - מעדכן טבלה...")
     update_google_sheet(filtered)
     
     print("\n✅ הושלם בהצלחה!")
