@@ -4,345 +4,320 @@
 import os
 import json
 import requests
-from bs4 import BeautifulSoup
-import re
+import hashlib
+import hmac
+import time
 from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googletrans import Translator
-import time
+from urllib.parse import quote
 
 # ===========================
-# הגדרות
+# הגדרות AliExpress API
 # ===========================
 
-# Google Sheets
+ALIEXPRESS_APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
+ALIEXPRESS_APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
+ALIEXPRESS_TRACKING_ID = 'Automation'  # ה-Tracking ID החדש שיצרת
+
+API_GATEWAY = 'https://api-sg.aliexpress.com/sync'
+
+# ===========================
+# הגדרות Google Sheets
+# ===========================
+
 SPREADSHEET_ID = '1oicbEsS2aU_G698uz-bd6ghUPKx7qt7dLUPFeaa4egU'
 SHEET_NAME = 'Affiliate Table'
-
-# Proxy לתמונות
-IMAGE_PROXY = "https://images.weserv.nl/?url="
-
-# מתרגם
-translator = Translator()
-
-# User Agent לדפדפן
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'Connection': 'keep-alive',
-}
-
-# רשימת מילות מפתח למניעת כפילויות
-PRODUCT_KEYWORDS = [
-    'cable', 'charger', 'mouse', 'keyboard', 'lighter', 'flashlight', 'headphones', 
-    'earbuds', 'speaker', 'powerbank', 'adapter', 'usb', 'hdmi', 'webcam',
-    'shirt', 'dress', 'shoes', 'bag', 'wallet', 'backpack', 'watch', 'belt', 
-    'sunglasses', 'hat', 'scarf', 'gloves', 'socks', 'tie', 'bracelet', 'necklace',
-    'ring', 'earrings', 'clutch', 'purse', 'handbag', 'tote', 'crossbody',
-    'mug', 'cup', 'bottle', 'thermos', 'flask', 'tumbler', 'pillow', 'cushion',
-    'blanket', 'organizer', 'holder', 'rack', 'storage', 'box', 'container',
-    'brush', 'comb', 'mirror', 'razor', 'trimmer', 'scissors', 'tweezers',
-    'pen', 'pencil', 'notebook', 'marker', 'toy', 'puzzle', 'game'
-]
 
 # ===========================
 # פונקציות עזר
 # ===========================
 
-def extract_main_keyword(title):
-    """מחלץ מילת מפתח עיקרית מכותרת"""
-    title_lower = title.lower()
-    found_keywords = []
-    for keyword in PRODUCT_KEYWORDS:
-        if keyword in title_lower:
-            found_keywords.append(keyword)
-    if found_keywords:
-        return max(found_keywords, key=len)
-    return None
-
-def is_duplicate(product, existing_products):
-    """בדיקה האם מוצר כפול"""
-    new_title = product.get('title', '').lower()
-    new_keyword = extract_main_keyword(product.get('title', ''))
+def generate_signature(params, secret):
+    """יצירת חתימה ל-API"""
+    # מיון הפרמטרים לפי ABC
+    sorted_params = sorted(params.items())
     
-    for existing in existing_products:
-        existing_title = existing.get('title', '').lower()
-        existing_keyword = extract_main_keyword(existing.get('title', ''))
-        
-        # כותרת זהה
-        if new_title == existing_title:
-            return True
-        
-        # דמיון גבוה
-        if new_title and existing_title:
-            common_words = set(new_title.split()) & set(existing_title.split())
-            if len(common_words) > 0:
-                similarity = len(common_words) / max(len(new_title.split()), len(existing_title.split()))
-                if similarity > 0.8:
-                    return True
-        
-        # מילת מפתח זהה
-        if new_keyword and existing_keyword and new_keyword == existing_keyword:
-            return True
+    # יצירת מחרוזת
+    sign_string = secret
+    for key, value in sorted_params:
+        sign_string += f"{key}{value}"
+    sign_string += secret
     
-    return False
+    # חישוב HMAC-SHA256
+    signature = hmac.new(
+        secret.encode('utf-8'),
+        sign_string.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest().upper()
+    
+    return signature
 
-def translate_to_hebrew(text):
-    """תרגום טקסט לעברית"""
+def call_aliexpress_api(method, params=None):
+    """קריאה ל-AliExpress API"""
+    if params is None:
+        params = {}
+    
+    # פרמטרים בסיסיים
+    base_params = {
+        'app_key': ALIEXPRESS_APP_KEY,
+        'method': method,
+        'timestamp': str(int(time.time() * 1000)),
+        'format': 'json',
+        'v': '2.0',
+        'sign_method': 'sha256',
+    }
+    
+    # שילוב עם פרמטרים נוספים
+    all_params = {**base_params, **params}
+    
+    # יצירת חתימה
+    signature = generate_signature(all_params, ALIEXPRESS_APP_SECRET)
+    all_params['sign'] = signature
+    
+    # שליחת בקשה
     try:
-        if not text or len(text.strip()) == 0:
-            return text
-        translated = translator.translate(text, src='en', dest='iw')
-        return translated.text
+        response = requests.post(API_GATEWAY, data=all_params, timeout=30)
+        response.raise_for_status()
+        return response.json()
     except Exception as e:
-        print(f"⚠️ שגיאה בתרגום: {e}")
-        return text
+        print(f"❌ שגיאת API: {e}")
+        return None
 
-def extract_price(price_text):
-    """חילוץ מחיר מטקסט"""
+def search_products(keywords, page=1, page_size=50):
+    """חיפוש מוצרים ב-AliExpress"""
+    print(f"🔍 מחפש מוצרים: '{keywords}' (עמוד {page})...")
+    
+    params = {
+        'keywords': keywords,
+        'page_no': str(page),
+        'page_size': str(page_size),
+        'target_currency': 'ILS',
+        'target_language': 'HE',
+        'ship_to_country': 'IL',
+        'sort': 'SALE_PRICE_ASC',  # מיון לפי מחיר עולה
+        'tracking_id': ALIEXPRESS_TRACKING_ID,
+    }
+    
+    result = call_aliexpress_api('aliexpress.affiliate.hotproduct.query', params)
+    
+    if not result:
+        print("❌ לא התקבלה תשובה מה-API")
+        return []
+    
+    # בדיקת שגיאות
+    if 'error_response' in result:
+        print(f"❌ שגיאת API: {result['error_response']}")
+        return []
+    
+    # חילוץ מוצרים
     try:
-        # חיפוש מספרים
-        numbers = re.findall(r'\d+\.?\d*', price_text)
-        if numbers:
-            return float(numbers[0])
+        products = result.get('aliexpress_affiliate_hotproduct_query_response', {}).get('result', {}).get('products', {}).get('product', [])
+        print(f"✅ נמצאו {len(products)} מוצרים")
+        return products
+    except Exception as e:
+        print(f"❌ שגיאה בחילוץ מוצרים: {e}")
+        return []
+
+def generate_affiliate_link(product_url):
+    """יצירת קישור שותפים"""
+    params = {
+        'promotion_link_type': '0',
+        'source_values': product_url,
+        'tracking_id': ALIEXPRESS_TRACKING_ID,
+    }
+    
+    result = call_aliexpress_api('aliexpress.affiliate.link.generate', params)
+    
+    if not result or 'error_response' in result:
+        return product_url  # אם נכשל, נחזיר את הקישור המקורי
+    
+    try:
+        links = result.get('aliexpress_affiliate_link_generate_response', {}).get('result', {}).get('promotion_links', {}).get('promotion_link', [])
+        if links and len(links) > 0:
+            return links[0].get('promotion_link', product_url)
     except:
         pass
-    return 0
+    
+    return product_url
 
-def scrape_aliexpress_bestsellers():
-    """גריפת Best Sellers מ-AliExpress"""
-    products = []
+def get_existing_products():
+    """קבלת מוצרים קיימים מהטבלה"""
+    print("📥 טוען מוצרים קיימים מהטבלה...")
     
-    # URL של Best Sellers - מיון לפי הזמנות
-    urls = [
-        'https://www.aliexpress.com/wholesale?SearchText=gadgets&SortType=total_tranpro_desc&page=1',
-        'https://www.aliexpress.com/wholesale?SearchText=accessories&SortType=total_tranpro_desc&page=1',
-        'https://www.aliexpress.com/wholesale?SearchText=home&SortType=total_tranpro_desc&page=1',
-    ]
-    
-    print("🔍 מחפש מוצרים Best Sellers...")
-    
-    for url in urls:
-        try:
-            print(f"📥 גורד מ: {url[:80]}...")
-            response = requests.get(url, headers=HEADERS, timeout=10)
-            
-            if response.status_code != 200:
-                print(f"⚠️ שגיאה {response.status_code}")
-                continue
-            
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # חיפוש מוצרים בדף
-            product_items = soup.find_all('div', class_=re.compile(r'product|item'))[:20]
-            
-            if not product_items:
-                # נסה מחלקה אחרת
-                product_items = soup.find_all('a', href=re.compile(r'/item/'))[:20]
-            
-            print(f"✅ נמצאו {len(product_items)} מוצרים בדף")
-            
-            for item in product_items:
-                try:
-                    # חילוץ כותרת
-                    title_elem = item.find(['h1', 'h2', 'h3', 'img'])
-                    if not title_elem:
-                        continue
-                    
-                    title = title_elem.get('alt', '') or title_elem.get_text(strip=True)
-                    if not title or len(title) < 10:
-                        continue
-                    
-                    # חילוץ מחיר
-                    price_elem = item.find(text=re.compile(r'[\$₪€£]'))
-                    price = 0
-                    if price_elem:
-                        price = extract_price(price_elem)
-                    
-                    # חילוץ תמונה
-                    img = item.find('img')
-                    image_url = img.get('src', '') or img.get('data-src', '') if img else ''
-                    
-                    # חילוץ קישור
-                    link_elem = item if item.name == 'a' else item.find('a')
-                    link = link_elem.get('href', '') if link_elem else ''
-                    if link and not link.startswith('http'):
-                        link = 'https:' + link if link.startswith('//') else 'https://www.aliexpress.com' + link
-                    
-                    if title and link:
-                        products.append({
-                            'title': title,
-                            'price': price,
-                            'image': image_url,
-                            'link': link
-                        })
-                        print(f"  ✓ {title[:50]}... (₪{price:.0f})")
-                
-                except Exception as e:
-                    continue
-            
-            time.sleep(2)  # המתנה בין בקשות
-            
-        except Exception as e:
-            print(f"⚠️ שגיאה בגריפה: {e}")
-            continue
-    
-    return products
+    try:
+        credentials_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
+        credentials_dict = json.loads(credentials_json)
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_dict,
+            scopes=['https://www.googleapis.com/auth/spreadsheets']
+        )
+        
+        service = build('sheets', 'v4', credentials=credentials)
+        
+        # קריאת הטבלה
+        result = service.spreadsheets().values().get(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f'{SHEET_NAME}!A:E'
+        ).execute()
+        
+        values = result.get('values', [])
+        
+        if not values or len(values) < 2:
+            print("✅ הטבלה ריקה או יש רק כותרות")
+            return []
+        
+        # דילוג על שורת כותרות
+        existing = []
+        for row in values[1:]:
+            if len(row) >= 2:  # לפחות URL ו-Title
+                existing.append({
+                    'url': row[0] if len(row) > 0 else '',
+                    'title': row[1] if len(row) > 1 else '',
+                })
+        
+        print(f"✅ נמצאו {len(existing)} מוצרים קיימים")
+        return existing
+        
+    except Exception as e:
+        print(f"⚠️ שגיאה בקריאת טבלה: {e}")
+        return []
 
-def filter_products(products):
-    """סינון מוצרים"""
-    filtered = []
-    seen_products = []
-    
-    print(f"\n🔍 מסנן {len(products)} מוצרים...")
-    
-    for product in products:
-        # בדיקת כפילויות
-        if is_duplicate(product, seen_products):
-            continue
-        
-        # בדיקת מחיר
-        price = product.get('price', 0)
-        if price < 15 or price > 300:
-            print(f"⏭️ דילוג - מחיר (₪{price:.0f}): {product.get('title', '')[:50]}...")
-            continue
-        
-        print(f"✅ מוצר מאושר (₪{price:.0f}): {product.get('title', '')[:50]}...")
-        
-        filtered.append(product)
-        seen_products.append(product)
-        
-        if len(filtered) >= 30:
-            break
-    
-    print(f"\n🎯 סה\"כ: {len(filtered)} מוצרים")
-    return filtered
+def is_duplicate(product_url, existing_products):
+    """בדיקה אם מוצר כבר קיים"""
+    for existing in existing_products:
+        if existing['url'] == product_url:
+            return True
+    return False
 
-def create_mock_products():
-    """יצירת מוצרים לדוגמה (במקרה שהגריפה לא עובדת)"""
-    print("🔄 יוצר מוצרים לדוגמה...")
+def add_products_to_sheet(new_products):
+    """הוספת מוצרים חדשים לטבלה (ללא מחיקת קיימים)"""
+    if not new_products:
+        print("⚠️ אין מוצרים חדשים להוסיף")
+        return
     
-    products = [
-        {
-            'title': 'USB Cable Fast Charging 3A Type-C',
-            'price': 25.99,
-            'image': 'https://ae01.alicdn.com/kf/HTB1example.jpg',
-            'link': 'https://www.aliexpress.com/item/example1.html'
-        },
-        {
-            'title': 'Wireless Bluetooth Earbuds TWS',
-            'price': 89.99,
-            'image': 'https://ae01.alicdn.com/kf/HTB2example.jpg',
-            'link': 'https://www.aliexpress.com/item/example2.html'
-        },
-        {
-            'title': 'Smart Watch Fitness Tracker',
-            'price': 149.99,
-            'image': 'https://ae01.alicdn.com/kf/HTB3example.jpg',
-            'link': 'https://www.aliexpress.com/item/example3.html'
-        },
-        {
-            'title': 'Phone Holder Car Mount',
-            'price': 35.50,
-            'image': 'https://ae01.alicdn.com/kf/HTB4example.jpg',
-            'link': 'https://www.aliexpress.com/item/example4.html'
-        },
-        {
-            'title': 'LED Desk Lamp USB Rechargeable',
-            'price': 55.00,
-            'image': 'https://ae01.alicdn.com/kf/HTB5example.jpg',
-            'link': 'https://www.aliexpress.com/item/example5.html'
-        }
-    ]
+    print(f"\n📝 מוסיף {len(new_products)} מוצרים חדשים לטבלה...")
     
-    return products
-
-def update_google_sheet(products):
-    """עדכון Google Sheets"""
-    # Load credentials
-    creds_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
-    if not creds_json:
-        raise ValueError("GOOGLE_SHEETS_CREDENTIALS not found")
-    
-    creds_dict = json.loads(creds_json)
-    credentials = service_account.Credentials.from_service_account_info(
-        creds_dict,
-        scopes=['https://www.googleapis.com/auth/spreadsheets']
-    )
-    
-    service = build('sheets', 'v4', credentials=credentials)
-    
-    # Prepare data
-    values = [['Title', 'Title (Hebrew)', 'Price', 'Image', 'Link', 'Last Updated']]
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
-    for product in products:
-        title = product.get('title', '')
-        price = f"₪{product.get('price', 0):.2f}"
-        image_url = product.get('image', '')
+    try:
+        credentials_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
+        credentials_dict = json.loads(credentials_json)
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_dict,
+            scopes=['https://www.googleapis.com/auth/spreadsheets']
+        )
         
-        # Proxy לתמונה
-        if image_url:
-            clean_url = image_url.replace('https://', '').replace('http://', '')
-            proxied_image = f"{IMAGE_PROXY}{clean_url}"
-        else:
-            proxied_image = ''
+        service = build('sheets', 'v4', credentials=credentials)
         
-        link = product.get('link', '')
-        title_hebrew = translate_to_hebrew(title)
+        # הוספה בסוף הטבלה
+        values = []
+        for product in new_products:
+            values.append([
+                product['url'],
+                product['title'],
+                product['description'],
+                product['image'],
+                product['affiliate_link']
+            ])
         
-        values.append([title, title_hebrew, price, proxied_image, link, current_time])
-    
-    # Clear and update
-    service.spreadsheets().values().clear(
-        spreadsheetId=SPREADSHEET_ID,
-        range=f'{SHEET_NAME}!A:F'
-    ).execute()
-    
-    service.spreadsheets().values().update(
-        spreadsheetId=SPREADSHEET_ID,
-        range=f'{SHEET_NAME}!A1',
-        valueInputOption='RAW',
-        body={'values': values}
-    ).execute()
-    
-    print(f"✅ {len(products)} מוצרים עודכנו בטבלה!")
+        # Append (הוספה) ולא Update (עדכון)
+        service.spreadsheets().values().append(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f'{SHEET_NAME}!A:E',
+            valueInputOption='RAW',
+            insertDataOption='INSERT_ROWS',
+            body={'values': values}
+        ).execute()
+        
+        print(f"✅ הוספו {len(new_products)} מוצרים בהצלחה!")
+        
+    except Exception as e:
+        print(f"❌ שגיאה בהוספת מוצרים: {e}")
 
 # ===========================
-# Main
+# תהליך ראשי
 # ===========================
 
 def main():
-    print("🚀 מתחיל משיכת מוצרים Best Sellers...")
+    print("🚀 מתחיל תהליך עדכון מוצרים AliExpress")
     print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("🎯 אסטרטגיה: Web Scraping (ללא API)")
-    print("🇮🇱 מותאם לישראל: ₪15-₪300")
-    print("🔄 תמונות דרך Proxy")
-    print("🔤 תרגום לעברית")
-    print("🚫 סינון כפילויות\n")
+    print(f"🎯 Tracking ID: {ALIEXPRESS_TRACKING_ID}")
+    print("🇮🇱 מותאם לישראל (ILS, HE, IL)")
+    print("➕ מוסיף מוצרים חדשים בלבד (לא מוחק קיימים)\n")
     
-    # גריפה
-    products = scrape_aliexpress_bestsellers()
-    
-    # 🚨 אם הגריפה נכשלה - לא לעדכן כלום!
-    if len(products) < 5:
-        print("\n❌ הגריפה נכשלה - לא נמצאו מוצרים אמיתיים")
-        print("🛡️ הטבלה לא תשתנה כדי לשמור על הנתונים הקיימים")
+    # בדיקת API Keys
+    if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
+        print("❌ חסרים API Keys! בדוק את GitHub Secrets")
         return
     
-    # סינון
-    filtered = filter_products(products)
+    # 1. קבלת מוצרים קיימים
+    existing_products = get_existing_products()
     
-    if not filtered:
-        print("\n❌ לא נמצאו מוצרים מתאימים אחרי סינון")
-        print("🛡️ הטבלה לא תשתנה כדי לשמור על הנתונים הקיימים")
-        return
+    # 2. חיפוש מוצרים חדשים
+    search_keywords = [
+        'phone accessories',
+        'smart gadgets',
+        'home decor',
+        'fitness tracker',
+        'wireless earbuds',
+    ]
     
-    # עדכון טבלה - רק אם יש מוצרים אמיתיים!
-    print(f"\n✅ נמצאו {len(filtered)} מוצרים - מעדכן טבלה...")
-    update_google_sheet(filtered)
+    all_new_products = []
+    
+    for keyword in search_keywords:
+        products = search_products(keyword, page=1, page_size=20)
+        
+        for product in products:
+            try:
+                # חילוץ נתונים
+                product_id = product.get('product_id', '')
+                product_url = f"https://www.aliexpress.com/item/{product_id}.html"
+                title = product.get('product_title', 'No Title')
+                
+                # בדיקת כפילויות
+                if is_duplicate(product_url, existing_products):
+                    print(f"⏭️ דילוג - מוצר כבר קיים: {title[:50]}...")
+                    continue
+                
+                # יצירת קישור שותפים
+                print(f"🔗 יוצר קישור שותפים עבור: {title[:50]}...")
+                affiliate_link = generate_affiliate_link(product_url)
+                
+                # הוספה לרשימה
+                all_new_products.append({
+                    'url': product_url,
+                    'title': title,
+                    'description': product.get('product_detail_url', ''),
+                    'image': product.get('product_main_image_url', ''),
+                    'affiliate_link': affiliate_link
+                })
+                
+                # הוספה לרשימת קיימים כדי למנוע כפילויות בתוך הריצה
+                existing_products.append({'url': product_url, 'title': title})
+                
+                # הגבלה ל-30 מוצרים חדשים
+                if len(all_new_products) >= 30:
+                    print("🎯 הגעתי ל-30 מוצרים חדשים - עוצר")
+                    break
+                
+                # Delay קטן בין קריאות
+                time.sleep(0.5)
+                
+            except Exception as e:
+                print(f"⚠️ שגיאה בעיבוד מוצר: {e}")
+                continue
+        
+        if len(all_new_products) >= 30:
+            break
+        
+        # Delay בין חיפושים
+        time.sleep(1)
+    
+    # 3. הוספת מוצרים חדשים לטבלה
+    if all_new_products:
+        print(f"\n🎉 נמצאו {len(all_new_products)} מוצרים חדשים!")
+        add_products_to_sheet(all_new_products)
+    else:
+        print("\n⚠️ לא נמצאו מוצרים חדשים להוספה")
     
     print("\n✅ הושלם בהצלחה!")
 
