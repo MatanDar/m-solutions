@@ -18,7 +18,7 @@ import time
 
 # Google Sheets
 SPREADSHEET_ID = '1oicbEsS2aU_G698uz-bd6ghUPKx7qt7dLUPFeaa4egU'
-SHEET_NAME = 'Products'
+SHEET_NAME = 'Affiliate Table'
 
 # Proxy לתמונות
 IMAGE_PROXY = "https://images.weserv.nl/?url="
