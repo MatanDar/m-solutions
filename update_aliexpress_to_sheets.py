@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import os
-import json
 import time
+import hmac
+import hashlib
+import requests
 from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from aliexpress_api import AliexpressApi, models
+import json
 
 # ===========================
 # הגדרות
@@ -15,24 +17,82 @@ from aliexpress_api import AliexpressApi, models
 
 ALIEXPRESS_APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
 ALIEXPRESS_APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
-ALIEXPRESS_TRACKING_ID = 'default'  # נסה עם default
+ALIEXPRESS_TRACKING_ID = 'matan123'  # הטראקינג שעבד!
 
 SPREADSHEET_ID = '1oicbEsS2aU_G698uz-bd6ghUPKx7qt7dLUPFeaa4egU'
 SHEET_NAME = 'Affiliate Table'
 
 # ===========================
-# פונקציות
+# פונקציות API
 # ===========================
 
-def init_aliexpress_api():
-    """אתחול AliExpress API"""
-    return AliexpressApi(
-        ALIEXPRESS_APP_KEY,
-        ALIEXPRESS_APP_SECRET,
-        models.Language.EN,
-        models.Currency.USD,
-        ALIEXPRESS_TRACKING_ID
-    )
+def generate_signature(params, secret):
+    """
+    ✅ החתימה המקורית שעבדה - MD5!
+    """
+    sorted_params = sorted(params.items())
+    sign_string = secret
+    for key, value in sorted_params:
+        sign_string += f"{key}{value}"
+    sign_string += secret
+    return hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
+
+def fetch_products():
+    """
+    ✅ הקוד המקורי שעבד!
+    """
+    timestamp = str(int(time.time() * 1000))
+    
+    params = {
+        'app_key': ALIEXPRESS_APP_KEY,
+        'timestamp': timestamp,
+        'sign_method': 'md5',
+        'method': 'aliexpress.affiliate.hotproduct.query',
+        'format': 'json',
+        'v': '2.0',
+        'page_size': '30',
+        'page_no': '1',
+        'sort': 'SALE_PRICE_ASC',
+        'target_currency': 'USD',
+        'target_language': 'EN',
+        'tracking_id': ALIEXPRESS_TRACKING_ID,
+    }
+    
+    params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
+    
+    # ✅ GET request (לא POST!)
+    url = "https://api-sg.aliexpress.com/sync"
+    
+    try:
+        print(f"🔍 מבצע קריאה ל-API...")
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        
+        print(f"📦 תשובת API: {json.dumps(data, indent=2)[:500]}...")
+        
+        if 'aliexpress_affiliate_hotproduct_query_response' in data:
+            result = data['aliexpress_affiliate_hotproduct_query_response']['resp_result']
+            result_data = json.loads(result['resp_code']) if isinstance(result['resp_code'], str) else result
+            
+            if result_data.get('resp_code') == 200:
+                products = result_data.get('result', {}).get('products', {}).get('product', [])
+                print(f"✅ נמצאו {len(products)} מוצרים!")
+                return products
+            else:
+                print(f"❌ שגיאה: {result_data.get('resp_msg', 'Unknown error')}")
+                return []
+        else:
+            print("❌ פורמט תשובה לא צפוי")
+            return []
+            
+    except Exception as e:
+        print(f"❌ שגיאה: {str(e)}")
+        return []
+
+# ===========================
+# פונקציות Google Sheets
+# ===========================
 
 def get_existing_products():
     """קבלת מוצרים קיימים"""
@@ -80,7 +140,7 @@ def is_duplicate(product_url, existing_products):
     return False
 
 def add_products_to_sheet(new_products):
-    """הוספת מוצרים לטבלה"""
+    """הוספת מוצרים"""
     if not new_products:
         print("⚠️ אין מוצרים להוסיף")
         return
@@ -127,90 +187,61 @@ def add_products_to_sheet(new_products):
 def main():
     print("🚀 AliExpress Products Updater")
     print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"🎯 Tracking ID: {ALIEXPRESS_TRACKING_ID}\n")
+    print(f"🎯 Tracking ID: {ALIEXPRESS_TRACKING_ID}")
+    print("✅ שימוש בקוד המקורי שעבד!\n")
     
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
         print("❌ Missing API Keys!")
         return
     
     try:
-        # אתחול
-        api = init_aliexpress_api()
-        print("✅ Connected to AliExpress API\n")
-        
         # מוצרים קיימים
         existing_products = get_existing_products()
         
-        # חיפוש
-        keywords = [
-            'phone accessories',
-            'smart watch',
-            'wireless earbuds',
-            'phone case',
-            'usb cable'
-        ]
+        # משיכת מוצרים
+        products = fetch_products()
         
+        if not products:
+            print("\n⚠️ לא נמצאו מוצרים")
+            return
+        
+        # עיבוד מוצרים
         all_new = []
         
-        for keyword in keywords:
-            print(f"🔍 Searching: '{keyword}'...")
-            
+        for product in products:
             try:
-                response = api.get_products(
-                    keywords=keyword,
-                    page_size=20,
-                    sort='SALE_PRICE_ASC'
-                )
+                url = product.get('product_detail_url', '')
+                title = product.get('product_title', '')
                 
-                if not response or not hasattr(response, 'products'):
-                    print(f"⚠️ No products for '{keyword}'")
+                if not url or not title:
                     continue
                 
-                products = response.products
-                print(f"✅ Found {len(products)} products")
+                if is_duplicate(url, existing_products):
+                    continue
                 
-                for product in products:
-                    try:
-                        url = product.product_detail_url
-                        title = product.product_title
-                        
-                        if is_duplicate(url, existing_products):
-                            continue
-                        
-                        # Get affiliate link
-                        affiliate_links = api.get_affiliate_links([url])
-                        affiliate_link = url
-                        if affiliate_links and len(affiliate_links) > 0:
-                            affiliate_link = affiliate_links[0].promotion_link
-                        
-                        all_new.append({
-                            'url': url,
-                            'title': title,
-                            'description': url,
-                            'image': product.product_main_image_url,
-                            'affiliate_link': affiliate_link
-                        })
-                        
-                        existing_products.append({'url': url, 'title': title})
-                        
-                        print(f"✅ Added: {title[:50]}...")
-                        
-                        if len(all_new) >= 30:
-                            print("\n🎯 Reached 30 products - stopping")
-                            break
-                        
-                        time.sleep(0.3)
-                        
-                    except Exception as e:
-                        continue
+                # קישור affiliate
+                promotion_link = product.get('promotion_link', url)
+                
+                # תמונה
+                image = product.get('product_main_image_url', '')
+                
+                all_new.append({
+                    'url': url,
+                    'title': title,
+                    'description': title[:120],
+                    'image': image,
+                    'affiliate_link': promotion_link
+                })
+                
+                existing_products.append({'url': url, 'title': title})
+                
+                print(f"✅ Added: {title[:50]}...")
                 
                 if len(all_new) >= 30:
                     break
                 
-                time.sleep(1)
-                
             except Exception as e:
-                print(f"❌ Error searching '{keyword}': {e}")
+                print(f"⚠️ Error: {e}")
                 continue
         
         # הוספה לטבלה
