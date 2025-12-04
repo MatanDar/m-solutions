@@ -10,6 +10,9 @@ from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import json
+from googletrans import Translator
+
+translator = Translator()
 
 ALIEXPRESS_APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
 ALIEXPRESS_APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
@@ -110,6 +113,39 @@ def calculate_similarity(text1, text2):
     
     similarity = len(common_words) / len(total_words)
     return similarity
+
+def translate_to_hebrew(text):
+    """
+    Translate text to Hebrew using Google Translate
+    """
+    try:
+        if not text or len(text.strip()) == 0:
+            return text
+        
+        # Translate to Hebrew
+        translated = translator.translate(text, src='en', dest='he')
+        return translated.text
+    except Exception as e:
+        print(f"  Translation error, keeping English: {str(e)}")
+        return text
+
+def create_description(product):
+    """
+    Create Hebrew description from product title and category
+    """
+    title = product.get('product_title', 'No Description')
+    category = product.get('second_level_category_name', '')
+    
+    # Create description in English
+    if category:
+        description_en = f"{category} - {title[:80]}"
+    else:
+        description_en = title[:120]
+    
+    # Translate to Hebrew
+    description_he = translate_to_hebrew(description_en)
+    
+    return description_he
 
 def fix_image_url(image_url):
     """
@@ -250,7 +286,7 @@ def get_existing_products():
         service = build('sheets', 'v4', credentials=credentials)
         result = service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
-            range=f'{SHEET_NAME}!A:E'
+            range=f'{SHEET_NAME}!A:F'
         ).execute()
         
         values = result.get('values', [])
@@ -337,12 +373,13 @@ def add_products_to_sheet(new_products):
                 product['title'],
                 product['description'],
                 product['image'],
-                product['affiliate_link']
+                product['affiliate_link'],
+                product['last_updated']
             ])
         
         service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID,
-            range=f'{SHEET_NAME}!A:E',
+            range=f'{SHEET_NAME}!A:F',
             valueInputOption='RAW',
             insertDataOption='INSERT_ROWS',
             body={'values': values}
@@ -401,12 +438,19 @@ def main():
                 # Fix image URL with proxy
                 image = fix_image_url(image)
                 
+                # Create Hebrew description
+                description = create_description(product)
+                
+                # Current timestamp
+                last_updated = datetime.now().strftime('%Y-%m-%d %H:%M')
+                
                 all_new.append({
                     'url': url,
                     'title': title,
-                    'description': title[:120],
+                    'description': description,
                     'image': image,
-                    'affiliate_link': promotion_link
+                    'affiliate_link': promotion_link,
+                    'last_updated': last_updated
                 })
                 
                 existing_products.append({'url': url, 'title': title})
