@@ -44,8 +44,8 @@ def fetch_products():
     timestamp = str(int(time.time() * 1000))
     
     params = {
-        'app_key': ALIEXPRESS_APP_KEY,
-        'timestamp': timestamp,
+        'app_key': str(ALIEXPRESS_APP_KEY),
+        'timestamp': str(timestamp),
         'sign_method': 'md5',
         'method': 'aliexpress.affiliate.hotproduct.query',
         'format': 'json',
@@ -55,7 +55,7 @@ def fetch_products():
         'sort': 'SALE_PRICE_ASC',
         'target_currency': 'USD',
         'target_language': 'EN',
-        'tracking_id': ALIEXPRESS_TRACKING_ID,
+        'tracking_id': str(ALIEXPRESS_TRACKING_ID),
     }
     
     params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
