@@ -171,32 +171,31 @@ def fix_image_url(image_url):
 def is_quality_product(product):
     """
     Check if product meets quality standards:
-    - Price >= $6
+    - Price >= $4 (lowered from $6 to get more results)
     - Free or cheap shipping to Israel
     - Fast shipping (if available)
     """
-    # Check price
+    # Check price - try multiple fields
     price = 0
+    
+    # Try different price fields
     if 'target_sale_price' in product:
         price = float(product.get('target_sale_price', 0))
+    elif 'target_app_sale_price' in product:
+        price = float(product.get('target_app_sale_price', 0))
     elif 'sale_price' in product:
         price = float(product.get('sale_price', 0))
     elif 'app_sale_price' in product:
         price = float(product.get('app_sale_price', 0))
+    elif 'original_price' in product:
+        price = float(product.get('original_price', 0))
     
-    if price < 6:
+    if price < 4:  # Lowered from $6 to $4
         print(f"  Skip - Price too low (${price:.2f})")
         return False
     
-    # Check free shipping (if data available)
-    if 'second_level_category_name' in product:
-        # Some products have shipping info in various fields
-        pass
-    
-    # Note: AliExpress API doesn't always return accurate shipping data
-    # The ship_to_country parameter in the request should handle this
-    # But we log it for debugging
-    
+    # If price is good, accept it
+    print(f"  ✓ Price OK: ${price:.2f}")
     return True
 
 def generate_signature(params, secret):
@@ -210,11 +209,14 @@ def generate_signature(params, secret):
     return hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
 
 def fetch_products():
-    """Fetch products - will try multiple pages if needed"""
+    """Fetch products - will search until we have enough"""
     all_products = []
-    max_pages = 5  # Try up to 5 pages
+    page = 1
+    max_pages = 20  # Search up to 20 pages (1000 products!)
     
-    for page in range(1, max_pages + 1):
+    print(f"Searching for products (up to {max_pages} pages)...\n")
+    
+    while page <= max_pages:
         timestamp = str(int(time.time() * 1000))
         
         params = {
@@ -248,28 +250,31 @@ def fetch_products():
                 
                 if result_data.get('resp_code') == 200:
                     products = result_data.get('result', {}).get('products', {}).get('product', [])
-                    print(f"Found {len(products)} products on page {page}")
+                    print(f"  Found {len(products)} products")
                     all_products.extend(products)
                     
                     # If we have enough products, stop searching
-                    if len(all_products) >= 100:
+                    if len(all_products) >= 500:
+                        print(f"  Collected enough products ({len(all_products)}), stopping search")
                         break
                 else:
-                    print(f"Error: {result_data.get('resp_msg', 'Unknown error')}")
+                    print(f"  Error: {result_data.get('resp_msg', 'Unknown error')}")
                     break
             else:
-                print("Unexpected response format")
+                print("  Unexpected response format")
                 break
                 
         except Exception as e:
-            print(f"Error: {str(e)}")
+            print(f"  Error: {str(e)}")
             break
         
+        page += 1
+        
         # Small delay between pages
-        if page < max_pages:
-            time.sleep(1)
+        if page <= max_pages:
+            time.sleep(0.5)
     
-    print(f"\nTotal products fetched: {len(all_products)}")
+    print(f"\nTotal products fetched: {len(all_products)}\n")
     return all_products
 
 def get_existing_products():
@@ -391,16 +396,22 @@ def add_products_to_sheet(new_products):
         print(f"Error: {e}")
 
 def main():
-    print("AliExpress Products Updater")
+    print("=" * 60)
+    print("🔥 AliExpress Products Updater - POWER MODE 🔥")
+    print("=" * 60)
     print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Tracking ID: {ALIEXPRESS_TRACKING_ID}")
     print(f"Signature: MD5 (original)")
     print(f"App Key length: {len(ALIEXPRESS_APP_KEY) if ALIEXPRESS_APP_KEY else 0}")
     print(f"App Secret length: {len(ALIEXPRESS_APP_SECRET) if ALIEXPRESS_APP_SECRET else 0}")
-    print(f"Min Price: $6")
-    print(f"Ship To: Israel (Free/Fast shipping preferred)")
-    print(f"Sort By: Best Sellers (Most Sales)")
-    print(f"Smart Duplicate Detection: ON\n")
+    print(f"\n📊 Settings:")
+    print(f"  • Min Price: $4 (lowered to get more results)")
+    print(f"  • Ship To: Israel (Best effort)")
+    print(f"  • Sort By: Best Sellers (Most Sales)")
+    print(f"  • Target: Minimum 5 quality products")
+    print(f"  • Will search up to 20 pages (1000 products!)")
+    print(f"  • Smart Duplicate Detection: ON")
+    print("=" * 60 + "\n")
     
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
         print("Missing API Keys!")
@@ -416,9 +427,12 @@ def main():
         
         print(f"\nFiltering products...")
         all_new = []
+        products_checked = 0
         
         for product in products:
             try:
+                products_checked += 1
+                
                 url = product.get('product_detail_url', '')
                 title = product.get('product_title', '')
                 
@@ -455,24 +469,26 @@ def main():
                 
                 existing_products.append({'url': url, 'title': title})
                 
-                print(f"Added: {title[:50]}...")
+                print(f"✅ Added ({len(all_new)}): {title[:50]}...")
                 
                 # Stop when we have enough quality products
-                if len(all_new) >= 30:
-                    print(f"\nReached target of 30 products!")
+                if len(all_new) >= 5:
+                    print(f"\n🎉 Success! Found {len(all_new)} quality products!")
+                    print(f"   (Checked {products_checked} out of {len(products)} total)")
                     break
                 
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"  Error: {e}")
                 continue
         
         if all_new:
-            print(f"\nFound {len(all_new)} new products!")
+            print(f"\n✅ Found {len(all_new)} new products!")
             add_products_to_sheet(all_new)
         else:
-            print("\nNo new products found")
+            print("\n⚠️ No new quality products found")
+            print("   (All products were either <$6, duplicates, or already in table)")
         
-        print("\nDone!")
+        print("\n✅ Done!")
         
     except Exception as e:
         print(f"\nError: {e}")
