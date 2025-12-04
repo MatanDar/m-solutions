@@ -24,7 +24,12 @@ def generate_signature(params, secret):
     for key, value in sorted_params:
         sign_string += f"{key}{value}"
     sign_string += secret
-    return hashlib.sha256(sign_string.encode('utf-8')).hexdigest().upper()
+    
+    return hmac.new(
+        secret.encode('utf-8'),
+        sign_string.encode('utf-8'),
+        hashlib.md5
+    ).hexdigest().upper()
 
 def fetch_products():
     timestamp = str(int(time.time() * 1000))
@@ -32,7 +37,7 @@ def fetch_products():
     params = {
         'app_key': str(ALIEXPRESS_APP_KEY),
         'timestamp': str(timestamp),
-        'sign_method': 'sha256',
+        'sign_method': 'hmac-md5',
         'method': 'aliexpress.affiliate.hotproduct.query',
         'format': 'json',
         'v': '2.0',
@@ -160,7 +165,8 @@ def add_products_to_sheet(new_products):
 def main():
     print("AliExpress Products Updater")
     print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Tracking ID: {ALIEXPRESS_TRACKING_ID}\n")
+    print(f"Tracking ID: {ALIEXPRESS_TRACKING_ID}")
+    print(f"Signature: HMAC-MD5\n")
     
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
         print("Missing API Keys!")
