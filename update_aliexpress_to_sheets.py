@@ -132,6 +132,38 @@ def fix_image_url(image_url):
     
     return proxy_url
 
+def is_quality_product(product):
+    """
+    Check if product meets quality standards:
+    - Price >= $6
+    - Ships to Israel
+    - Good shipping time (if available)
+    """
+    # Check price
+    price = 0
+    if 'target_sale_price' in product:
+        price = float(product.get('target_sale_price', 0))
+    elif 'sale_price' in product:
+        price = float(product.get('sale_price', 0))
+    
+    if price < 6:
+        print(f"  Skip - Price too low (${price:.2f})")
+        return False
+    
+    # Check if ships to Israel (if data available)
+    ship_to = product.get('ship_to_days', '')
+    if ship_to and 'israel' in str(ship_to).lower():
+        # Check shipping time
+        try:
+            days = int(ship_to.split()[0])
+            if days > 30:
+                print(f"  Skip - Shipping too long ({days} days)")
+                return False
+        except:
+            pass
+    
+    return True
+
 def generate_signature(params, secret):
     sorted_params = sorted(params.items())
     sign_string = secret
@@ -152,12 +184,14 @@ def fetch_products():
         'method': 'aliexpress.affiliate.hotproduct.query',
         'format': 'json',
         'v': '2.0',
-        'page_size': '30',
+        'page_size': '50',  # More products to filter from
         'page_no': '1',
         'sort': 'SALE_PRICE_ASC',
         'target_currency': 'USD',
         'target_language': 'EN',
         'tracking_id': str(ALIEXPRESS_TRACKING_ID),
+        'ship_to_country': 'IL',  # Ship to Israel
+        'min_sale_price': '6',  # Minimum $6
     }
     
     params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
@@ -313,7 +347,10 @@ def main():
     print(f"Tracking ID: {ALIEXPRESS_TRACKING_ID}")
     print(f"Signature: MD5 (original)")
     print(f"App Key length: {len(ALIEXPRESS_APP_KEY) if ALIEXPRESS_APP_KEY else 0}")
-    print(f"App Secret length: {len(ALIEXPRESS_APP_SECRET) if ALIEXPRESS_APP_SECRET else 0}\n")
+    print(f"App Secret length: {len(ALIEXPRESS_APP_SECRET) if ALIEXPRESS_APP_SECRET else 0}")
+    print(f"Min Price: $6")
+    print(f"Ship To: Israel")
+    print(f"Smart Duplicate Detection: ON\n")
     
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
         print("Missing API Keys!")
@@ -335,6 +372,10 @@ def main():
                 title = product.get('product_title', '')
                 
                 if not url or not title:
+                    continue
+                
+                # Check quality standards
+                if not is_quality_product(product):
                     continue
                 
                 if is_duplicate(url, title, existing_products):
