@@ -163,7 +163,9 @@ def main():
     print("AliExpress Products Updater")
     print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Tracking ID: {ALIEXPRESS_TRACKING_ID}")
-    print(f"Signature: MD5 (original)\n")
+    print(f"Signature: MD5 (original)")
+    print(f"App Key length: {len(ALIEXPRESS_APP_KEY) if ALIEXPRESS_APP_KEY else 0}")
+    print(f"App Secret length: {len(ALIEXPRESS_APP_SECRET) if ALIEXPRESS_APP_SECRET else 0}\n")
     
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
         print("Missing API Keys!")
