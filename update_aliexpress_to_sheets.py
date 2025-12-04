@@ -175,54 +175,67 @@ def generate_signature(params, secret):
     return hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
 
 def fetch_products():
-    timestamp = str(int(time.time() * 1000))
+    """Fetch products - will try multiple pages if needed"""
+    all_products = []
+    max_pages = 5  # Try up to 5 pages
     
-    params = {
-        'app_key': str(ALIEXPRESS_APP_KEY),
-        'timestamp': str(timestamp),
-        'sign_method': 'md5',
-        'method': 'aliexpress.affiliate.hotproduct.query',
-        'format': 'json',
-        'v': '2.0',
-        'page_size': '50',  # More products to filter from
-        'page_no': '1',
-        'sort': 'SALE_PRICE_ASC',
-        'target_currency': 'USD',
-        'target_language': 'EN',
-        'tracking_id': str(ALIEXPRESS_TRACKING_ID),
-        'ship_to_country': 'IL',  # Ship to Israel
-        'min_sale_price': '6',  # Minimum $6
-    }
-    
-    params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
-    url = "https://api-sg.aliexpress.com/sync"
-    
-    try:
-        print(f"API Call...")
-        response = requests.get(url, params=params, timeout=30)
-        response.raise_for_status()
-        data = response.json()
+    for page in range(1, max_pages + 1):
+        timestamp = str(int(time.time() * 1000))
         
-        print(f"API Response: {json.dumps(data, indent=2)[:500]}...")
+        params = {
+            'app_key': str(ALIEXPRESS_APP_KEY),
+            'timestamp': str(timestamp),
+            'sign_method': 'md5',
+            'method': 'aliexpress.affiliate.hotproduct.query',
+            'format': 'json',
+            'v': '2.0',
+            'page_size': '50',
+            'page_no': str(page),
+            'sort': 'SALE_PRICE_ASC',
+            'target_currency': 'USD',
+            'target_language': 'EN',
+            'tracking_id': str(ALIEXPRESS_TRACKING_ID),
+            'ship_to_country': 'IL',
+        }
         
-        if 'aliexpress_affiliate_hotproduct_query_response' in data:
-            result = data['aliexpress_affiliate_hotproduct_query_response']['resp_result']
-            result_data = json.loads(result['resp_code']) if isinstance(result['resp_code'], str) else result
+        params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
+        url = "https://api-sg.aliexpress.com/sync"
+        
+        try:
+            print(f"API Call (Page {page})...")
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
             
-            if result_data.get('resp_code') == 200:
-                products = result_data.get('result', {}).get('products', {}).get('product', [])
-                print(f"Found {len(products)} products!")
-                return products
+            if 'aliexpress_affiliate_hotproduct_query_response' in data:
+                result = data['aliexpress_affiliate_hotproduct_query_response']['resp_result']
+                result_data = json.loads(result['resp_code']) if isinstance(result['resp_code'], str) else result
+                
+                if result_data.get('resp_code') == 200:
+                    products = result_data.get('result', {}).get('products', {}).get('product', [])
+                    print(f"Found {len(products)} products on page {page}")
+                    all_products.extend(products)
+                    
+                    # If we have enough products, stop searching
+                    if len(all_products) >= 100:
+                        break
+                else:
+                    print(f"Error: {result_data.get('resp_msg', 'Unknown error')}")
+                    break
             else:
-                print(f"Error: {result_data.get('resp_msg', 'Unknown error')}")
-                return []
-        else:
-            print("Unexpected response format")
-            return []
-            
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return []
+                print("Unexpected response format")
+                break
+                
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            break
+        
+        # Small delay between pages
+        if page < max_pages:
+            time.sleep(1)
+    
+    print(f"\nTotal products fetched: {len(all_products)}")
+    return all_products
 
 def get_existing_products():
     print("Loading existing products...")
@@ -364,6 +377,7 @@ def main():
             print("No products found")
             return
         
+        print(f"\nFiltering products...")
         all_new = []
         
         for product in products:
@@ -399,7 +413,9 @@ def main():
                 
                 print(f"Added: {title[:50]}...")
                 
+                # Stop when we have enough quality products
                 if len(all_new) >= 30:
+                    print(f"\nReached target of 30 products!")
                     break
                 
             except Exception as e:
