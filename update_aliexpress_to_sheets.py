@@ -60,8 +60,8 @@ def fetch_products():
     
     params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
     
-    # ✅ GET request (לא POST!)
-    url = "https://api-sg.aliexpress.com/sync"
+    # ✅ ניסיון עם Gateway אחר!
+    url = "http://gw.api.taobao.com/router/rest"
     
     try:
         print(f"🔍 מבצע קריאה ל-API...")
