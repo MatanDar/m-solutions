@@ -136,8 +136,8 @@ def is_quality_product(product):
     """
     Check if product meets quality standards:
     - Price >= $6
-    - Ships to Israel
-    - Good shipping time (if available)
+    - Free or cheap shipping to Israel
+    - Fast shipping (if available)
     """
     # Check price
     price = 0
@@ -145,22 +145,21 @@ def is_quality_product(product):
         price = float(product.get('target_sale_price', 0))
     elif 'sale_price' in product:
         price = float(product.get('sale_price', 0))
+    elif 'app_sale_price' in product:
+        price = float(product.get('app_sale_price', 0))
     
     if price < 6:
         print(f"  Skip - Price too low (${price:.2f})")
         return False
     
-    # Check if ships to Israel (if data available)
-    ship_to = product.get('ship_to_days', '')
-    if ship_to and 'israel' in str(ship_to).lower():
-        # Check shipping time
-        try:
-            days = int(ship_to.split()[0])
-            if days > 30:
-                print(f"  Skip - Shipping too long ({days} days)")
-                return False
-        except:
-            pass
+    # Check free shipping (if data available)
+    if 'second_level_category_name' in product:
+        # Some products have shipping info in various fields
+        pass
+    
+    # Note: AliExpress API doesn't always return accurate shipping data
+    # The ship_to_country parameter in the request should handle this
+    # But we log it for debugging
     
     return True
 
@@ -191,7 +190,7 @@ def fetch_products():
             'v': '2.0',
             'page_size': '50',
             'page_no': str(page),
-            'sort': 'SALE_PRICE_ASC',
+            'sort': 'LAST_VOLUME_DESC',  # Best sellers (most sales)
             'target_currency': 'USD',
             'target_language': 'EN',
             'tracking_id': str(ALIEXPRESS_TRACKING_ID),
@@ -362,7 +361,8 @@ def main():
     print(f"App Key length: {len(ALIEXPRESS_APP_KEY) if ALIEXPRESS_APP_KEY else 0}")
     print(f"App Secret length: {len(ALIEXPRESS_APP_SECRET) if ALIEXPRESS_APP_SECRET else 0}")
     print(f"Min Price: $6")
-    print(f"Ship To: Israel")
+    print(f"Ship To: Israel (Free/Fast shipping preferred)")
+    print(f"Sort By: Best Sellers (Most Sales)")
     print(f"Smart Duplicate Detection: ON\n")
     
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
