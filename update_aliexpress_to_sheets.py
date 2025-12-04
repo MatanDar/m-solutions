@@ -18,6 +18,27 @@ ALIEXPRESS_TRACKING_ID = 'matan123'
 SPREADSHEET_ID = '1oicbEsS2aU_G698uz-bd6ghUPKx7qt7dLUPFeaa4egU'
 SHEET_NAME = 'Affiliate Table'
 
+def fix_image_url(image_url):
+    """
+    Fix and proxy image URLs to ensure they always work
+    """
+    if not image_url or image_url == 'NO_IMAGE':
+        return 'https://via.placeholder.com/400x400/e0e0e0/666666?text=No+Image'
+    
+    # Clean the URL
+    if '?' in image_url:
+        image_url = image_url.split('?')[0]
+    
+    # Ensure protocol
+    if not image_url.startswith('http'):
+        image_url = 'https:' + image_url if image_url.startswith('//') else 'https://' + image_url
+    
+    # Use image proxy to ensure images always load
+    clean_url = image_url.replace('https://', '').replace('http://', '')
+    proxy_url = f"https://images.weserv.nl/?url={clean_url}&w=400&h=400&fit=cover&default=1"
+    
+    return proxy_url
+
 def generate_signature(params, secret):
     sorted_params = sorted(params.items())
     sign_string = secret
@@ -194,6 +215,9 @@ def main():
                 
                 promotion_link = product.get('promotion_link', url)
                 image = product.get('product_main_image_url', '')
+                
+                # Fix image URL with proxy
+                image = fix_image_url(image)
                 
                 all_new.append({
                     'url': url,
