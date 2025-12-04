@@ -18,6 +18,99 @@ ALIEXPRESS_TRACKING_ID = 'matan123'
 SPREADSHEET_ID = '1oicbEsS2aU_G698uz-bd6ghUPKx7qt7dLUPFeaa4egU'
 SHEET_NAME = 'Affiliate Table'
 
+# Keywords to prevent duplicates
+PRODUCT_KEYWORDS = [
+    # Bags & Cases
+    'bag', 'wallet', 'backpack', 'clutch', 'purse', 'handbag', 'tote', 'crossbody', 
+    'shoulder bag', 'messenger', 'satchel', 'hobo', 'wristlet', 'pouch', 'case',
+    
+    # Accessories
+    'bracelet', 'necklace', 'ring', 'earrings', 'belt', 'watch', 'sunglasses', 
+    'hat', 'scarf', 'gloves', 'tie', 'bowtie', 'cufflinks', 'brooch', 'anklet',
+    
+    # Tools
+    'screwdriver', 'hammer', 'wrench', 'pliers', 'tape measure', 'level', 'drill', 
+    'saw', 'knife', 'scissors', 'cutter', 'opener', 'flashlight', 'torch', 'lighter',
+    
+    # Sports & Fitness
+    'ball', 'racket', 'paddle', 'mat', 'band', 'rope', 'weight', 'dumbbell',
+    'yoga', 'fitness', 'exercise', 'gym', 'sports', 'training', 'workout',
+    
+    # Office
+    'pen', 'pencil', 'notebook', 'marker', 'highlighter', 'eraser', 'stapler', 
+    'clip', 'folder', 'binder', 'calculator', 'ruler', 'tape', 'scissors',
+    
+    # Toys
+    'puzzle', 'toy', 'game', 'doll', 'car', 'truck', 'plane', 'robot', 
+    'lego', 'block', 'figure', 'plush', 'stuffed', 'action figure',
+    
+    # Pet
+    'collar', 'leash', 'bowl', 'pet toy', 'bed', 'carrier', 'cage', 'aquarium',
+    
+    # Auto
+    'mount', 'holder', 'cover', 'mat', 'organizer', 'charger', 'light', 'mirror',
+    
+    # Electronics
+    'cable', 'charger', 'adapter', 'mouse', 'keyboard', 'headphone', 'earphone', 
+    'speaker', 'powerbank', 'battery', 'usb', 'hdmi', 'bluetooth', 'wireless',
+    'phone', 'tablet', 'laptop', 'computer', 'monitor', 'screen', 'display',
+    'smartwatch', 'tracker', 'camera', 'tripod', 'lens', 'drone', 'remote',
+    
+    # Home
+    'mug', 'cup', 'bottle', 'thermos', 'plate', 'bowl', 'spoon', 'fork', 'knife',
+    'pan', 'pot', 'cooker', 'blender', 'mixer', 'kettle', 'toaster', 'oven',
+    'pillow', 'blanket', 'sheet', 'curtain', 'towel', 'mat', 'rug', 'carpet',
+    'organizer', 'storage', 'box', 'basket', 'rack', 'shelf', 'holder', 'hanger',
+    'clock', 'mirror', 'frame', 'vase', 'plant', 'pot', 'garden', 'tool',
+    
+    # Other
+    'bookmark', 'keychain', 'lanyard', 'badge', 'sticker', 'magnet', 'flag', 
+    'poster', 'sign', 'plaque', 'ornament', 'candle', 'incense', 'diffuser'
+]
+
+def extract_main_keyword(title):
+    """
+    Extract main keyword from product title
+    Example: 'USB Cable Fast Charging' -> 'cable'
+    """
+    title_lower = title.lower()
+    
+    # Search for keyword from list
+    for keyword in PRODUCT_KEYWORDS:
+        if keyword in title_lower:
+            return keyword
+    
+    # If no keyword found, use first meaningful word
+    words = title_lower.split()
+    for word in words:
+        if len(word) >= 3:
+            return word
+    
+    return title_lower[:20]
+
+def calculate_similarity(text1, text2):
+    """
+    Calculate similarity between two texts
+    Returns value between 0-1 (1 = identical)
+    """
+    text1 = text1.lower().strip()
+    text2 = text2.lower().strip()
+    
+    if text1 == text2:
+        return 1.0
+    
+    words1 = set(text1.split())
+    words2 = set(text2.split())
+    
+    if not words1 or not words2:
+        return 0.0
+    
+    common_words = words1.intersection(words2)
+    total_words = words1.union(words2)
+    
+    similarity = len(common_words) / len(total_words)
+    return similarity
+
 def fix_image_url(image_url):
     """
     Fix and proxy image URLs to ensure they always work
@@ -134,10 +227,44 @@ def get_existing_products():
         print(f"Error: {e}")
         return []
 
-def is_duplicate(product_url, existing_products):
+def is_duplicate(product_url, product_title, existing_products):
+    """
+    Smart duplicate detection:
+    1. Exact URL match
+    2. Exact title match
+    3. Similar title (80%+)
+    4. Same keyword/category (prevents multiple bags, wallets, etc.)
+    """
+    product_keyword = extract_main_keyword(product_title)
+    
     for existing in existing_products:
-        if existing['url'] in product_url or product_url in existing['url']:
+        existing_url = existing.get('url', '')
+        existing_title = existing.get('title', '')
+        
+        # Check 1: Exact URL match
+        if product_url and existing_url and product_url == existing_url:
+            print(f"  Skip - Duplicate URL: {product_title[:40]}...")
             return True
+        
+        # Check 2: Exact title match
+        if product_title and existing_title and product_title.lower() == existing_title.lower():
+            print(f"  Skip - Duplicate title: {product_title[:40]}...")
+            return True
+        
+        # Check 3: Similar title (80%+)
+        if product_title and existing_title:
+            similarity = calculate_similarity(product_title, existing_title)
+            if similarity >= 0.8:
+                print(f"  Skip - Similar ({similarity*100:.0f}%): {product_title[:40]}...")
+                return True
+        
+        # Check 4: Same keyword/category
+        existing_keyword = extract_main_keyword(existing_title)
+        if product_keyword and existing_keyword and product_keyword == existing_keyword:
+            print(f"  Skip - Category exists ('{product_keyword}'): {product_title[:40]}...")
+            print(f"         Already have: {existing_title[:40]}...")
+            return True
+    
     return False
 
 def add_products_to_sheet(new_products):
@@ -210,7 +337,7 @@ def main():
                 if not url or not title:
                     continue
                 
-                if is_duplicate(url, existing_products):
+                if is_duplicate(url, title, existing_products):
                     continue
                 
                 promotion_link = product.get('promotion_link', url)
