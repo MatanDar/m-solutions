@@ -27,23 +27,39 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
+            flex-direction: row !important;
             direction: ltr !important;
+        }
+        
+        .navbar-container .logo-section {
+            order: 1;
+        }
+        
+        .navbar-container .search-section {
+            order: 2;
         }
         .logo-section {
             display: flex;
             align-items: center;
             gap: 15px;
-            order: 1;
+            flex-direction: row;
+        }
+        .navbar-brand-logo {
+            height: 60px; width: auto;
+        }
+        .brand-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #5d64f2, #764def);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
         }
         .search-section {
             flex-grow: 1;
             max-width: 500px;
-            margin: 0 30px;
-            order: 2;
-        }
-        .navbar-brand-logo {
-            height: 60px;
-            width: auto;
+            margin-left: 30px;
         }
         .search-input {
             width: 100%;
@@ -298,6 +314,83 @@
             text-align: right;
             font-weight: 600;
         }
+
+        /* --- כפתורי קטגוריות --- */
+        .categories-section {
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 30px 20px;
+            margin: 20px auto;
+            max-width: 1200px;
+            border-radius: 25px;
+            border: 1px solid rgba(93, 100, 242, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        
+        .categories-title {
+            text-align: center;
+            color: #f8f9fa;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #5d64f2, #764def);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .category-btn {
+            background: linear-gradient(135deg, #5d64f2, #764def);
+            border: none;
+            border-radius: 20px;
+            padding: 20px 15px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(118, 77, 239, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .category-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(118, 77, 239, 0.5);
+        }
+        
+        .category-btn.active {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            box-shadow: 0 8px 25px rgba(74, 222, 128, 0.5);
+            transform: scale(1.05);
+        }
+        
+        .category-btn .emoji {
+            font-size: 1.5rem;
+        }
+        
+        @media (max-width: 575.98px) {
+            .categories-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .category-btn {
+                padding: 15px 10px;
+                font-size: 0.95rem;
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -316,6 +409,50 @@
     </nav>
     
     <header class="main-header-bg" style="display: none;"></header> 
+    
+    <!-- קטגוריות -->
+    <section class="categories-section">
+        <h2 class="categories-title">קטגוריות שלך</h2>
+        <div class="categories-grid">
+            <button class="category-btn" onclick="filterByCategory('מוצרי חשמל', this)">
+                <span class="emoji">🔌</span>
+                <span>מוצרי חשמל</span>
+            </button>
+            <button class="category-btn" onclick="filterByCategory('מטבח ובית', this)">
+                <span class="emoji">🍳</span>
+                <span>מטבח ובית</span>
+            </button>
+            <button class="category-btn" onclick="filterByCategory('ספורט וכושר', this)">
+                <span class="emoji">⚽</span>
+                <span>ספורט וכושר</span>
+            </button>
+            <button class="category-btn" onclick="filterByCategory('תיקים ואביזרים', this)">
+                <span class="emoji">👜</span>
+                <span>תיקים ואביזרים</span>
+            </button>
+            <button class="category-btn" onclick="filterByCategory('כלי עבודה', this)">
+                <span class="emoji">🔧</span>
+                <span>כלי עבודה</span>
+            </button>
+            <button class="category-btn" onclick="filterByCategory('צעצועים', this)">
+                <span class="emoji">🎮</span>
+                <span>צעצועים</span>
+            </button>
+            <button class="category-btn" onclick="filterByCategory('אופנה', this)">
+                <span class="emoji">👔</span>
+                <span>אופנה</span>
+            </button>
+            <button class="category-btn" onclick="filterByCategory('אלקטרוניקה', this)">
+                <span class="emoji">📱</span>
+                <span>אלקטרוניקה</span>
+            </button>
+            <button class="category-btn" onclick="filterByCategory('כללי', this)">
+                <span class="emoji">📦</span>
+                <span>כללי</span>
+            </button>
+        </div>
+    </section>
+
     
     <div class="container mt-4">
         <!-- סקשן פילטרים -->
@@ -552,6 +689,29 @@
             }
         });
     });
+
+    // סינון לפי קטגוריה
+    let selectedCategory = '';
+    
+    function filterByCategory(category, btnElement) {
+        // הסרת active מכל הכפתורים
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // אם לחצנו על אותה קטגוריה - בטל סינון
+        if (selectedCategory === category) {
+            selectedCategory = '';
+        } else {
+            // סינון קטגוריה חדשה
+            selectedCategory = category;
+            btnElement.classList.add('active');
+        }
+        
+        // סינון המוצרים (כרגע לא עושה כלום - זה יעבוד בשלב 4!)
+        console.log('Selected category:', selectedCategory);
+    }
+
     </script>
 </body>
 </html>
