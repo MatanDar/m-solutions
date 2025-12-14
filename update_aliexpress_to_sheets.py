@@ -10,9 +10,8 @@ from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import json
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
-translator = Translator()
 
 # Custom Category Mapping - קטגוריות מותאמות אישית
 CATEGORY_MAPPING = {
