@@ -12,11 +12,12 @@ from googleapiclient.discovery import build
 import json
 
 try:
-    from deep_translator import GoogleTranslator
+    from googletrans import Translator
+    translator = Translator()
     TRANSLATOR_AVAILABLE = True
 except ImportError:
     TRANSLATOR_AVAILABLE = False
-    print("⚠️ deep-translator not available, using English only")
+    print("⚠️ googletrans not available, using English only")
 
 # ============ CATEGORY MAPPING ============
 # מיפוי חכם של מילות מפתח לקטגוריות
@@ -135,8 +136,8 @@ def translate_to_hebrew(text):
             return text
         
         text = text[:500]
-        translated = GoogleTranslator(source='en', target='he').translate(text)
-        return translated
+        translated = translator.translate(text, src='en', dest='he')
+        return translated.text
     except Exception as e:
         print(f"  Translation error: {e}")
         return text
