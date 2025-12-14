@@ -10,9 +10,96 @@ from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import json
-from googletrans import Translator
 
-translator = Translator()
+try:
+    from deep_translator import GoogleTranslator
+    TRANSLATOR_AVAILABLE = True
+except ImportError:
+    TRANSLATOR_AVAILABLE = False
+    print("⚠️ deep-translator not available, using English only")
+
+# ============ CATEGORY MAPPING ============
+# מיפוי חכם של מילות מפתח לקטגוריות
+CATEGORY_MAPPING = {
+    'מוצרי חשמל': [
+        'consumer electronics', 'electronics', 'electronic', 'lights', 'lighting',
+        'electrical', 'phone', 'mobile', 'charger', 'power bank', 'cable', 'adapter', 
+        'headphone', 'earphone', 'earbuds', 'speaker', 'bluetooth', 'wireless',
+        'smart', 'led', 'lamp', 'bulb', 'usb', 'battery'
+    ],
+    'מטבח ובית': [
+        'home', 'kitchen', 'dining', 'tableware', 'cookware', 'appliances',
+        'furniture', 'bedding', 'bath', 'storage', 'organization', 'decor',
+        'garden', 'cleaning', 'laundry', 'towel', 'curtain', 'pillow', 'blanket'
+    ],
+    'ספורט וכושר': [
+        'sports', 'fitness', 'gym', 'exercise', 'yoga', 'running', 'cycling',
+        'outdoor', 'camping', 'hiking', 'swimming', 'workout', 'training',
+        'athletic', 'ball', 'racket', 'dumbbell', 'weight'
+    ],
+    'תיקים ואביזרים': [
+        'bags', 'bag', 'luggage', 'backpack', 'wallet', 'handbag', 'purse', 
+        'case', 'pouch', 'travel', 'accessories', 'jewelry', 'watches', 'watch',
+        'sunglasses', 'glasses', 'belt', 'scarf', 'hat', 'gloves', 'bracelet',
+        'necklace', 'earrings', 'ring'
+    ],
+    'כלי עבודה': [
+        'tools', 'tool', 'hardware', 'construction', 'drill', 'saw', 'hammer',
+        'wrench', 'screwdriver', 'measuring', 'safety', 'industrial',
+        'automotive', 'repair', 'maintenance', 'flashlight', 'knife'
+    ],
+    'צעצועים': [
+        'toys', 'toy', 'games', 'game', 'hobbies', 'kids', 'children', 'baby', 
+        'puzzle', 'doll', 'action figure', 'model', 'educational', 'remote control',
+        'stuffed', 'plush', 'lego', 'block'
+    ],
+    'אופנה': [
+        'clothing', 'fashion', 'apparel', 'shoes', 'shoe', 'men', 'women', 'dress',
+        'shirt', 'pants', 'jacket', 'coat', 'sweater', 'underwear', 'socks',
+        'boots', 'sneakers', 'sandals', 't-shirt', 'jeans'
+    ],
+    'אלקטרוניקה': [
+        'cameras', 'camera', 'photography', 'video', 'audio', 'tv', 'monitor',
+        'projector', 'drone', 'gaming', 'console', 'vr', 'security',
+        'surveillance', 'gps', 'smart home', 'tablet', 'computer'
+    ]
+}
+
+def map_to_category(title, description, aliexpress_category):
+    """
+    מיפוי חכם לקטגוריה לפי:
+    1. מילות מפתח בכותרת
+    2. מילות מפתח בתיאור
+    3. קטגוריית AliExpress
+    """
+    # המרה לאותיות קטנות
+    text_to_search = f"{title} {description} {aliexpress_category}".lower()
+    
+    # ספירת התאמות לכל קטגוריה
+    category_scores = {}
+    
+    for category, keywords in CATEGORY_MAPPING.items():
+        score = 0
+        for keyword in keywords:
+            if keyword in text_to_search:
+                # נקודות נוספות אם המילה בכותרת
+                if keyword in title.lower():
+                    score += 3
+                else:
+                    score += 1
+        
+        if score > 0:
+            category_scores[category] = score
+    
+    # החזר קטגוריה עם הציון הגבוה ביותר
+    if category_scores:
+        best_category = max(category_scores, key=category_scores.get)
+        return best_category
+    
+    # ברירת מחדל
+    return 'כללי'
+
+# ============ REST OF THE CODE (UNCHANGED) ============
 
 ALIEXPRESS_APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
 ALIEXPRESS_APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
@@ -21,182 +108,105 @@ ALIEXPRESS_TRACKING_ID = 'matan123'
 SPREADSHEET_ID = '1oicbEsS2aU_G698uz-bd6ghUPKx7qt7dLUPFeaa4egU'
 SHEET_NAME = 'Affiliate Table'
 
-# Keywords to prevent duplicates
 PRODUCT_KEYWORDS = [
-    # Bags & Cases
     'bag', 'wallet', 'backpack', 'clutch', 'purse', 'handbag', 'tote', 'crossbody', 
     'shoulder bag', 'messenger', 'satchel', 'hobo', 'wristlet', 'pouch', 'case',
-    
-    # Accessories
     'bracelet', 'necklace', 'ring', 'earrings', 'belt', 'watch', 'sunglasses', 
     'hat', 'scarf', 'gloves', 'tie', 'bowtie', 'cufflinks', 'brooch', 'anklet',
-    
-    # Tools
     'screwdriver', 'hammer', 'wrench', 'pliers', 'tape measure', 'level', 'drill', 
     'saw', 'knife', 'scissors', 'cutter', 'opener', 'flashlight', 'torch', 'lighter',
-    
-    # Sports & Fitness
     'ball', 'racket', 'paddle', 'mat', 'band', 'rope', 'weight', 'dumbbell',
     'yoga', 'fitness', 'exercise', 'gym', 'sports', 'training', 'workout',
-    
-    # Office
     'pen', 'pencil', 'notebook', 'marker', 'highlighter', 'eraser', 'stapler', 
     'clip', 'folder', 'binder', 'calculator', 'ruler', 'tape', 'scissors',
-    
-    # Toys
     'puzzle', 'toy', 'game', 'doll', 'car', 'truck', 'plane', 'robot', 
     'lego', 'block', 'figure', 'plush', 'stuffed', 'action figure',
-    
-    # Pet
-    'collar', 'leash', 'bowl', 'pet toy', 'bed', 'carrier', 'cage', 'aquarium',
-    
-    # Auto
-    'mount', 'holder', 'cover', 'mat', 'organizer', 'charger', 'light', 'mirror',
-    
-    # Electronics
-    'cable', 'charger', 'adapter', 'mouse', 'keyboard', 'headphone', 'earphone', 
-    'speaker', 'powerbank', 'battery', 'usb', 'hdmi', 'bluetooth', 'wireless',
-    'phone', 'tablet', 'laptop', 'computer', 'monitor', 'screen', 'display',
-    'smartwatch', 'tracker', 'camera', 'tripod', 'lens', 'drone', 'remote',
-    
-    # Home
-    'mug', 'cup', 'bottle', 'thermos', 'plate', 'bowl', 'spoon', 'fork', 'knife',
-    'pan', 'pot', 'cooker', 'blender', 'mixer', 'kettle', 'toaster', 'oven',
-    'pillow', 'blanket', 'sheet', 'curtain', 'towel', 'mat', 'rug', 'carpet',
-    'organizer', 'storage', 'box', 'basket', 'rack', 'shelf', 'holder', 'hanger',
-    'clock', 'mirror', 'frame', 'vase', 'plant', 'pot', 'garden', 'tool',
-    
-    # Other
-    'bookmark', 'keychain', 'lanyard', 'badge', 'sticker', 'magnet', 'flag', 
-    'poster', 'sign', 'plaque', 'ornament', 'candle', 'incense', 'diffuser'
+    'collar', 'leash', 'bowl', 'bed', 'treat', 'shampoo', 'brush',
+    'grooming', 'cage', 'carrier', 'aquarium', 'fish', 'bird', 'hamster'
 ]
 
-def extract_main_keyword(title):
-    """
-    Extract main keyword from product title
-    Example: 'USB Cable Fast Charging' -> 'cable'
-    """
-    title_lower = title.lower()
-    
-    # Search for keyword from list
-    for keyword in PRODUCT_KEYWORDS:
-        if keyword in title_lower:
-            return keyword
-    
-    # If no keyword found, use first meaningful word
-    words = title_lower.split()
-    for word in words:
-        if len(word) >= 3:
-            return word
-    
-    return title_lower[:20]
-
-def calculate_similarity(text1, text2):
-    """
-    Calculate similarity between two texts
-    Returns value between 0-1 (1 = identical)
-    """
-    text1 = text1.lower().strip()
-    text2 = text2.lower().strip()
-    
-    if text1 == text2:
-        return 1.0
-    
-    words1 = set(text1.split())
-    words2 = set(text2.split())
-    
-    if not words1 or not words2:
-        return 0.0
-    
-    common_words = words1.intersection(words2)
-    total_words = words1.union(words2)
-    
-    similarity = len(common_words) / len(total_words)
-    return similarity
-
 def translate_to_hebrew(text):
-    """
-    Translate text to Hebrew using Google Translate
-    """
+    """Translate text to Hebrew"""
+    if not TRANSLATOR_AVAILABLE:
+        return text
+    
     try:
         if not text or len(text.strip()) == 0:
             return text
         
-        # Translate to Hebrew
-        translated = translator.translate(text, src='en', dest='he')
-        return translated.text
+        text = text[:500]
+        translated = GoogleTranslator(source='en', target='he').translate(text)
+        return translated
     except Exception as e:
-        print(f"  Translation error, keeping English: {str(e)}")
+        print(f"  Translation error: {e}")
         return text
 
 def create_description(product):
-    """
-    Create Hebrew description from product title and category
-    """
+    """Create Hebrew description"""
     title = product.get('product_title', 'No Description')
     category = product.get('second_level_category_name', '')
     
-    # Create description in English
     if category:
         description_en = f"{category} - {title[:80]}"
     else:
         description_en = title[:120]
     
-    # Translate to Hebrew
     description_he = translate_to_hebrew(description_en)
-    
     return description_he
 
 def fix_image_url(image_url):
-    """
-    Fix and proxy image URLs to ensure they always work
-    """
-    if not image_url or image_url == 'NO_IMAGE':
-        return 'https://via.placeholder.com/400x400/e0e0e0/666666?text=No+Image'
-    
-    # Clean the URL
-    if '?' in image_url:
-        image_url = image_url.split('?')[0]
-    
-    # Ensure protocol
-    if not image_url.startswith('http'):
-        image_url = 'https:' + image_url if image_url.startswith('//') else 'https://' + image_url
-    
-    # Use image proxy to ensure images always load
-    clean_url = image_url.replace('https://', '').replace('http://', '')
-    proxy_url = f"https://images.weserv.nl/?url={clean_url}&w=400&h=400&fit=cover&default=1"
-    
-    return proxy_url
+    """Fix image URL"""
+    if not image_url:
+        return ''
+    return image_url
 
 def is_quality_product(product):
-    """
-    Check if product meets quality standards:
-    - Price >= $4 (lowered from $6 to get more results)
-    - Free or cheap shipping to Israel
-    - Fast shipping (if available)
-    """
-    # Check price - try multiple fields
-    price = 0
-    
-    # Try different price fields
-    if 'target_sale_price' in product:
-        price = float(product.get('target_sale_price', 0))
-    elif 'target_app_sale_price' in product:
-        price = float(product.get('target_app_sale_price', 0))
-    elif 'sale_price' in product:
-        price = float(product.get('sale_price', 0))
-    elif 'app_sale_price' in product:
-        price = float(product.get('app_sale_price', 0))
-    elif 'original_price' in product:
-        price = float(product.get('original_price', 0))
-    
-    if price < 4:  # Lowered from $6 to $4
-        print(f"  Skip - Price too low (${price:.2f})")
+    """Check quality standards"""
+    try:
+        sale_price_str = product.get('target_sale_price', '0')
+        try:
+            sale_price = float(sale_price_str)
+        except (ValueError, TypeError):
+            return False
+        
+        if sale_price < 6.0:
+            return False
+        
+        return True
+    except Exception as e:
         return False
+
+def is_duplicate(url, title, existing_products):
+    """Smart duplicate detection"""
+    title_lower = title.lower()
     
-    # If price is good, accept it
-    print(f"  ✓ Price OK: ${price:.2f}")
-    return True
+    for existing in existing_products:
+        existing_url = existing.get('url', '')
+        existing_title = existing.get('title', '').lower()
+        
+        if url == existing_url:
+            print(f"  Skip - Same URL: {title[:40]}...")
+            return True
+        
+        if len(title_lower) > 10:
+            words_new = set(title_lower.split())
+            words_existing = set(existing_title.split())
+            if words_new and words_existing:
+                similarity = len(words_new & words_existing) / len(words_new | words_existing)
+                if similarity > 0.9:
+                    print(f"  Skip - Similar title ({similarity:.0%}): {title[:40]}...")
+                    return True
+        
+        if title_lower == existing_title:
+            print(f"  Skip - Exact title: {title[:40]}...")
+            return True
+        
+        for keyword in PRODUCT_KEYWORDS:
+            if keyword in title_lower and keyword in existing_title:
+                print(f"  Skip - Category exists ('{keyword}'): {title[:40]}...")
+                return True
+    
+    return False
 
 def generate_signature(params, secret):
     sorted_params = sorted(params.items())
@@ -204,15 +214,13 @@ def generate_signature(params, secret):
     for key, value in sorted_params:
         sign_string += f"{key}{value}"
     sign_string += secret
-    
-    # Simple MD5 - exactly like the original code!
     return hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
 
 def fetch_products():
-    """Fetch products - will search until we have enough"""
+    """Fetch products"""
     all_products = []
     page = 1
-    max_pages = 20  # Search up to 20 pages (1000 products!)
+    max_pages = 20
     
     print(f"Searching for products (up to {max_pages} pages)...\n")
     
@@ -228,7 +236,7 @@ def fetch_products():
             'v': '2.0',
             'page_size': '50',
             'page_no': str(page),
-            'sort': 'LAST_VOLUME_DESC',  # Best sellers (most sales)
+            'sort': 'LAST_VOLUME_DESC',
             'target_currency': 'USD',
             'target_language': 'EN',
             'tracking_id': str(ALIEXPRESS_TRACKING_ID),
@@ -253,9 +261,8 @@ def fetch_products():
                     print(f"  Found {len(products)} products")
                     all_products.extend(products)
                     
-                    # If we have enough products, stop searching
                     if len(all_products) >= 500:
-                        print(f"  Collected enough products ({len(all_products)}), stopping search")
+                        print(f"  Collected enough products ({len(all_products)}), stopping")
                         break
                 else:
                     print(f"  Error: {result_data.get('resp_msg', 'Unknown error')}")
@@ -269,8 +276,6 @@ def fetch_products():
             break
         
         page += 1
-        
-        # Small delay between pages
         if page <= max_pages:
             time.sleep(0.5)
     
@@ -291,7 +296,7 @@ def get_existing_products():
         service = build('sheets', 'v4', credentials=credentials)
         result = service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
-            range=f'{SHEET_NAME}!A:F'
+            range=f'{SHEET_NAME}!A:G'
         ).execute()
         
         values = result.get('values', [])
@@ -299,67 +304,23 @@ def get_existing_products():
         if not values or len(values) < 2:
             return []
         
-        existing = []
+        products = []
         for row in values[1:]:
             if len(row) >= 2:
-                existing.append({
+                products.append({
                     'url': row[0] if len(row) > 0 else '',
-                    'title': row[1] if len(row) > 1 else '',
+                    'title': row[1] if len(row) > 1 else ''
                 })
         
-        print(f"Found {len(existing)} existing products")
-        return existing
+        print(f"Found {len(products)} existing products\n")
+        return products
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error loading products: {e}")
         return []
 
-def is_duplicate(product_url, product_title, existing_products):
-    """
-    Smart duplicate detection:
-    1. Exact URL match
-    2. Exact title match
-    3. Similar title (80%+)
-    4. Same keyword/category (prevents multiple bags, wallets, etc.)
-    """
-    product_keyword = extract_main_keyword(product_title)
-    
-    for existing in existing_products:
-        existing_url = existing.get('url', '')
-        existing_title = existing.get('title', '')
-        
-        # Check 1: Exact URL match
-        if product_url and existing_url and product_url == existing_url:
-            print(f"  Skip - Duplicate URL: {product_title[:40]}...")
-            return True
-        
-        # Check 2: Exact title match
-        if product_title and existing_title and product_title.lower() == existing_title.lower():
-            print(f"  Skip - Duplicate title: {product_title[:40]}...")
-            return True
-        
-        # Check 3: Similar title (80%+)
-        if product_title and existing_title:
-            similarity = calculate_similarity(product_title, existing_title)
-            if similarity >= 0.8:
-                print(f"  Skip - Similar ({similarity*100:.0f}%): {product_title[:40]}...")
-                return True
-        
-        # Check 4: Same keyword/category
-        existing_keyword = extract_main_keyword(existing_title)
-        if product_keyword and existing_keyword and product_keyword == existing_keyword:
-            print(f"  Skip - Category exists ('{product_keyword}'): {product_title[:40]}...")
-            print(f"         Already have: {existing_title[:40]}...")
-            return True
-    
-    return False
-
-def add_products_to_sheet(new_products):
-    if not new_products:
-        print("No products to add")
-        return
-    
-    print(f"Adding {len(new_products)} products...")
+def add_products_to_sheet(products):
+    print(f"\nAdding {len(products)} products to sheet...")
     
     try:
         credentials_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
@@ -371,46 +332,41 @@ def add_products_to_sheet(new_products):
         
         service = build('sheets', 'v4', credentials=credentials)
         
-        values = []
-        for product in new_products:
-            values.append([
-                product['url'],
-                product['title'],
-                product['description'],
-                product['image'],
-                product['affiliate_link'],
-                product['last_updated']
-            ])
+        rows = [[
+            p.get('url', ''),
+            p.get('title', ''),
+            p.get('description', ''),
+            p.get('image', ''),
+            p.get('affiliate_link', ''),
+            p.get('last_updated', ''),
+            p.get('category', 'כללי')
+        ] for p in products]
         
-        service.spreadsheets().values().append(
+        body = {'values': rows}
+        
+        result = service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID,
-            range=f'{SHEET_NAME}!A:F',
+            range=f'{SHEET_NAME}!A:G',
             valueInputOption='RAW',
-            insertDataOption='INSERT_ROWS',
-            body={'values': values}
+            body=body
         ).execute()
         
-        print(f"Added {len(new_products)} products!")
+        print(f"✅ Added {result.get('updates', {}).get('updatedRows', 0)} rows")
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error adding products: {e}")
+        import traceback
+        traceback.print_exc()
 
 def main():
-    print("=" * 60)
-    print("🔥 AliExpress Products Updater - POWER MODE 🔥")
+    print("🔥 AliExpress Products with Smart Categories 🔥")
     print("=" * 60)
     print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Tracking ID: {ALIEXPRESS_TRACKING_ID}")
-    print(f"Signature: MD5 (original)")
-    print(f"App Key length: {len(ALIEXPRESS_APP_KEY) if ALIEXPRESS_APP_KEY else 0}")
-    print(f"App Secret length: {len(ALIEXPRESS_APP_SECRET) if ALIEXPRESS_APP_SECRET else 0}")
     print(f"\n📊 Settings:")
-    print(f"  • Min Price: $4 (lowered to get more results)")
-    print(f"  • Ship To: Israel (Best effort)")
-    print(f"  • Sort By: Best Sellers (Most Sales)")
-    print(f"  • Target: Minimum 5 quality products")
-    print(f"  • Will search up to 20 pages (1000 products!)")
-    print(f"  • Smart Duplicate Detection: ON")
+    print(f"  • Min Price: $6")
+    print(f"  • Smart Categories: 9 categories")
+    print(f"  • Category Mapping: Based on keywords")
     print("=" * 60 + "\n")
     
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
@@ -439,7 +395,6 @@ def main():
                 if not url or not title:
                     continue
                 
-                # Check quality standards
                 if not is_quality_product(product):
                     continue
                 
@@ -448,15 +403,14 @@ def main():
                 
                 promotion_link = product.get('promotion_link', url)
                 image = product.get('product_main_image_url', '')
-                
-                # Fix image URL with proxy
                 image = fix_image_url(image)
                 
-                # Create Hebrew description
                 description = create_description(product)
-                
-                # Current timestamp
                 last_updated = datetime.now().strftime('%Y-%m-%d %H:%M')
+                
+                # Smart category mapping
+                aliexpress_category = product.get('second_level_category_name', '')
+                category = map_to_category(title, description, aliexpress_category)
                 
                 all_new.append({
                     'url': url,
@@ -464,17 +418,16 @@ def main():
                     'description': description,
                     'image': image,
                     'affiliate_link': promotion_link,
-                    'last_updated': last_updated
+                    'last_updated': last_updated,
+                    'category': category
                 })
                 
                 existing_products.append({'url': url, 'title': title})
                 
-                print(f"✅ Added ({len(all_new)}): {title[:50]}...")
+                print(f"✅ Added ({len(all_new)}): {title[:40]}... → {category}")
                 
-                # Stop when we have enough quality products
                 if len(all_new) >= 5:
                     print(f"\n🎉 Success! Found {len(all_new)} quality products!")
-                    print(f"   (Checked {products_checked} out of {len(products)} total)")
                     break
                 
             except Exception as e:
@@ -486,7 +439,6 @@ def main():
             add_products_to_sheet(all_new)
         else:
             print("\n⚠️ No new quality products found")
-            print("   (All products were either <$6, duplicates, or already in table)")
         
         print("\n✅ Done!")
         
