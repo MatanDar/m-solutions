@@ -142,6 +142,77 @@
             box-shadow: 0 0 15px rgba(118, 77, 239, 0.3);
         }
 
+        /* --- סגנונות כפתורי קטגוריות --- */
+        .categories-section {
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 30px 20px;
+            margin: 20px auto;
+            max-width: 1200px;
+            border-radius: 25px;
+            border: 1px solid rgba(93, 100, 242, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        
+        .categories-title {
+            text-align: center;
+            color: #f8f9fa;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #5d64f2, #764def);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .category-btn {
+            background: linear-gradient(135deg, #5d64f2, #764def);
+            border: none;
+            border-radius: 20px;
+            padding: 20px 15px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(118, 77, 239, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-align: center;
+        }
+        
+        .category-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(118, 77, 239, 0.5);
+            background: linear-gradient(135deg, #764def, #5d64f2);
+        }
+        
+        .category-btn.active {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            box-shadow: 0 8px 25px rgba(74, 222, 128, 0.5);
+            transform: scale(1.05);
+        }
+        
+        .category-btn .emoji {
+            font-size: 1.5rem;
+        }
+        
+        .category-btn .count {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-right: 5px;
+        }
+
         /* --- סגנונות כרטיס מוצר --- */
         .product-card {
             border: 1px solid rgba(93, 100, 242, 0.2);
@@ -305,6 +376,34 @@
             text-align: right;
             font-weight: 600;
         }
+        
+        /* --- רספונסיביות קטגוריות למובייל --- */
+        @media (max-width: 575.98px) {
+            .categories-section {
+                padding: 20px 15px;
+                margin: 15px auto;
+            }
+            .categories-title {
+                font-size: 1.4rem;
+                margin-bottom: 20px;
+            }
+            .categories-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .category-btn {
+                padding: 15px 10px;
+                font-size: 0.95rem;
+                flex-direction: column;
+                gap: 5px;
+            }
+            .category-btn .emoji {
+                font-size: 1.3rem;
+            }
+            .category-btn .count {
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -323,6 +422,14 @@
     </nav>
     
     <header class="main-header-bg" style="display: none;"></header> 
+    
+    <!-- קטגוריות שלך -->
+    <section class="categories-section">
+        <h2 class="categories-title">קטגוריות שלך</h2>
+        <div class="categories-grid" id="categoriesGrid">
+            <!-- הקטגוריות ימולאו דינמית ב-JavaScript -->
+        </div>
+    </section>
     
     <div class="container mt-4">
         <!-- סקשן פילטרים -->
@@ -391,17 +498,17 @@
 
 
     function populateCategories() {
-        // קטגוריות מוגדרות מראש - בדיוק כמו ב-Python
+        // קטגוריות מוגדרות מראש עם אייקונים
         const predefinedCategories = [
-            'מוצרי חשמל',
-            'מטבח ובית',
-            'ספורט וכושר',
-            'תיקים ואביזרים',
-            'כלי עבודה',
-            'צעצועים',
-            'אופנה',
-            'אלקטרוניקה',
-            'כללי'
+            { name: 'מוצרי חשמל', emoji: '🔌' },
+            { name: 'מטבח ובית', emoji: '🍳' },
+            { name: 'ספורט וכושר', emoji: '⚽' },
+            { name: 'תיקים ואביזרים', emoji: '👜' },
+            { name: 'כלי עבודה', emoji: '🔧' },
+            { name: 'צעצועים', emoji: '🎮' },
+            { name: 'אופנה', emoji: '👔' },
+            { name: 'אלקטרוניקה', emoji: '📱' },
+            { name: 'כללי', emoji: '📦' }
         ];
         
         // ספירת מוצרים לכל קטגוריה
@@ -413,25 +520,75 @@
             }
         });
         
-        const categorySelect = document.getElementById('categorySelect');
-        categorySelect.innerHTML = '<option value="">כל הקטגוריות</option>';
+        // מילוי כפתורי הקטגוריות הגדולים
+        const categoriesGrid = document.getElementById('categoriesGrid');
+        categoriesGrid.innerHTML = '';
         
-        // הצגת רק קטגוריות שיש בהן מוצרים
-        predefinedCategories.forEach(category => {
-            const count = categoryCounts[category] || 0;
+        predefinedCategories.forEach(cat => {
+            const count = categoryCounts[cat.name] || 0;
             if (count > 0) {
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = `${category} (${count})`;
-                categorySelect.appendChild(option);
+                const btn = document.createElement('button');
+                btn.className = 'category-btn';
+                btn.dataset.category = cat.name;
+                btn.innerHTML = `
+                    <span class="emoji">${cat.emoji}</span>
+                    <span>${cat.name}</span>
+                    <span class="count">(${count})</span>
+                `;
+                btn.onclick = () => selectCategory(cat.name, btn);
+                categoriesGrid.appendChild(btn);
             }
         });
+        
+        // מילוי dropdown (לשמירת תאימות)
+        const categorySelect = document.getElementById('categorySelect');
+        if (categorySelect) {
+            categorySelect.innerHTML = '<option value="">כל הקטגוריות</option>';
+            
+            predefinedCategories.forEach(cat => {
+                const count = categoryCounts[cat.name] || 0;
+                if (count > 0) {
+                    const option = document.createElement('option');
+                    option.value = cat.name;
+                    option.textContent = `${cat.name} (${count})`;
+                    categorySelect.appendChild(option);
+                }
+            });
+        }
+    }
+    
+    let selectedCategoryName = '';
+    
+    function selectCategory(categoryName, btnElement) {
+        // הסרת active מכל הכפתורים
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // אם לחצנו על אותה קטגוריה - בטל בחירה
+        if (selectedCategoryName === categoryName) {
+            selectedCategoryName = '';
+            const categorySelect = document.getElementById('categorySelect');
+            if (categorySelect) categorySelect.value = '';
+        } else {
+            // בחירת קטגוריה חדשה
+            selectedCategoryName = categoryName;
+            btnElement.classList.add('active');
+            const categorySelect = document.getElementById('categorySelect');
+            if (categorySelect) categorySelect.value = categoryName;
+        }
+        
+        applyFilters();
     }
 
     function applyFilters() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const sortBy = document.getElementById('sortSelect').value;
-        const selectedCategory = document.getElementById('categorySelect').value;
+        const categorySelect = document.getElementById('categorySelect');
+        const dropdownCategory = categorySelect ? categorySelect.value : '';
+        
+        // השתמש בקטגוריה מהכפתורים או מה-dropdown
+        const selectedCategory = selectedCategoryName || dropdownCategory;
 
         // פילטור
         filteredProducts = allProducts.filter(product => {
@@ -546,7 +703,15 @@
     function resetFilters() {
         document.getElementById('searchInput').value = '';
         document.getElementById('sortSelect').value = 'default';
-        document.getElementById('categorySelect').value = '';
+        const categorySelect = document.getElementById('categorySelect');
+        if (categorySelect) categorySelect.value = '';
+        
+        // איפוס בחירת קטגוריה מהכפתורים
+        selectedCategoryName = '';
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
         applyFilters();
     }
 
