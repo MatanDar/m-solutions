@@ -14,6 +14,71 @@ from googletrans import Translator
 
 translator = Translator()
 
+# Custom Category Mapping - קטגוריות מותאמות אישית
+CATEGORY_MAPPING = {
+    'מוצרי חשמל': [
+        'consumer electronics', 'electronics', 'electronic', 'lights', 'lighting',
+        'electrical', 'phone accessories', 'computer', 'tablet', 'charger',
+        'power bank', 'cable', 'adapter', 'headphone', 'earphone', 'speaker',
+        'bluetooth', 'smart', 'led', 'lamp'
+    ],
+    'מטבח ובית': [
+        'home', 'kitchen', 'dining', 'tableware', 'cookware', 'appliances',
+        'home improvement', 'furniture', 'bedding', 'bath', 'storage',
+        'organization', 'decor', 'garden', 'cleaning', 'laundry'
+    ],
+    'ספורט וכושר': [
+        'sports', 'fitness', 'gym', 'exercise', 'yoga', 'running', 'cycling',
+        'outdoor', 'camping', 'hiking', 'swimming', 'workout', 'training',
+        'athletic', 'recreation'
+    ],
+    'תיקים ואביזרים': [
+        'bags', 'luggage', 'backpack', 'wallet', 'handbag', 'purse', 'case',
+        'pouch', 'travel', 'accessories', 'jewelry', 'watches', 'sunglasses',
+        'belt', 'scarf', 'hat', 'gloves'
+    ],
+    'כלי עבודה': [
+        'tools', 'hardware', 'construction', 'drill', 'saw', 'hammer',
+        'wrench', 'screwdriver', 'measuring', 'safety', 'industrial',
+        'automotive', 'repair', 'maintenance'
+    ],
+    'צעצועים': [
+        'toys', 'games', 'hobbies', 'kids', 'children', 'baby', 'puzzle',
+        'doll', 'action figure', 'model', 'educational', 'remote control',
+        'stuffed', 'plush'
+    ],
+    'אופנה': [
+        'clothing', 'fashion', 'apparel', 'shoes', 'men', 'women', 'dress',
+        'shirt', 'pants', 'jacket', 'coat', 'sweater', 'underwear', 'socks',
+        'boots', 'sneakers', 'sandals'
+    ],
+    'אלקטרוניקה': [
+        'cameras', 'photography', 'video', 'audio', 'tv', 'monitor',
+        'projector', 'drone', 'gaming', 'console', 'vr', 'security',
+        'surveillance', 'gps', 'smart home'
+    ]
+}
+
+def map_to_custom_category(aliexpress_category):
+    """
+    מיפוי חכם של קטגוריות AliExpress לקטגוריות מותאמות אישית
+    """
+    if not aliexpress_category:
+        return 'כללי'
+    
+    # המרה לאותיות קטנות לחיפוש
+    category_lower = aliexpress_category.lower()
+    
+    # חיפוש בכל הקטגוריות המותאמות
+    for custom_category, keywords in CATEGORY_MAPPING.items():
+        for keyword in keywords:
+            if keyword in category_lower:
+                return custom_category
+    
+    # אם לא נמצאה התאמה - קטגוריה כללית
+    return 'כללי'
+
+
 ALIEXPRESS_APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
 ALIEXPRESS_APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
 ALIEXPRESS_TRACKING_ID = 'matan123'
@@ -291,7 +356,7 @@ def get_existing_products():
         service = build('sheets', 'v4', credentials=credentials)
         result = service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
-            range=f'{SHEET_NAME}!A:F'
+            range=f'{SHEET_NAME}!A:G'
         ).execute()
         
         values = result.get('values', [])
@@ -384,7 +449,7 @@ def add_products_to_sheet(new_products):
         
         service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID,
-            range=f'{SHEET_NAME}!A:F',
+            range=f'{SHEET_NAME}!A:G',
             valueInputOption='RAW',
             insertDataOption='INSERT_ROWS',
             body={'values': values}
@@ -458,13 +523,18 @@ def main():
                 # Current timestamp
                 last_updated = datetime.now().strftime('%Y-%m-%d %H:%M')
                 
+                # Get category using smart mapping
+                category_en = product.get('second_level_category_name', '')
+                category_he = map_to_custom_category(category_en)
+                
                 all_new.append({
                     'url': url,
                     'title': title,
                     'description': description,
                     'image': image,
                     'affiliate_link': promotion_link,
-                    'last_updated': last_updated
+                    'last_updated': last_updated,
+                    'category': category_he
                 })
                 
                 existing_products.append({'url': url, 'title': title})

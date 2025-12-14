@@ -23,27 +23,34 @@
         .navbar-container {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
-            direction: ltr !important;
+            flex-direction: row;
         }
         .logo-section {
             display: flex;
             align-items: center;
             gap: 15px;
-            order: 1;
+            flex-direction: row;
+        }
+        .navbar-brand-logo {
+            height: 60px; width: auto;
+        }
+        .brand-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #5d64f2, #764def);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
         }
         .search-section {
             flex-grow: 1;
             max-width: 500px;
-            margin: 0 30px;
-            order: 2;
-        }
-        .navbar-brand-logo {
-            height: 60px;
-            width: auto;
+            margin-left: 30px;
         }
         .search-input {
             width: 100%;
@@ -352,7 +359,9 @@
         "TITLE", 
         "DESCRIPTION", 
         "IMAGE_URL", 
-        "AFFILIATE_LINK" 
+        "AFFILIATE_LINK",
+        "LAST_UPDATED",
+        "CATEGORY"
     ];
 
     let allProducts = [];
@@ -380,21 +389,65 @@
         return products;
     }
 
+
+    function populateCategories() {
+        // קטגוריות מוגדרות מראש - בדיוק כמו ב-Python
+        const predefinedCategories = [
+            'מוצרי חשמל',
+            'מטבח ובית',
+            'ספורט וכושר',
+            'תיקים ואביזרים',
+            'כלי עבודה',
+            'צעצועים',
+            'אופנה',
+            'אלקטרוניקה',
+            'כללי'
+        ];
+        
+        // ספירת מוצרים לכל קטגוריה
+        const categoryCounts = {};
+        allProducts.forEach(product => {
+            const category = product['CATEGORY'];
+            if (category && category.trim()) {
+                categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+            }
+        });
+        
+        const categorySelect = document.getElementById('categorySelect');
+        categorySelect.innerHTML = '<option value="">כל הקטגוריות</option>';
+        
+        // הצגת רק קטגוריות שיש בהן מוצרים
+        predefinedCategories.forEach(category => {
+            const count = categoryCounts[category] || 0;
+            if (count > 0) {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = `${category} (${count})`;
+                categorySelect.appendChild(option);
+            }
+        });
+    }
+
     function applyFilters() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const sortBy = document.getElementById('sortSelect').value;
+        const selectedCategory = document.getElementById('categorySelect').value;
 
         // פילטור
         filteredProducts = allProducts.filter(product => {
             const title = (product['TITLE'] || '').toLowerCase();
             const description = (product['DESCRIPTION'] || '').toLowerCase();
+            const category = product['CATEGORY'] || '';
 
             // חיפוש טקסט
             const matchesSearch = !searchTerm || 
                 title.includes(searchTerm) || 
                 description.includes(searchTerm);
+            
+            // סינון קטגוריה
+            const matchesCategory = !selectedCategory || category === selectedCategory;
 
-            return matchesSearch;
+            return matchesSearch && matchesCategory;
         });
 
         // מיון
@@ -477,6 +530,7 @@
             allProducts = parseCSV(csvText, HEADERS);
             filteredProducts = [...allProducts];
             
+            populateCategories();
             displayProducts();
             
         } catch (error) {
@@ -492,6 +546,7 @@
     function resetFilters() {
         document.getElementById('searchInput').value = '';
         document.getElementById('sortSelect').value = 'default';
+        document.getElementById('categorySelect').value = '';
         applyFilters();
     }
 
@@ -501,6 +556,7 @@
         // מאזינים לפילטרים
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('sortSelect').addEventListener('change', applyFilters);
+        document.getElementById('categorySelect').addEventListener('change', applyFilters);
         document.getElementById('resetBtn').addEventListener('click', resetFilters);
     });
 </script>
