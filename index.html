@@ -417,6 +417,47 @@
             }
         }
 
+        /* --- כפתור "עוד מוצרים" --- */
+        .load-more-container {
+            display: flex;
+            justify-content: center;
+            margin: 40px 0;
+            padding: 20px;
+        }
+        
+        .load-more-btn {
+            background: linear-gradient(135deg, #5d64f2, #764def);
+            border: none;
+            border-radius: 50px;
+            padding: 18px 50px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(118, 77, 239, 0.4);
+            display: none; /* מוסתר בהתחלה */
+        }
+        
+        .load-more-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(118, 77, 239, 0.6);
+            background: linear-gradient(135deg, #764def, #5d64f2);
+        }
+        
+        .load-more-btn:active {
+            transform: translateY(-2px);
+        }
+        
+        body.light-mode .load-more-btn {
+            background: linear-gradient(135deg, #5d64f2, #764def);
+            box-shadow: 0 8px 25px rgba(93, 100, 242, 0.4);
+        }
+        
+        body.light-mode .load-more-btn:hover {
+            box-shadow: 0 12px 35px rgba(93, 100, 242, 0.6);
+        }
+
         /* --- כפתור Dark/Light Mode --- */
         .theme-toggle {
             background: rgba(26, 26, 46, 0.6);
@@ -599,6 +640,13 @@
         
         <div id="product-list" class="row">
         </div>
+        
+        <!-- כפתור עוד מוצרים -->
+        <div class="load-more-container">
+            <button id="loadMoreBtn" class="load-more-btn" onclick="loadMoreProducts()">
+                טען עוד מוצרים
+            </button>
+        </div>
     </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -617,6 +665,8 @@
 
     let allProducts = [];
     let filteredProducts = [];
+    let displayedCount = 0;
+    const PRODUCTS_PER_LOAD = 40; // כמה מוצרים להציג בכל פעם
 
     function parseCSV(csvText, headers) {
         const products = [];
@@ -671,20 +721,30 @@
         displayProducts();
     }
 
-    function displayProducts() {
+    function displayProducts(append = false) {
         const productList = document.getElementById('product-list');
         const resultsCount = document.getElementById('resultsCount');
-        productList.innerHTML = '';
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        
+        if (!append) {
+            productList.innerHTML = '';
+            displayedCount = 0;
+        }
 
         // עדכון מספר התוצאות
         resultsCount.textContent = `${filteredProducts.length} תוצאות נמצאו`;
 
         if (filteredProducts.length === 0) {
             productList.innerHTML = `<div class="alert alert-info" role="alert" dir="rtl">לא נמצאו מוצרים התואמים לחיפוש.</div>`;
+            loadMoreBtn.style.display = 'none';
             return;
         }
 
-        filteredProducts.forEach(product => {
+        // חישוב כמה מוצרים להציג
+        const endIndex = Math.min(displayedCount + PRODUCTS_PER_LOAD, filteredProducts.length);
+        const productsToShow = filteredProducts.slice(displayedCount, endIndex);
+
+        productsToShow.forEach(product => {
             const affiliateLink = product['AFFILIATE_LINK'];
             const regularLink = product['PRODUCT_URL'];
             const finalLink = affiliateLink && affiliateLink.length > 5 ? affiliateLink : regularLink;
@@ -722,6 +782,21 @@
                 productList.innerHTML += cardHtml;
             }
         });
+        
+        // עדכון המונה
+        displayedCount = endIndex;
+        
+        // הצג/הסתר כפתור "עוד מוצרים"
+        if (displayedCount >= filteredProducts.length) {
+            loadMoreBtn.style.display = 'none'; // אין יותר מוצרים
+        } else {
+            loadMoreBtn.style.display = 'block'; // יש עוד מוצרים
+            loadMoreBtn.textContent = `טען עוד (${filteredProducts.length - displayedCount} מוצרים נותרו)`;
+        }
+    }
+    
+    function loadMoreProducts() {
+        displayProducts(true); // true = להוסיף ולא למחוק
     }
 
     async function loadProducts() {
