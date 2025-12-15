@@ -391,6 +391,100 @@
             }
         }
 
+        /* --- כפתור Dark/Light Mode --- */
+        .theme-toggle {
+            background: rgba(26, 26, 46, 0.6);
+            border: 1px solid rgba(93, 100, 242, 0.4);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.3rem;
+            margin-left: 15px;
+        }
+        
+        .theme-toggle:hover {
+            background: rgba(118, 77, 239, 0.3);
+            border-color: #764def;
+            box-shadow: 0 0 15px rgba(118, 77, 239, 0.4);
+            transform: scale(1.1);
+        }
+
+        /* --- Light Mode Styles --- */
+        body.light-mode {
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            color: #102a43;
+        }
+        
+        body.light-mode .top-navbar {
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 1px solid rgba(93, 100, 242, 0.2);
+        }
+        
+        body.light-mode .brand-text {
+            background: linear-gradient(45deg, #5d64f2, #764def);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        body.light-mode .search-input {
+            background: rgba(240, 244, 248, 0.9);
+            color: #102a43;
+            border: 1px solid rgba(93, 100, 242, 0.3);
+        }
+        
+        body.light-mode .search-input::placeholder {
+            color: #627d98;
+        }
+        
+        body.light-mode .filters-section {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(93, 100, 242, 0.3);
+        }
+        
+        body.light-mode .filter-label {
+            color: #486581;
+        }
+        
+        body.light-mode .sort-select,
+        body.light-mode .reset-btn,
+        body.light-mode .theme-toggle {
+            background: rgba(240, 244, 248, 0.8);
+            color: #102a43;
+            border: 1px solid rgba(93, 100, 242, 0.4);
+        }
+        
+        body.light-mode .reset-btn:hover {
+            background: rgba(118, 77, 239, 0.15);
+            color: #5d64f2;
+        }
+        
+        body.light-mode .categories-section {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(93, 100, 242, 0.3);
+        }
+        
+        body.light-mode .product-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(93, 100, 242, 0.2);
+        }
+        
+        body.light-mode .card-title {
+            color: #102a43;
+        }
+        
+        body.light-mode .card-text {
+            color: #486581;
+        }
+        
+        body.light-mode .results-count {
+            color: #5d64f2;
+        }
+
     </style>
 </head>
 <body>
@@ -405,6 +499,9 @@
             <div class="search-section">
                 <input type="text" id="searchInput" class="search-input" placeholder="חפש מוצרים...">
             </div>
+            <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
+                <span id="themeIcon">🌙</span>
+            </button>
         </div>
     </nav>
     
@@ -412,7 +509,6 @@
     
     <!-- קטגוריות -->
     <section class="categories-section">
-        <h2 class="categories-title">קטגוריות שלך</h2>
         <div class="categories-grid">
             <button class="category-btn" onclick="filterByCategory('מוצרי חשמל', this)">
                 <span class="emoji">🔌</span>
@@ -442,13 +538,9 @@
                 <span class="emoji">👔</span>
                 <span>אופנה</span>
             </button>
-            <button class="category-btn" onclick="filterByCategory('אלקטרוניקה', this)">
+            <button class="category-btn" onclick="filterByCategory('מוצרים לטלפון', this)">
                 <span class="emoji">📱</span>
-                <span>אלקטרוניקה</span>
-            </button>
-            <button class="category-btn" onclick="filterByCategory('כללי', this)">
-                <span class="emoji">📦</span>
-                <span>כללי</span>
+                <span>מוצרים לטלפון</span>
             </button>
         </div>
     </section>
@@ -717,6 +809,32 @@
         // סינון המוצרים - עכשיו באמת!
         applyFilters();
     }
+
+    // פונקציית החלפת Dark/Light Mode
+    function toggleTheme() {
+        const body = document.body;
+        const themeIcon = document.getElementById('themeIcon');
+        
+        body.classList.toggle('light-mode');
+        
+        // שינוי אייקון
+        if (body.classList.contains('light-mode')) {
+            themeIcon.textContent = '☀️';
+            localStorage.setItem('theme', 'light');
+        } else {
+            themeIcon.textContent = '🌙';
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+    
+    // טעינת העדפת המשתמש
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeIcon').textContent = '☀️';
+        }
+    });
 
     </script>
 </body>
