@@ -1,0 +1,46 @@
+name: Auto Update Products 3x Daily
+
+on:
+  schedule:
+    # רץ 3 פעמים ביום - 08:00, 14:00, 20:00 (UTC)
+    # בישראל זה: 10:00, 16:00, 22:00
+    - cron: '0 8 * * *'    # 10:00 Israel Time
+    - cron: '0 14 * * *'   # 16:00 Israel Time
+    - cron: '0 20 * * *'   # 22:00 Israel Time
+  
+  workflow_dispatch:  # מאפשר הרצה ידנית
+
+jobs:
+  update-products:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install requests google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client googletrans==3.1.0a0
+      
+      - name: Run update script
+        env:
+          ALIEXPRESS_APP_KEY: ${{ secrets.ALIEXPRESS_APP_KEY }}
+          ALIEXPRESS_APP_SECRET: ${{ secrets.ALIEXPRESS_APP_SECRET }}
+          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
+        run: |
+          echo "🚀 Starting automatic product update..."
+          echo "📅 Date: $(date)"
+          echo "⏰ Time: $(date +%H:%M)"
+          python update_aliexpress_to_sheets.py
+          echo "✅ Update completed!"
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Update failed! Check logs."

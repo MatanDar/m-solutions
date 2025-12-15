@@ -23,10 +23,8 @@ except ImportError:
 # מיפוי חכם של מילות מפתח לקטגוריות
 CATEGORY_MAPPING = {
     'מוצרי חשמל': [
-        'consumer electronics', 'electronics', 'electronic', 'lights', 'lighting',
-        'electrical', 'phone', 'mobile', 'charger', 'power bank', 'cable', 'adapter', 
-        'headphone', 'earphone', 'earbuds', 'speaker', 'bluetooth', 'wireless',
-        'smart', 'led', 'lamp', 'bulb', 'usb', 'battery'
+        'consumer electronics', 'lights', 'lighting', 'electrical', 'led', 'lamp', 
+        'bulb', 'power', 'battery', 'appliances', 'gadget', 'device'
     ],
     'מטבח ובית': [
         'home', 'kitchen', 'dining', 'tableware', 'cookware', 'appliances',
@@ -59,10 +57,11 @@ CATEGORY_MAPPING = {
         'shirt', 'pants', 'jacket', 'coat', 'sweater', 'underwear', 'socks',
         'boots', 'sneakers', 'sandals', 't-shirt', 'jeans'
     ],
-    'אלקטרוניקה': [
-        'cameras', 'camera', 'photography', 'video', 'audio', 'tv', 'monitor',
-        'projector', 'drone', 'gaming', 'console', 'vr', 'security',
-        'surveillance', 'gps', 'smart home', 'tablet', 'computer'
+    'מוצרים לטלפון': [
+        'phone', 'mobile', 'smartphone', 'charger', 'cable', 'adapter', 
+        'headphone', 'earphone', 'earbuds', 'speaker', 'bluetooth', 'wireless',
+        'usb', 'screen protector', 'phone case', 'selfie stick', 'power bank',
+        'holder', 'stand', 'mount', 'tablet', 'iphone', 'android', 'samsung'
     ]
 }
 
@@ -73,17 +72,14 @@ def map_to_category(title, description, aliexpress_category):
     2. מילות מפתח בתיאור
     3. קטגוריית AliExpress
     """
-    # המרה לאותיות קטנות
     text_to_search = f"{title} {description} {aliexpress_category}".lower()
     
-    # ספירת התאמות לכל קטגוריה
     category_scores = {}
     
     for category, keywords in CATEGORY_MAPPING.items():
         score = 0
         for keyword in keywords:
             if keyword in text_to_search:
-                # נקודות נוספות אם המילה בכותרת
                 if keyword in title.lower():
                     score += 3
                 else:
@@ -92,15 +88,14 @@ def map_to_category(title, description, aliexpress_category):
         if score > 0:
             category_scores[category] = score
     
-    # החזר קטגוריה עם הציון הגבוה ביותר
     if category_scores:
         best_category = max(category_scores, key=category_scores.get)
         return best_category
     
-    # ברירת מחדל
-    return 'כללי'
+    # ברירת מחדל - מוצרים לטלפון
+    return 'מוצרים לטלפון'
 
-# ============ REST OF THE CODE (UNCHANGED) ============
+# ============ REST OF THE CODE ============
 
 ALIEXPRESS_APP_KEY = os.environ.get('ALIEXPRESS_APP_KEY')
 ALIEXPRESS_APP_SECRET = os.environ.get('ALIEXPRESS_APP_SECRET')
@@ -201,11 +196,6 @@ def is_duplicate(url, title, existing_products):
         if title_lower == existing_title:
             print(f"  Skip - Exact title: {title[:40]}...")
             return True
-        
-        for keyword in PRODUCT_KEYWORDS:
-            if keyword in title_lower and keyword in existing_title:
-                print(f"  Skip - Category exists ('{keyword}'): {title[:40]}...")
-                return True
     
     return False
 
@@ -217,22 +207,17 @@ def generate_signature(params, secret):
     sign_string += secret
     return hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
 
-def fetch_products():
-    """Fetch products"""
+def fetch_products(max_pages=10):
+    print(f"Fetching products from AliExpress API...")
     all_products = []
     page = 1
-    max_pages = 20
-    
-    print(f"Searching for products (up to {max_pages} pages)...\n")
     
     while page <= max_pages:
-        timestamp = str(int(time.time() * 1000))
-        
         params = {
             'app_key': str(ALIEXPRESS_APP_KEY),
-            'timestamp': str(timestamp),
-            'sign_method': 'md5',
+            'timestamp': str(int(time.time() * 1000)),
             'method': 'aliexpress.affiliate.hotproduct.query',
+            'sign_method': 'md5',
             'format': 'json',
             'v': '2.0',
             'page_size': '50',
@@ -340,7 +325,7 @@ def add_products_to_sheet(products):
             p.get('image', ''),
             p.get('affiliate_link', ''),
             p.get('last_updated', ''),
-            p.get('category', 'כללי')
+            p.get('category', 'מוצרים לטלפון')
         ] for p in products]
         
         body = {'values': rows}
@@ -360,18 +345,19 @@ def add_products_to_sheet(products):
         traceback.print_exc()
 
 def main():
-    print("🔥 AliExpress Products with Smart Categories 🔥")
+    print("🔥 AliExpress Auto-Update - 3x Daily 🔥")
     print("=" * 60)
     print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Tracking ID: {ALIEXPRESS_TRACKING_ID}")
     print(f"\n📊 Settings:")
     print(f"  • Min Price: $6")
-    print(f"  • Smart Categories: 9 categories")
-    print(f"  • Category Mapping: Based on keywords")
+    print(f"  • Categories: 8 (no 'כללי')")
+    print(f"  • Default: מוצרים לטלפון")
+    print(f"  • Target: 5+ products per run")
     print("=" * 60 + "\n")
     
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:
-        print("Missing API Keys!")
+        print("❌ Missing API Keys!")
         return
     
     try:
@@ -379,7 +365,7 @@ def main():
         products = fetch_products()
         
         if not products:
-            print("No products found")
+            print("⚠️ No products found")
             return
         
         print(f"\nFiltering products...")
@@ -409,7 +395,6 @@ def main():
                 description = create_description(product)
                 last_updated = datetime.now().strftime('%Y-%m-%d %H:%M')
                 
-                # Smart category mapping
                 aliexpress_category = product.get('second_level_category_name', '')
                 category = map_to_category(title, description, aliexpress_category)
                 
