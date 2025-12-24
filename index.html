@@ -37,11 +37,11 @@
         }
         
         .navbar-container .logo-section {
-            order: 2;
+            order: 1;
         }
         
         .navbar-container .theme-toggle {
-            order: 1;
+            order: 2;
         }
         .logo-section {
             display: flex;
@@ -465,8 +465,8 @@
 
         /* --- כפתור המבורגר --- */
         .hamburger-btn {
-            background: rgba(26, 26, 46, 0.6);
-            border: 1px solid rgba(93, 100, 242, 0.4);
+            background: linear-gradient(135deg, rgba(93, 100, 242, 0.3), rgba(118, 77, 239, 0.3));
+            border: 1px solid rgba(93, 100, 242, 0.6);
             border-radius: 50%;
             width: 45px;
             height: 45px;
@@ -477,12 +477,14 @@
             transition: all 0.3s ease;
             font-size: 1.5rem;
             margin-left: 10px;
+            color: #ffffff;
+            box-shadow: 0 2px 10px rgba(93, 100, 242, 0.3);
         }
         
         .hamburger-btn:hover {
-            background: rgba(118, 77, 239, 0.3);
+            background: linear-gradient(135deg, rgba(93, 100, 242, 0.5), rgba(118, 77, 239, 0.5));
             border-color: #764def;
-            box-shadow: 0 0 15px rgba(118, 77, 239, 0.4);
+            box-shadow: 0 0 20px rgba(118, 77, 239, 0.6);
             transform: scale(1.1);
         }
 
