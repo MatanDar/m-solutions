@@ -819,6 +819,7 @@
             const csvText = await response.text();
             
             allProducts = parseCSV(csvText, HEADERS);
+            allProducts.reverse(); // הפיכת הסדר - מוצרים חדשים ראשונים
             filteredProducts = [...allProducts];
             
             displayProducts();
