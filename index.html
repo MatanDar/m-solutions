@@ -40,8 +40,10 @@
             order: 1;
         }
         
-        .navbar-container .theme-toggle {
+        .navbar-container .buttons-section {
             order: 2;
+            display: flex;
+            gap: 10px;
         }
         .logo-section {
             display: flex;
@@ -732,7 +734,7 @@
                 <img src="img/logo.png" alt="M-SOLUTIONS Logo" class="navbar-brand-logo">
                 <h1 class="brand-text">M-SOLUTIONS</h1>
             </div>
-            <div style="display: flex; gap: 10px;">
+            <div class="buttons-section">
                 <button id="hamburgerBtn" class="hamburger-btn" onclick="toggleSidebar()">
                     <span>☰</span>
                 </button>
