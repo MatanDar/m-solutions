@@ -948,7 +948,9 @@
                         <div class="product-card">
                             <a href="${finalLink}" target="_blank" rel="nofollow noopener noreferrer" style="text-decoration: none; color: inherit;">
                                 <div class="product-image">
-                                    <img src="${imageUrl}" alt="${title} - תמונה">
+                                    <img src="${imageUrl}" 
+                                         alt="${title} - תמונה"
+                                         onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${imageUrl}');}else if(this.dataset.tried==='1'){this.dataset.tried='2';this.src='https://via.placeholder.com/400x400/e0e0e0/666666?text=No+Image';}">
                                 </div>
                             </a>
                             <div class="card-body">
