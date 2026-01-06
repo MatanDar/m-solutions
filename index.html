@@ -444,22 +444,44 @@
         const PRODUCTS_PER_PAGE = 12;
         let selectedCategory = '';
 
-        // Parse CSV
+        // Parse CSV - Fixed version
         function parseCSV(csvText, headers) {
             const lines = csvText.trim().split('\n');
             const products = [];
             
             for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',');
+                const line = lines[i];
+                if (!line) continue;
+                
+                // Parse CSV properly handling commas inside quotes
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim()); // Last value
+                
                 if (values.length >= headers.length) {
                     const product = {};
                     headers.forEach((header, index) => {
-                        product[header] = values[index] ? values[index].trim() : '';
+                        product[header] = values[index] ? values[index].replace(/^"|"$/g, '').trim() : '';
                     });
                     products.push(product);
                 }
             }
             
+            console.log('Parsed products:', products.length);
             return products;
         }
 
@@ -485,6 +507,8 @@
             const productList = document.getElementById('productList');
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             
+            console.log('displayProducts called. Filtered products:', filteredProducts.length);
+            
             if (!append) {
                 productList.innerHTML = '';
                 displayedCount = 0;
@@ -497,6 +521,8 @@
             }
             
             const endIndex = Math.min(displayedCount + PRODUCTS_PER_PAGE, filteredProducts.length);
+            
+            console.log('Displaying products from', displayedCount, 'to', endIndex);
             
             for (let i = displayedCount; i < endIndex; i++) {
                 const product = filteredProducts[i];
@@ -514,7 +540,19 @@
                     }
                 }
                 
-                if (finalLink && title && imageUrl) {
+                // Debug: check what we have
+                if (!finalLink || !title) {
+                    console.log('Skipping product - missing link or title:', {
+                        hasLink: !!finalLink,
+                        hasTitle: !!title,
+                        hasImage: !!imageUrl,
+                        title: title
+                    });
+                    continue;
+                }
+                
+                // Display product even without image (will show fallback)
+                if (finalLink && title) {
                     const card = document.createElement('a');
                     card.href = finalLink;
                     card.target = '_blank';
@@ -524,9 +562,9 @@
                     
                     card.innerHTML = `
                         <div class="product-image-container">
-                            <img src="${imageUrl}" 
+                            <img src="${imageUrl || 'https://via.placeholder.com/80x80/f7fafc/a0aec0?text=📦'}" 
                                  alt="${title}"
-                                 onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${imageUrl}');}else if(this.dataset.tried==='1'){this.dataset.tried='2';this.src='https://via.placeholder.com/80x80/f7fafc/a0aec0?text=📦';}">
+                                 onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${imageUrl || ''}');}else if(this.dataset.tried==='1'){this.dataset.tried='2';this.src='https://via.placeholder.com/80x80/f7fafc/a0aec0?text=📦';}">
                         </div>
                         <div class="product-info">
                             <div class="product-title">${title}</div>
@@ -536,6 +574,7 @@
                     `;
                     
                     productList.appendChild(card);
+                    console.log('Added product card:', title.substring(0, 30) + '...');
                 }
             }
             
@@ -558,19 +597,26 @@
         async function loadProducts() {
             const productList = document.getElementById('productList');
             
+            console.log('Starting to load products...');
+            
             try {
+                console.log('Fetching from:', SHEET_URL);
                 const response = await fetch(SHEET_URL);
                 const csvText = await response.text();
+                
+                console.log('CSV loaded, length:', csvText.length);
                 
                 allProducts = parseCSV(csvText, HEADERS);
                 allProducts.reverse();
                 filteredProducts = [...allProducts];
                 
+                console.log('Total products loaded:', allProducts.length);
+                
                 displayProducts();
                 
             } catch (error) {
                 productList.innerHTML = '<div class="loading">שגיאה בטעינת המוצרים 😞</div>';
-                console.error('Error:', error);
+                console.error('Error loading products:', error);
             }
         }
 
