@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M-SOLUTIONS | מוצרים מומלצים</title>
     
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="img/logo.png">
     <link rel="apple-touch-icon" href="img/logo.png">
     
-    <!-- Google Fonts - DM Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -30,7 +28,6 @@
             overflow-x: hidden;
         }
 
-        /* רקע עם טקסטורה עדינה */
         body::before {
             content: '';
             position: fixed;
@@ -93,6 +90,33 @@
             margin-bottom: 30px;
         }
 
+        /* Back Button */
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            color: #4a5568;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+            font-family: 'DM Sans', sans-serif;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .back-btn:hover {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
         /* Search Bar */
         .search-container {
             margin-bottom: 30px;
@@ -122,49 +146,85 @@
             color: #a0aec0;
         }
 
-        /* Filter Buttons */
-        .filter-section {
-            margin-bottom: 30px;
-            animation: fadeIn 1s ease-out 0.3s both;
-        }
-
-        .filter-scroll {
+        /* Categories Grid */
+        .categories-grid {
             display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 40px;
         }
 
-        .filter-scroll::-webkit-scrollbar {
-            display: none;
-        }
-
-        .filter-btn {
-            padding: 10px 20px;
-            border: 2px solid #e2e8f0;
-            border-radius: 20px;
+        .category-card {
             background: white;
-            color: #4a5568;
-            font-size: 0.9rem;
-            font-weight: 500;
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-            font-family: 'DM Sans', sans-serif;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            animation: fadeInUp 0.6s ease-out both;
         }
 
-        .filter-btn:hover,
-        .filter-btn.active {
-            background: #667eea;
+        .category-card:nth-child(1) { animation-delay: 0.1s; }
+        .category-card:nth-child(2) { animation-delay: 0.15s; }
+        .category-card:nth-child(3) { animation-delay: 0.2s; }
+        .category-card:nth-child(4) { animation-delay: 0.25s; }
+        .category-card:nth-child(5) { animation-delay: 0.3s; }
+        .category-card:nth-child(6) { animation-delay: 0.35s; }
+        .category-card:nth-child(7) { animation-delay: 0.4s; }
+        .category-card:nth-child(8) { animation-delay: 0.45s; }
+
+        .category-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
             border-color: #667eea;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
-        /* Product Cards - Linktree Style */
+        .category-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .category-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .category-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 4px;
+        }
+
+        .category-count {
+            font-size: 0.9rem;
+            color: #718096;
+        }
+
+        .category-arrow {
+            color: #a0aec0;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .category-card:hover .category-arrow {
+            color: #667eea;
+            transform: translateX(-4px);
+        }
+
+        /* Products Grid */
         .products-grid {
             display: flex;
             flex-direction: column;
@@ -187,12 +247,6 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             animation: fadeInUp 0.6s ease-out both;
         }
-
-        .product-card:nth-child(1) { animation-delay: 0.1s; }
-        .product-card:nth-child(2) { animation-delay: 0.15s; }
-        .product-card:nth-child(3) { animation-delay: 0.2s; }
-        .product-card:nth-child(4) { animation-delay: 0.25s; }
-        .product-card:nth-child(5) { animation-delay: 0.3s; }
 
         .product-card:hover {
             transform: translateY(-4px) scale(1.01);
@@ -257,7 +311,6 @@
         .load-more-container {
             text-align: center;
             margin: 40px 0;
-            animation: fadeIn 1s ease-out 0.5s both;
         }
 
         .load-more-btn {
@@ -331,9 +384,20 @@
         @media (max-width: 640px) {
             h1 { font-size: 1.75rem; }
             
+            .category-card,
             .product-card {
                 padding: 16px;
                 gap: 16px;
+            }
+            
+            .category-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.6rem;
+            }
+            
+            .category-title {
+                font-size: 1.05rem;
             }
             
             .product-image-container {
@@ -342,13 +406,6 @@
             }
             
             .product-title { font-size: 0.95rem; }
-            
-            .filter-scroll { gap: 8px; }
-            
-            .filter-btn {
-                padding: 8px 16px;
-                font-size: 0.85rem;
-            }
         }
 
         /* Hidden by default */
@@ -365,44 +422,40 @@
                 <img src="img/logo.png" alt="M-SOLUTIONS" onerror="this.style.display='none'">
             </div>
             <h1>M-SOLUTIONS</h1>
-            <p class="subtitle">מוצרים נבחרים במיוחד בשבילך 🛍️</p>
+            <p class="subtitle">בחר קטגוריה לצפייה במוצרים 🛍️</p>
         </header>
 
-        <!-- Search -->
-        <div class="search-container">
-            <input 
-                type="text" 
-                class="search-input" 
-                id="searchInput"
-                placeholder="🔍 חפש מוצר..."
-            >
-        </div>
-
-        <!-- Filters -->
-        <div class="filter-section">
-            <div class="filter-scroll" id="filterButtons">
-                <button class="filter-btn active" onclick="filterByCategory('', this)">🌟 הכל</button>
-                <button class="filter-btn" onclick="filterByCategory('מוצרי חשמל', this)">⚡ חשמל</button>
-                <button class="filter-btn" onclick="filterByCategory('מטבח ובית', this)">🏠 בית</button>
-                <button class="filter-btn" onclick="filterByCategory('ספורט וכושר', this)">💪 ספורט</button>
-                <button class="filter-btn" onclick="filterByCategory('תיקים ואביזרים', this)">👜 תיקים</button>
-                <button class="filter-btn" onclick="filterByCategory('כלי עבודה', this)">🔧 כלים</button>
-                <button class="filter-btn" onclick="filterByCategory('צעצועים', this)">🧸 צעצועים</button>
-                <button class="filter-btn" onclick="filterByCategory('אופנה', this)">👗 אופנה</button>
-                <button class="filter-btn" onclick="filterByCategory('מוצרים לטלפון', this)">📱 טלפון</button>
+        <!-- Categories View (Default) -->
+        <div id="categoriesView">
+            <div class="categories-grid" id="categoriesList">
+                <div class="loading">טוען קטגוריות...</div>
             </div>
         </div>
 
-        <!-- Products Grid -->
-        <div class="products-grid" id="product-list">
-            <div class="loading">טוען מוצרים...</div>
-        </div>
-
-        <!-- Load More Button -->
-        <div class="load-more-container">
-            <button class="load-more-btn hidden" id="loadMoreBtn" onclick="loadMoreProducts()">
-                טען עוד מוצרים
+        <!-- Products View (Hidden by default) -->
+        <div id="productsView" class="hidden">
+            <button class="back-btn" onclick="showCategories()">
+                ← חזרה לקטגוריות
             </button>
+            
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput"
+                    placeholder="🔍 חפש מוצר..."
+                >
+            </div>
+
+            <div class="products-grid" id="product-list">
+                <div class="loading">טוען מוצרים...</div>
+            </div>
+
+            <div class="load-more-container">
+                <button class="load-more-btn hidden" id="loadMoreBtn" onclick="loadMoreProducts()">
+                    טען עוד מוצרים
+                </button>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -412,8 +465,6 @@
     </div>
 
     <script>
-        // ========== הלוגיקה המקורית (שעובדת!) ==========
-        
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv';
         
         const HEADERS = [
@@ -426,11 +477,22 @@
             "CATEGORY"
         ];
 
+        const CATEGORIES = [
+            { name: 'מוצרי חשמל', icon: '🔌' },
+            { name: 'מטבח ובית', icon: '🍳' },
+            { name: 'ספורט וכושר', icon: '⚽' },
+            { name: 'תיקים ואביזרים', icon: '👜' },
+            { name: 'כלי עבודה', icon: '🔧' },
+            { name: 'צעצועים', icon: '🎮' },
+            { name: 'אופנה', icon: '👔' },
+            { name: 'מוצרים לטלפון', icon: '📱' }
+        ];
+
         let allProducts = [];
         let filteredProducts = [];
         let displayedCount = 0;
+        let currentCategory = '';
         const PRODUCTS_PER_LOAD = 12;
-        let selectedCategory = '';
 
         function parseCSV(csvText, headers) {
             const products = [];
@@ -454,6 +516,51 @@
             return products;
         }
 
+        function countProductsByCategory(category) {
+            return allProducts.filter(p => p['CATEGORY'] === category).length;
+        }
+
+        function displayCategories() {
+            const categoriesList = document.getElementById('categoriesList');
+            categoriesList.innerHTML = '';
+
+            CATEGORIES.forEach((category, index) => {
+                const count = countProductsByCategory(category.name);
+                
+                const card = document.createElement('div');
+                card.className = 'category-card';
+                card.style.animationDelay = `${index * 0.05}s`;
+                card.onclick = () => showProducts(category.name);
+                
+                card.innerHTML = `
+                    <div class="category-icon">${category.icon}</div>
+                    <div class="category-info">
+                        <div class="category-title">${category.name}</div>
+                        <div class="category-count">${count} מוצרים</div>
+                    </div>
+                    <div class="category-arrow">←</div>
+                `;
+                
+                categoriesList.appendChild(card);
+            });
+        }
+
+        function showCategories() {
+            document.getElementById('categoriesView').classList.remove('hidden');
+            document.getElementById('productsView').classList.add('hidden');
+            document.querySelector('.subtitle').textContent = 'בחר קטגוריה לצפייה במוצרים 🛍️';
+            currentCategory = '';
+        }
+
+        function showProducts(category) {
+            currentCategory = category;
+            document.getElementById('categoriesView').classList.add('hidden');
+            document.getElementById('productsView').classList.remove('hidden');
+            document.querySelector('.subtitle').textContent = `${category} 🛍️`;
+            
+            applyFilters();
+        }
+
         function applyFilters() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
@@ -466,7 +573,7 @@
                     title.includes(searchTerm) || 
                     description.includes(searchTerm);
 
-                const matchesCategory = !selectedCategory || category === selectedCategory;
+                const matchesCategory = category === currentCategory;
 
                 return matchesSearch && matchesCategory;
             });
@@ -484,7 +591,7 @@
             }
 
             if (filteredProducts.length === 0) {
-                productList.innerHTML = '<div class="loading">לא נמצאו מוצרים 😔</div>';
+                productList.innerHTML = '<div class="loading">לא נמצאו מוצרים בקטגוריה זו 😔</div>';
                 loadMoreBtn.classList.add('hidden');
                 return;
             }
@@ -548,14 +655,9 @@
         }
 
         async function loadProducts() {
-            const productList = document.getElementById('product-list');
+            const categoriesList = document.getElementById('categoriesList');
             
-            if (!productList) {
-                console.error("Error: Element with ID 'product-list' not found.");
-                return;
-            }
-
-            productList.innerHTML = '<div class="loading">טוען מוצרים...</div>';
+            categoriesList.innerHTML = '<div class="loading">טוען מוצרים...</div>';
 
             try {
                 const response = await fetch(SHEET_URL);
@@ -563,29 +665,13 @@
                 
                 allProducts = parseCSV(csvText, HEADERS);
                 allProducts.reverse();
-                filteredProducts = [...allProducts];
                 
-                displayProducts();
+                displayCategories();
                 
             } catch (error) {
-                productList.innerHTML = '<div class="loading">שגיאה בטעינת המוצרים 😞</div>';
+                categoriesList.innerHTML = '<div class="loading">שגיאה בטעינת המוצרים 😞</div>';
                 console.error('Error:', error);
             }
-        }
-
-        function filterByCategory(category, btnElement) {
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            if (selectedCategory === category) {
-                selectedCategory = '';
-            } else {
-                selectedCategory = category;
-                btnElement.classList.add('active');
-            }
-            
-            applyFilters();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
