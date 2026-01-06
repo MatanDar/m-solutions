@@ -293,12 +293,8 @@
 
         /* Animations */
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         @keyframes fadeInDown {
@@ -331,41 +327,24 @@
             font-size: 1.1rem;
         }
 
-        .loading::after {
-            content: '...';
-            animation: dots 1.5s steps(4, end) infinite;
-        }
-
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
-        }
-
         /* Responsive */
         @media (max-width: 640px) {
-            h1 {
-                font-size: 1.75rem;
-            }
-
+            h1 { font-size: 1.75rem; }
+            
             .product-card {
                 padding: 16px;
                 gap: 16px;
             }
-
+            
             .product-image-container {
                 width: 70px;
                 height: 70px;
             }
-
-            .product-title {
-                font-size: 0.95rem;
-            }
-
-            .filter-scroll {
-                gap: 8px;
-            }
-
+            
+            .product-title { font-size: 0.95rem; }
+            
+            .filter-scroll { gap: 8px; }
+            
             .filter-btn {
                 padding: 8px 16px;
                 font-size: 0.85rem;
@@ -415,8 +394,8 @@
         </div>
 
         <!-- Products Grid -->
-        <div class="products-grid" id="productList">
-            <div class="loading">טוען מוצרים</div>
+        <div class="products-grid" id="product-list">
+            <div class="loading">טוען מוצרים...</div>
         </div>
 
         <!-- Load More Button -->
@@ -433,138 +412,115 @@
     </div>
 
     <script>
-        // Google Sheets CSV URL
-        const SHEET_URL = 'https://https://docs.google.com/spreadsheets/d/1oicbEsS2aU_G698uz-bd6ghUPKx7qt7dLUPFeaa4egU/edit?pli=1&gid=725361923#gid=725361923';
+        // ========== הלוגיקה המקורית (שעובדת!) ==========
         
-        const HEADERS = ['URL', 'TITLE', 'DESCRIPTION', 'IMAGE_URL', 'AFFILIATE_LINK', 'LAST_UPDATED', 'CATEGORY'];
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv';
         
+        const HEADERS = [
+            "PRODUCT_URL", 
+            "TITLE", 
+            "DESCRIPTION", 
+            "IMAGE_URL", 
+            "AFFILIATE_LINK",
+            "KEYWORDS",
+            "CATEGORY"
+        ];
+
         let allProducts = [];
         let filteredProducts = [];
         let displayedCount = 0;
-        const PRODUCTS_PER_PAGE = 12;
+        const PRODUCTS_PER_LOAD = 12;
         let selectedCategory = '';
 
-        // Parse CSV - Fixed version
         function parseCSV(csvText, headers) {
-            const lines = csvText.trim().split('\n');
             const products = [];
+            const lines = csvText.trim().split('\n');
             
             for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                if (!line) continue;
+                const values = lines[i].match(/(?:"[^"]*"|[^,])+/g); 
                 
-                // Parse CSV properly handling commas inside quotes
-                const values = [];
-                let current = '';
-                let inQuotes = false;
-                
-                for (let j = 0; j < line.length; j++) {
-                    const char = line[j];
-                    
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        values.push(current.trim());
-                        current = '';
-                    } else {
-                        current += char;
-                    }
-                }
-                values.push(current.trim()); // Last value
-                
-                if (values.length >= headers.length) {
-                    const product = {};
+                if (values && values.length >= headers.length) {
+                    let product = {};
                     headers.forEach((header, index) => {
-                        product[header] = values[index] ? values[index].replace(/^"|"$/g, '').trim() : '';
+                        let value = values[index] ? values[index].trim() : '';
+                        if (value.startsWith('"') && value.endsWith('"')) {
+                            value = value.slice(1, -1);
+                        }
+                        product[header] = value;
                     });
                     products.push(product);
                 }
             }
-            
-            console.log('Parsed products:', products.length);
             return products;
         }
 
-        // Apply Filters
         function applyFilters() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
+
             filteredProducts = allProducts.filter(product => {
-                const matchesCategory = !selectedCategory || product['CATEGORY'] === selectedCategory;
+                const title = (product['TITLE'] || '').toLowerCase();
+                const description = (product['DESCRIPTION'] || '').toLowerCase();
+                const category = product['CATEGORY'] || '';
+
                 const matchesSearch = !searchTerm || 
-                    product['TITLE'].toLowerCase().includes(searchTerm) ||
-                    product['DESCRIPTION'].toLowerCase().includes(searchTerm);
-                
-                return matchesCategory && matchesSearch;
+                    title.includes(searchTerm) || 
+                    description.includes(searchTerm);
+
+                const matchesCategory = !selectedCategory || category === selectedCategory;
+
+                return matchesSearch && matchesCategory;
             });
-            
-            displayedCount = 0;
+
             displayProducts();
         }
 
-        // Display Products
         function displayProducts(append = false) {
-            const productList = document.getElementById('productList');
+            const productList = document.getElementById('product-list');
             const loadMoreBtn = document.getElementById('loadMoreBtn');
-            
-            console.log('displayProducts called. Filtered products:', filteredProducts.length);
             
             if (!append) {
                 productList.innerHTML = '';
                 displayedCount = 0;
             }
-            
+
             if (filteredProducts.length === 0) {
                 productList.innerHTML = '<div class="loading">לא נמצאו מוצרים 😔</div>';
                 loadMoreBtn.classList.add('hidden');
                 return;
             }
-            
-            const endIndex = Math.min(displayedCount + PRODUCTS_PER_PAGE, filteredProducts.length);
-            
-            console.log('Displaying products from', displayedCount, 'to', endIndex);
-            
-            for (let i = displayedCount; i < endIndex; i++) {
-                const product = filteredProducts[i];
-                const regularLink = product['URL'];
+
+            const endIndex = Math.min(displayedCount + PRODUCTS_PER_LOAD, filteredProducts.length);
+            const productsToShow = filteredProducts.slice(displayedCount, endIndex);
+
+            productsToShow.forEach((product, index) => {
                 const affiliateLink = product['AFFILIATE_LINK'];
+                const regularLink = product['PRODUCT_URL'];
                 const finalLink = affiliateLink && affiliateLink.length > 5 ? affiliateLink : regularLink;
+                
                 const title = product['TITLE'];
                 const description = product['DESCRIPTION'];
                 let imageUrl = product['IMAGE_URL'];
                 
                 if (imageUrl) {
-                    imageUrl = imageUrl.toString().replace('.avif', '');
+                    imageUrl = imageUrl.toString().replace('.avif', ''); 
                     if (imageUrl.includes('<') || imageUrl.includes('>')) {
-                        imageUrl = '';
+                        imageUrl = ''; 
                     }
                 }
-                
-                // Debug: check what we have
-                if (!finalLink || !title) {
-                    console.log('Skipping product - missing link or title:', {
-                        hasLink: !!finalLink,
-                        hasTitle: !!title,
-                        hasImage: !!imageUrl,
-                        title: title
-                    });
-                    continue;
-                }
-                
-                // Display product even without image (will show fallback)
-                if (finalLink && title) {
+
+                if (finalLink && title && imageUrl) {
                     const card = document.createElement('a');
                     card.href = finalLink;
                     card.target = '_blank';
                     card.rel = 'nofollow noopener noreferrer';
                     card.className = 'product-card';
-                    card.style.animationDelay = `${(i - displayedCount) * 0.05}s`;
+                    card.style.animationDelay = `${index * 0.05}s`;
                     
                     card.innerHTML = `
                         <div class="product-image-container">
-                            <img src="${imageUrl || 'https://via.placeholder.com/80x80/f7fafc/a0aec0?text=📦'}" 
+                            <img src="${imageUrl}" 
                                  alt="${title}"
-                                 onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${imageUrl || ''}');}else if(this.dataset.tried==='1'){this.dataset.tried='2';this.src='https://via.placeholder.com/80x80/f7fafc/a0aec0?text=📦';}">
+                                 onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${imageUrl}');}else if(this.dataset.tried==='1'){this.dataset.tried='2';this.src='https://via.placeholder.com/80x80/f7fafc/a0aec0?text=📦';}">
                         </div>
                         <div class="product-info">
                             <div class="product-title">${title}</div>
@@ -574,9 +530,8 @@
                     `;
                     
                     productList.appendChild(card);
-                    console.log('Added product card:', title.substring(0, 30) + '...');
                 }
-            }
+            });
             
             displayedCount = endIndex;
             
@@ -588,39 +543,36 @@
             }
         }
 
-        // Load More
         function loadMoreProducts() {
             displayProducts(true);
         }
 
-        // Load Products from Google Sheets
         async function loadProducts() {
-            const productList = document.getElementById('productList');
+            const productList = document.getElementById('product-list');
             
-            console.log('Starting to load products...');
-            
+            if (!productList) {
+                console.error("Error: Element with ID 'product-list' not found.");
+                return;
+            }
+
+            productList.innerHTML = '<div class="loading">טוען מוצרים...</div>';
+
             try {
-                console.log('Fetching from:', SHEET_URL);
                 const response = await fetch(SHEET_URL);
                 const csvText = await response.text();
-                
-                console.log('CSV loaded, length:', csvText.length);
                 
                 allProducts = parseCSV(csvText, HEADERS);
                 allProducts.reverse();
                 filteredProducts = [...allProducts];
                 
-                console.log('Total products loaded:', allProducts.length);
-                
                 displayProducts();
                 
             } catch (error) {
                 productList.innerHTML = '<div class="loading">שגיאה בטעינת המוצרים 😞</div>';
-                console.error('Error loading products:', error);
+                console.error('Error:', error);
             }
         }
 
-        // Filter by Category
         function filterByCategory(category, btnElement) {
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -636,7 +588,6 @@
             applyFilters();
         }
 
-        // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
             loadProducts();
             document.getElementById('searchInput').addEventListener('input', applyFilters);
