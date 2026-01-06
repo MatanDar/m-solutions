@@ -207,8 +207,9 @@ def generate_signature(params, secret):
     sign_string += secret
     return hashlib.md5(sign_string.encode('utf-8')).hexdigest().upper()
 
-def fetch_products(max_pages=10):
+def fetch_products(max_pages=30):
     print(f"Fetching products from AliExpress API...")
+    print(f"📄 Scanning up to 30 pages (1500 products max) - Ship to Israel only 🇮🇱")
     all_products = []
     page = 1
     
@@ -247,7 +248,7 @@ def fetch_products(max_pages=10):
                     print(f"  Found {len(products)} products")
                     all_products.extend(products)
                     
-                    if len(all_products) >= 500:
+                    if len(all_products) >= 1500:
                         print(f"  Collected enough products ({len(all_products)}), stopping")
                         break
                 else:
@@ -263,7 +264,7 @@ def fetch_products(max_pages=10):
         
         page += 1
         if page <= max_pages:
-            time.sleep(0.5)
+            time.sleep(2)  # Prevent rate limit
     
     print(f"\nTotal products fetched: {len(all_products)}\n")
     return all_products
@@ -345,7 +346,7 @@ def add_products_to_sheet(products):
         traceback.print_exc()
 
 def main():
-    print("🔥 AliExpress Auto-Update - 3x Daily 🔥")
+    print("🔥 AliExpress Auto-Update - 4x Daily 🔥")
     print("=" * 60)
     print(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Tracking ID: {ALIEXPRESS_TRACKING_ID}")
@@ -354,6 +355,8 @@ def main():
     print(f"  • Categories: 8 (no 'כללי')")
     print(f"  • Default: מוצרים לטלפון")
     print(f"  • Target: 5+ products per run")
+    print(f"  • Pages to scan: 30 (1500 products max)")
+    print(f"  • Ship to: Israel only 🇮🇱")
     print("=" * 60 + "\n")
     
     if not ALIEXPRESS_APP_KEY or not ALIEXPRESS_APP_SECRET:

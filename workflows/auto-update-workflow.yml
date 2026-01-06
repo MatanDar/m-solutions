@@ -1,10 +1,11 @@
-name: Auto Update Products 3x Daily
+name: Auto Update Products 4x Daily
 
 on:
   schedule:
-    # רץ 3 פעמים ביום - 08:00, 14:00, 20:00 (UTC)
-    # בישראל זה: 10:00, 16:00, 22:00
-    - cron: '0 8 * * *'    # 10:00 Israel Time
+    # רץ 4 פעמים ביום - 06:00, 10:00, 14:00, 20:00 (UTC)
+    # בישראל זה: 08:00, 12:00, 16:00, 22:00
+    - cron: '0 6 * * *'    # 08:00 Israel Time
+    - cron: '0 10 * * *'   # 12:00 Israel Time
     - cron: '0 14 * * *'   # 16:00 Israel Time
     - cron: '0 20 * * *'   # 22:00 Israel Time
   
@@ -21,12 +22,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
       
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install requests google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client googletrans==3.1.0a0
+          pip install requests google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+          pip install googletrans==4.0.0rc1
       
       - name: Run update script
         env:
@@ -37,10 +39,29 @@ jobs:
           echo "🚀 Starting automatic product update..."
           echo "📅 Date: $(date)"
           echo "⏰ Time: $(date +%H:%M)"
+          echo "🔑 Checking API Keys..."
+          if [ -z "$ALIEXPRESS_APP_KEY" ]; then
+            echo "❌ ERROR: ALIEXPRESS_APP_KEY not set!"
+            exit 1
+          fi
+          if [ -z "$ALIEXPRESS_APP_SECRET" ]; then
+            echo "❌ ERROR: ALIEXPRESS_APP_SECRET not set!"
+            exit 1
+          fi
+          if [ -z "$GOOGLE_SHEETS_CREDENTIALS" ]; then
+            echo "❌ ERROR: GOOGLE_SHEETS_CREDENTIALS not set!"
+            exit 1
+          fi
+          echo "✅ All secrets configured!"
+          echo "🔄 Running update script..."
           python update_aliexpress_to_sheets.py
-          echo "✅ Update completed!"
+          echo "✅ Update completed successfully!"
       
       - name: Notify on failure
         if: failure()
         run: |
-          echo "❌ Update failed! Check logs."
+          echo "❌ Update failed! Check logs above for details."
+          echo "📋 Common issues:"
+          echo "   1. Missing or incorrect API keys"
+          echo "   2. AliExpress API rate limit"
+          echo "   3. Google Sheets permission error"
