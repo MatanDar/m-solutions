@@ -148,18 +148,19 @@
         .categories-grid {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 30px;
             margin-bottom: 40px;
         }
 
         .category-card {
             background: white;
             border-radius: 20px;
-            padding: 20px;
+            padding: 25px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             animation: fadeInUp 0.6s ease-out both;
+            overflow: hidden;
         }
 
         .category-card:nth-child(1) { animation-delay: 0.1s; }
@@ -183,7 +184,7 @@
             grid-template-rows: 1fr 1fr;
             gap: 10px;
             height: 180px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .category-images img {
@@ -201,13 +202,14 @@
 
         .category-info {
             text-align: center;
+            padding-top: 10px;
         }
 
         .category-title {
             font-size: 1.1rem;
             font-weight: 700;
             color: #1a202c;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
 
         .category-count {
@@ -379,9 +381,18 @@
                 max-width: 100%;
             }
 
+            .categories-grid {
+                gap: 20px;
+            }
+
+            .category-card {
+                padding: 20px;
+            }
+
             .category-images {
                 height: 140px;
                 gap: 8px;
+                margin-bottom: 15px;
             }
 
             .products-list {
@@ -403,9 +414,18 @@
                 padding: 10px;
             }
 
+            .categories-grid {
+                gap: 15px;
+            }
+
+            .category-card {
+                padding: 15px;
+            }
+
             .category-images {
                 height: 120px;
                 gap: 6px;
+                margin-bottom: 12px;
             }
 
             .products-list {
