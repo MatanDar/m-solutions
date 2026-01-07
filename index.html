@@ -153,15 +153,17 @@
         }
 
         .category-card {
-    background: white;
-    border-radius: 20px;
-    padding: 2px 9px 410px 9px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    animation: fadeInUp 0.6s ease-out both;
-    overflow: hidden;
-}
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            animation: fadeInUp 0.6s ease-out both;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
 
         .category-card:nth-child(1) { animation-delay: 0.1s; }
         .category-card:nth-child(2) { animation-delay: 0.15s; }
@@ -185,6 +187,7 @@
             gap: 8px;
             height: 120px;
             margin-bottom: 0;
+            flex-shrink: 0;
         }
 
         .category-images img {
@@ -202,9 +205,10 @@
 
         .category-info {
             text-align: center;
-            padding: 25px 15px 8px 15px;
+            padding: 20px 15px 0 15px;
             background: transparent;
             margin-top: 0;
+            flex-shrink: 0;
         }
 
         .category-title {
@@ -440,11 +444,11 @@
             }
 
             .category-card {
-                padding: 18px 18px 12px 18px;
+                padding: 18px;
             }
 
             .category-info {
-                padding: 20px 10px 8px 10px;
+                padding: 18px 10px 0 10px;
             }
 
             .category-images {
@@ -477,11 +481,11 @@
             }
 
             .category-card {
-                padding: 15px 15px 12px 15px;
+                padding: 15px;
             }
 
             .category-info {
-                padding: 18px 8px 6px 8px;
+                padding: 15px 8px 0 8px;
             }
 
             .category-images {
