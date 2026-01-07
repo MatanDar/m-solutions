@@ -160,9 +160,7 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             animation: fadeInUp 0.6s ease-out both;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            overflow: visible;
         }
 
         .category-card:nth-child(1) { animation-delay: 0.1s; }
@@ -185,9 +183,8 @@
             grid-template-columns: 2fr 1fr 1fr;
             grid-template-rows: 1fr 1fr;
             gap: 8px;
-            height: 120px;
-            margin-bottom: 0;
-            flex-shrink: 0;
+            height: 180px;
+            margin-bottom: 15px;
         }
 
         .category-images img {
@@ -205,10 +202,9 @@
 
         .category-info {
             text-align: center;
-            padding: 20px 15px 0 15px;
+            padding: 10px 0 0 0;
             background: transparent;
             margin-top: 0;
-            flex-shrink: 0;
         }
 
         .category-title {
@@ -447,14 +443,14 @@
                 padding: 18px;
             }
 
-            .category-info {
-                padding: 18px 10px 0 10px;
+            .category-images {
+                height: 150px;
+                gap: 6px;
+                margin-bottom: 12px;
             }
 
-            .category-images {
-                height: 100px;
-                gap: 6px;
-                margin-bottom: 0;
+            .category-info {
+                padding: 8px 0 0 0;
             }
 
             .products-list {
@@ -484,14 +480,14 @@
                 padding: 15px;
             }
 
-            .category-info {
-                padding: 15px 8px 0 8px;
+            .category-images {
+                height: 130px;
+                gap: 5px;
+                margin-bottom: 10px;
             }
 
-            .category-images {
-                height: 90px;
-                gap: 5px;
-                margin-bottom: 0;
+            .category-info {
+                padding: 8px 0 0 0;
             }
 
             .products-list {
