@@ -21,7 +21,7 @@
 
         body {
             font-family: 'DM Sans', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #f5e6f0 0%, #e8d5e0 100%);
             min-height: 100vh;
             padding: 20px;
             position: relative;
@@ -36,14 +36,14 @@
             right: 0;
             bottom: 0;
             background-image: 
-                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at 20% 50%, rgba(236, 72, 153, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(219, 39, 119, 0.08) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
 
         .container {
-            max-width: 680px;
+            max-width: 900px;
             margin: 0 auto;
             position: relative;
             z-index: 1;
@@ -57,12 +57,12 @@
         }
 
         .logo {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             margin: 0 auto 20px;
             background: white;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -95,10 +95,10 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 20px;
+            padding: 12px 24px;
             background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
+            border: none;
+            border-radius: 25px;
             color: #4a5568;
             font-size: 0.95rem;
             font-weight: 600;
@@ -106,15 +106,14 @@
             transition: all 0.3s ease;
             margin-bottom: 30px;
             font-family: 'DM Sans', sans-serif;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         }
 
         .back-btn:hover {
-            background: #667eea;
-            border-color: #667eea;
+            background: #ec4899;
             color: white;
             transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
         }
 
         /* Search Bar */
@@ -126,45 +125,40 @@
         .search-input {
             width: 100%;
             padding: 16px 20px;
-            border: 2px solid #e2e8f0;
-            border-radius: 16px;
+            border: none;
+            border-radius: 25px;
             background: white;
             font-size: 1rem;
             font-family: 'DM Sans', sans-serif;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
             text-align: center;
         }
 
         .search-input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 4px 20px rgba(236, 72, 153, 0.2);
         }
 
         .search-input::placeholder {
             color: #a0aec0;
         }
 
-        /* Categories Grid */
+        /* ========== CATEGORIES - LINKTREE STYLE ========== */
         .categories-grid {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
             margin-bottom: 40px;
         }
 
         .category-card {
             background: white;
             border-radius: 20px;
-            padding: 24px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 20px;
             cursor: pointer;
-            border: 2px solid transparent;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             animation: fadeInUp 0.6s ease-out both;
         }
 
@@ -178,178 +172,164 @@
         .category-card:nth-child(8) { animation-delay: 0.45s; }
 
         .category-card:hover {
-            transform: translateY(-4px) scale(1.01);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
         }
 
-        .category-icon {
-            width: 60px;
-            height: 60px;
+        /* Category Images Grid - 1 large + 4 small */
+        .category-images {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 10px;
+            height: 180px;
+            margin-bottom: 15px;
+        }
+
+        .category-images img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             border-radius: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            flex-shrink: 0;
+            background: #f5f5f5;
+        }
+
+        .category-image-large {
+            grid-row: 1 / 3;
+            grid-column: 1;
         }
 
         .category-info {
-            flex: 1;
-            min-width: 0;
+            text-align: center;
         }
 
         .category-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: #1a202c;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
 
         .category-count {
             font-size: 0.9rem;
-            color: #718096;
+            color: #999;
         }
 
-        .category-arrow {
-            color: #a0aec0;
-            font-size: 1.5rem;
-            flex-shrink: 0;
-            transition: all 0.3s ease;
-        }
-
-        .category-card:hover .category-arrow {
-            color: #667eea;
-            transform: translateX(-4px);
-        }
-
-        /* Products Grid */
-        .products-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+        /* ========== PRODUCTS - 3 PER ROW ========== */
+        .products-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
             margin-bottom: 40px;
         }
 
         .product-card {
             background: white;
-            border-radius: 20px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 15px;
+            overflow: hidden;
             cursor: pointer;
-            border: 2px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             text-decoration: none;
             color: inherit;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            display: block;
             animation: fadeInUp 0.6s ease-out both;
         }
 
         .product-card:hover {
-            transform: translateY(-4px) scale(1.01);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
         .product-image-container {
-            width: 80px;
-            height: 80px;
-            border-radius: 12px;
+            width: 100%;
+            height: 250px;
             overflow: hidden;
-            flex-shrink: 0;
-            background: #f7fafc;
+            background: #f5f5f5;
+            position: relative;
         }
 
         .product-image-container img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover .product-image-container img {
+            transform: scale(1.05);
         }
 
         .product-info {
-            flex: 1;
-            min-width: 0;
+            padding: 15px;
+            text-align: center;
         }
 
         .product-title {
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             font-weight: 600;
             color: #1a202c;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            height: 42px;
+            overflow: hidden;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.4;
         }
 
         .product-description {
             font-size: 0.85rem;
             color: #718096;
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
+            line-height: 1.3;
+            height: 36px;
             overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
         }
 
         .product-arrow {
-            color: #a0aec0;
-            font-size: 1.5rem;
-            flex-shrink: 0;
-            transition: all 0.3s ease;
-        }
-
-        .product-card:hover .product-arrow {
-            color: #667eea;
-            transform: translateX(-4px);
+            display: none;
         }
 
         /* Load More Button */
         .load-more-container {
             text-align: center;
-            margin: 40px 0;
+            margin-top: 30px;
         }
 
         .load-more-btn {
-            padding: 16px 40px;
+            padding: 16px 32px;
             background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 16px;
-            color: #4a5568;
+            border: none;
+            border-radius: 25px;
+            color: #1a202c;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             font-family: 'DM Sans', sans-serif;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         }
 
         .load-more-btn:hover {
-            background: #667eea;
-            border-color: #667eea;
+            background: #ec4899;
             color: white;
             transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
         }
 
         /* Footer */
         footer {
             text-align: center;
-            padding: 40px 20px 20px;
+            padding: 40px 20px;
             color: #718096;
             font-size: 0.9rem;
-            animation: fadeIn 1.2s ease-out 0.6s both;
+            animation: fadeIn 1.5s ease-out;
         }
 
         /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
         @keyframes fadeInDown {
             from {
                 opacity: 0;
@@ -372,6 +352,15 @@
             }
         }
 
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
         /* Loading State */
         .loading {
             text-align: center;
@@ -380,37 +369,53 @@
             font-size: 1.1rem;
         }
 
-        /* Responsive */
-        @media (max-width: 640px) {
-            h1 { font-size: 1.75rem; }
-            
-            .category-card,
-            .product-card {
-                padding: 16px;
-                gap: 16px;
-            }
-            
-            .category-icon {
-                width: 50px;
-                height: 50px;
-                font-size: 1.6rem;
-            }
-            
-            .category-title {
-                font-size: 1.05rem;
-            }
-            
-            .product-image-container {
-                width: 70px;
-                height: 70px;
-            }
-            
-            .product-title { font-size: 0.95rem; }
-        }
-
-        /* Hidden by default */
         .hidden {
             display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+            }
+
+            .category-images {
+                height: 140px;
+                gap: 8px;
+            }
+
+            .products-list {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .product-image-container {
+                height: 180px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .category-images {
+                height: 120px;
+                gap: 6px;
+            }
+
+            .products-list {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .product-image-container {
+                height: 250px;
+            }
         }
     </style>
 </head>
@@ -419,35 +424,33 @@
         <!-- Header -->
         <header>
             <div class="logo">
-                <img src="img/logo.png" alt="M-SOLUTIONS" onerror="this.style.display='none'">
+                <img src="img/logo.png" alt="M-SOLUTIONS Logo" onerror="this.style.display='none'">
             </div>
             <h1>M-SOLUTIONS</h1>
             <p class="subtitle">בחר קטגוריה לצפייה במוצרים 🛍️</p>
         </header>
 
-        <!-- Categories View (Default) -->
+        <!-- Categories View -->
         <div id="categoriesView">
+            <div class="search-container">
+                <input type="text" id="categorySearch" class="search-input" placeholder="🔍 חפש קטגוריה...">
+            </div>
             <div class="categories-grid" id="categoriesList">
                 <div class="loading">טוען קטגוריות...</div>
             </div>
         </div>
 
-        <!-- Products View (Hidden by default) -->
+        <!-- Products View -->
         <div id="productsView" class="hidden">
             <button class="back-btn" onclick="showCategories()">
                 ← חזרה לקטגוריות
             </button>
-            
+
             <div class="search-container">
-                <input 
-                    type="text" 
-                    class="search-input" 
-                    id="searchInput"
-                    placeholder="🔍 חפש מוצר..."
-                >
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 חפש מוצר...">
             </div>
 
-            <div class="products-grid" id="product-list">
+            <div class="products-list" id="product-list">
                 <div class="loading">טוען מוצרים...</div>
             </div>
 
@@ -520,12 +523,36 @@
             return allProducts.filter(p => p['CATEGORY'] === category).length;
         }
 
+        function getCategoryImages(category) {
+            // Get first 5 products images from this category
+            const categoryProducts = allProducts.filter(p => p['CATEGORY'] === category);
+            const images = [];
+            
+            for (let i = 0; i < Math.min(5, categoryProducts.length); i++) {
+                let imageUrl = categoryProducts[i]['IMAGE_URL'];
+                if (imageUrl) {
+                    imageUrl = imageUrl.toString().replace('.avif', '');
+                    if (!imageUrl.includes('<') && !imageUrl.includes('>')) {
+                        images.push(imageUrl);
+                    }
+                }
+            }
+            
+            // Fill with placeholders if needed
+            while (images.length < 5) {
+                images.push('https://via.placeholder.com/300x300/f5f5f5/999?text=📦');
+            }
+            
+            return images;
+        }
+
         function displayCategories() {
             const categoriesList = document.getElementById('categoriesList');
             categoriesList.innerHTML = '';
 
             CATEGORIES.forEach((category, index) => {
                 const count = countProductsByCategory(category.name);
+                const images = getCategoryImages(category.name);
                 
                 const card = document.createElement('div');
                 card.className = 'category-card';
@@ -533,12 +560,28 @@
                 card.onclick = () => showProducts(category.name);
                 
                 card.innerHTML = `
-                    <div class="category-icon">${category.icon}</div>
+                    <div class="category-images">
+                        <img class="category-image-large" 
+                             src="${images[0]}" 
+                             alt="${category.name}"
+                             onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${images[0]}');}else{this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦';}">
+                        <img src="${images[1]}" 
+                             alt="${category.name}"
+                             onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${images[1]}');}else{this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦';}">
+                        <img src="${images[2]}" 
+                             alt="${category.name}"
+                             onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${images[2]}');}else{this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦';}">
+                        <img src="${images[3]}" 
+                             alt="${category.name}"
+                             onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${images[3]}');}else{this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦';}">
+                        <img src="${images[4]}" 
+                             alt="${category.name}"
+                             onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${images[4]}');}else{this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦';}">
+                    </div>
                     <div class="category-info">
                         <div class="category-title">${category.name}</div>
-                        <div class="category-count">${count} מוצרים</div>
+                        <div class="category-count">${count} products</div>
                     </div>
-                    <div class="category-arrow">←</div>
                 `;
                 
                 categoriesList.appendChild(card);
@@ -627,13 +670,12 @@
                         <div class="product-image-container">
                             <img src="${imageUrl}" 
                                  alt="${title}"
-                                 onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${imageUrl}');}else if(this.dataset.tried==='1'){this.dataset.tried='2';this.src='https://via.placeholder.com/80x80/f7fafc/a0aec0?text=📦';}">
+                                 onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='https://images.weserv.nl/?url='+encodeURIComponent('${imageUrl}');}else if(this.dataset.tried==='1'){this.dataset.tried='2';this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦';}">
                         </div>
                         <div class="product-info">
                             <div class="product-title">${title}</div>
                             <div class="product-description">${description || 'לחץ לפרטים נוספים'}</div>
                         </div>
-                        <div class="product-arrow">←</div>
                     `;
                     
                     productList.appendChild(card);
@@ -674,9 +716,27 @@
             }
         }
 
+        // Category search functionality
         document.addEventListener('DOMContentLoaded', () => {
             loadProducts();
+            
+            // Product search
             document.getElementById('searchInput').addEventListener('input', applyFilters);
+            
+            // Category search (optional enhancement)
+            document.getElementById('categorySearch').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const categoryCards = document.querySelectorAll('.category-card');
+                
+                categoryCards.forEach(card => {
+                    const title = card.querySelector('.category-title').textContent.toLowerCase();
+                    if (title.includes(searchTerm) || searchTerm === '') {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
         });
     </script>
 </body>
