@@ -31,7 +31,7 @@
 
         /* Phone Frame Wrapper */
         .phone-frame {
-            max-width: 480px;
+            max-width: 600px;
             width: 100%;
             background: white;
             border-radius: 40px;
@@ -234,7 +234,7 @@
             grid-template-columns: 2fr 1fr 1fr;
             grid-template-rows: 1fr 1fr;
             gap: 10px;
-            height: 200px;
+            height: 250px;
             margin-bottom: 35px;
             overflow: hidden;
         }
@@ -409,7 +409,7 @@
             }
 
             .category-images {
-                height: 160px;
+                height: 200px;
                 gap: 8px;
                 margin-bottom: 30px;
                 overflow: hidden;
@@ -438,7 +438,7 @@
             }
 
             .category-images {
-                height: 140px;
+                height: 180px;
                 gap: 6px;
                 margin-bottom: 25px;
                 overflow: hidden;
@@ -501,10 +501,16 @@
 
     <!-- QR Code for Mobile View -->
     <div class="qr-code-container">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://m-solutions-fawn.vercel.app/" alt="QR Code">
+        <img id="qrCodeImage" src="" alt="QR Code">
         <div class="qr-label">View on mobile</div>
     </div>
 
+    <script>
+        // Generate QR code with actual page URL
+        const currentURL = window.location.href;
+        document.getElementById('qrCodeImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentURL)}`;
+    </script>
+    
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv';
         
