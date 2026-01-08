@@ -21,7 +21,7 @@
 
         body {
             font-family: 'DM Sans', sans-serif;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
             min-height: 100vh;
             padding: 40px 20px;
             display: flex;
@@ -43,7 +43,7 @@
         .container {
             max-width: 100%;
             margin: 0;
-            background: linear-gradient(135deg, #e0f7ff 0%, #b8e6ff 100%);
+            background: linear-gradient(135deg, #ffeef8 0%, #f5f0ff 100%);
             min-height: 100vh;
         }
 
@@ -69,7 +69,7 @@
         .share-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-            background: #4facfe;
+            background: #a78bfa;
         }
 
         .share-btn:hover svg {
@@ -163,6 +163,12 @@
             margin-bottom: 30px;
         }
 
+        /* Main Content Views - Add padding to prevent side cutoff */
+        #categoriesView,
+        #productsView {
+            padding: 0 30px;
+        }
+
         /* Search Bar */
         .search-input {
             width: 100%;
@@ -180,7 +186,7 @@
 
         .search-input:focus {
             outline: none;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 4px 20px rgba(167, 139, 250, 0.3);
         }
 
         /* Back Button */
@@ -203,10 +209,10 @@
         }
 
         .back-btn:hover {
-            background: #4facfe;
+            background: #a78bfa;
             color: white;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.3);
+            box-shadow: 0 6px 20px rgba(167, 139, 250, 0.3);
         }
 
         /* Category Card - SIMPLE LAYOUT */
@@ -234,7 +240,7 @@
             grid-template-columns: 2fr 1fr 1fr;
             grid-template-rows: 1fr 1fr;
             gap: 10px;
-            height: 320px;
+            height: 350px;
             margin-bottom: 35px;
             overflow: hidden;
         }
@@ -401,6 +407,11 @@
                 border-radius: 20px;
             }
 
+            #categoriesView,
+            #productsView {
+                padding: 0 20px;
+            }
+
             .share-btn {
                 top: 15px;
                 right: 15px;
@@ -409,7 +420,7 @@
             }
 
             .category-images {
-                height: 220px;
+                height: 240px;
                 gap: 8px;
                 margin-bottom: 30px;
                 overflow: hidden;
@@ -437,8 +448,13 @@
                 box-shadow: none;
             }
 
+            #categoriesView,
+            #productsView {
+                padding: 0 15px;
+            }
+
             .category-images {
-                height: 200px;
+                height: 220px;
                 gap: 6px;
                 margin-bottom: 25px;
                 overflow: hidden;
