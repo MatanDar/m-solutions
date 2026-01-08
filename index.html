@@ -625,19 +625,29 @@
             });
         }
 
-        function showCategories() {
+        function showCategories(addToHistory = true) {
             document.getElementById('categoriesView').classList.remove('hidden');
             document.getElementById('productsView').classList.add('hidden');
             document.querySelector('.subtitle').textContent = 'בחר קטגוריה לצפייה במוצרים 🛍️';
             currentCategory = '';
+            
+            // Update browser history only when explicitly requested
+            if (addToHistory) {
+                history.pushState({view: 'categories'}, '', '#categories');
+            }
         }
 
-        function showProducts(category) {
+        function showProducts(category, addToHistory = true) {
             currentCategory = category;
             document.getElementById('categoriesView').classList.add('hidden');
             document.getElementById('productsView').classList.remove('hidden');
             document.querySelector('.subtitle').textContent = `${category} 🛍️`;
             applyFilters();
+            
+            // Update browser history only when explicitly requested
+            if (addToHistory) {
+                history.pushState({view: 'products', category: category}, '', `#products-${encodeURIComponent(category)}`);
+            }
         }
 
         function applyFilters() {
@@ -763,6 +773,11 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Set initial history state
+            if (!window.location.hash) {
+                history.replaceState({view: 'categories'}, '', '#categories');
+            }
+            
             loadProducts();
             document.getElementById('searchInput').addEventListener('input', applyFilters);
             document.getElementById('categorySearch').addEventListener('input', function() {
@@ -777,7 +792,41 @@
                     }
                 });
             });
+
+            // Handle initial page load with hash
+            handleHashChange();
         });
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', function(event) {
+            if (event.state) {
+                if (event.state.view === 'categories') {
+                    // Going back to categories - use original function without adding to history
+                    showCategories(false);
+                } else if (event.state.view === 'products') {
+                    // Going back to products view - use original function without adding to history
+                    showProducts(event.state.category, false);
+                }
+            } else {
+                // No state (initial page or external navigation) - show categories
+                handleHashChange();
+            }
+        });
+
+        // Handle hash change on initial load
+        function handleHashChange() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#products-')) {
+                const category = decodeURIComponent(hash.replace('#products-', ''));
+                if (category && allProducts.some(p => p['CATEGORY'] === category)) {
+                    // Directly show products without adding to history again
+                    showProducts(category, false);
+                }
+            } else if (hash === '#categories' || hash === '') {
+                // Show categories view without adding to history
+                showCategories(false);
+            }
+        }
     </script>
 </body>
 </html>
