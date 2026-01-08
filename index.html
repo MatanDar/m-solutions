@@ -21,21 +21,37 @@
 
         body {
             font-family: 'DM Sans', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Phone Frame Wrapper */
+        .phone-frame {
+            max-width: 480px;
+            width: 100%;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
         }
 
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            max-width: 100%;
+            margin: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
         }
 
         /* Share Button */
         .share-btn {
-            position: fixed;
+            position: absolute;
             top: 20px;
-            right: 20px;
+            left: 20px;
             width: 50px;
             height: 50px;
             background: white;
@@ -65,6 +81,47 @@
             height: 22px;
             fill: #4a5568;
             transition: all 0.3s ease;
+        }
+
+        /* QR Code Section */
+        .qr-code-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: white;
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .qr-code-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .qr-code-container img {
+            width: 120px;
+            height: 120px;
+            display: block;
+            margin-bottom: 8px;
+            border-radius: 10px;
+        }
+
+        .qr-code-container .qr-label {
+            font-size: 0.75rem;
+            color: #4a5568;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        /* Hide QR on mobile */
+        @media (max-width: 768px) {
+            .qr-code-container {
+                display: none;
+            }
         }
 
         /* Header */
@@ -336,6 +393,14 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .phone-frame {
+                border-radius: 20px;
+            }
+
             .share-btn {
                 top: 15px;
                 right: 15px;
@@ -362,7 +427,14 @@
 
         @media (max-width: 480px) {
             body {
-                padding: 10px;
+                padding: 0;
+                align-items: flex-start;
+            }
+
+            .phone-frame {
+                border-radius: 0;
+                max-width: 100%;
+                box-shadow: none;
             }
 
             .category-images {
@@ -384,22 +456,23 @@
     </style>
 </head>
 <body>
-    <!-- Share Button -->
-    <button class="share-btn" onclick="shareWebsite()" title="שתף את האתר">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
-        </svg>
-    </button>
-
-    <div class="container">
-        <!-- Header -->
-        <header>
-            <div class="logo">
-                <img src="img/logo.png" alt="M-SOLUTIONS Logo" onerror="this.style.display='none'">
-            </div>
-            <h1>M-SOLUTIONS</h1>
-            <p class="subtitle">בחר קטגוריה לצפייה במוצרים 🛍️</p>
-        </header>
+    <div class="phone-frame">
+        <!-- Share Button -->
+        <button class="share-btn" onclick="shareWebsite()" title="שתף את האתר">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+            </svg>
+        </button>
+        
+        <div class="container">
+            <!-- Header -->
+            <header>
+                <div class="logo">
+                    <img src="img/logo.png" alt="M-SOLUTIONS Logo" onerror="this.style.display='none'">
+                </div>
+                <h1>M-SOLUTIONS</h1>
+                <p class="subtitle">בחר קטגוריה לצפייה במוצרים 🛍️</p>
+            </header>
 
         <!-- Categories View -->
         <div id="categoriesView">
@@ -423,6 +496,13 @@
         <footer>
             <p>© 2026 M-SOLUTIONS | מוצרים מומלצים מ-AliExpress</p>
         </footer>
+        </div>
+    </div>
+
+    <!-- QR Code for Mobile View -->
+    <div class="qr-code-container">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://m-solutions-fawn.vercel.app/" alt="QR Code">
+        <div class="qr-label">View on mobile</div>
     </div>
 
     <script>
