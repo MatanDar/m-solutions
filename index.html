@@ -494,7 +494,14 @@
         <div id="categoriesView">
             <input type="text" id="categorySearch" class="search-input" placeholder="🔍 חפש קטגוריה...">
             <div id="categoriesList">
-                <div class="loading">טוען קטגוריות...</div>
+                <div class="loading">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>
+                    <div style="font-weight: 600;">טוען קטגוריות...</div>
+                    <div style="font-size: 0.85rem; color: #999; margin-top: 8px;">
+                        הטעינה הראשונה עשויה לקחת מספר שניות<br>
+                        הביקורים הבאים יהיו מיידיים! ⚡
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -604,15 +611,15 @@
                 
                 card.innerHTML = `
                     <div class="category-images">
-                        <img class="category-image-large" src="${images[0]}" alt="${category.name}"
+                        <img class="category-image-large" src="${images[0]}" alt="${category.name}" loading="lazy"
                              onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
-                        <img src="${images[1]}" alt="${category.name}"
+                        <img src="${images[1]}" alt="${category.name}" loading="lazy"
                              onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
-                        <img src="${images[2]}" alt="${category.name}"
+                        <img src="${images[2]}" alt="${category.name}" loading="lazy"
                              onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
-                        <img src="${images[3]}" alt="${category.name}"
+                        <img src="${images[3]}" alt="${category.name}" loading="lazy"
                              onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
-                        <img src="${images[4]}" alt="${category.name}"
+                        <img src="${images[4]}" alt="${category.name}" loading="lazy"
                              onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
                     </div>
                     <div class="category-info">
@@ -631,6 +638,12 @@
             document.querySelector('.subtitle').textContent = 'בחר קטגוריה לצפייה במוצרים 🛍️';
             currentCategory = '';
             
+            // Scroll to top smoothly
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            
             // Update browser history only when explicitly requested
             if (addToHistory) {
                 history.pushState({view: 'categories'}, '', '#categories');
@@ -643,6 +656,9 @@
             document.getElementById('productsView').classList.remove('hidden');
             document.querySelector('.subtitle').textContent = `${category} 🛍️`;
             applyFilters();
+            
+            // Scroll to top smoothly when entering category
+            window.scrollTo({top: 0, behavior: 'smooth'});
             
             // Update browser history only when explicitly requested
             if (addToHistory) {
@@ -735,10 +751,54 @@
 
         async function loadProducts() {
             try {
+                // PERFORMANCE NOTE: 
+                // Current strategy works well for hundreds-thousands of products:
+                // 1. All data loaded once from Google Sheets
+                // 2. Cached in localStorage for 1 hour (instant subsequent loads)
+                // 3. Products displayed in batches of 12 (lazy loading with "Load More")
+                // 
+                // For 10,000+ products, consider:
+                // - Server-side pagination
+                // - Database instead of Google Sheets
+                // - API with search/filter endpoints
+                
+                // Check localStorage cache first (expires after 1 hour)
+                const cachedData = localStorage.getItem('msolutions_products_cache');
+                const cacheTime = localStorage.getItem('msolutions_products_cache_time');
+                const ONE_HOUR = 60 * 60 * 1000;
+                
+                if (cachedData && cacheTime) {
+                    const age = Date.now() - parseInt(cacheTime);
+                    if (age < ONE_HOUR) {
+                        // Use cached data - instant load!
+                        console.log('📦 Loading from cache (instant!)');
+                        allProducts = JSON.parse(cachedData);
+                        
+                        // Show loading for a brief moment so users see something
+                        setTimeout(() => {
+                            displayCategories();
+                        }, 100);
+                        return;
+                    }
+                }
+                
+                // Fetch fresh data from Google Sheets
+                console.log('🌐 Fetching fresh data from Google Sheets...');
                 const response = await fetch(SHEET_URL);
                 const csvText = await response.text();
                 allProducts = parseCSV(csvText, HEADERS);
                 allProducts.reverse();
+                
+                // Save to localStorage cache
+                try {
+                    localStorage.setItem('msolutions_products_cache', JSON.stringify(allProducts));
+                    localStorage.setItem('msolutions_products_cache_time', Date.now().toString());
+                    console.log('💾 Data cached successfully!');
+                } catch (e) {
+                    // localStorage might be full or disabled - ignore
+                    console.warn('Could not cache data:', e);
+                }
+                
                 displayCategories();
             } catch (error) {
                 document.getElementById('categoriesList').innerHTML = '<div class="loading">שגיאה בטעינת המוצרים 😞</div>';
