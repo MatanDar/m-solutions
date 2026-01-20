@@ -315,7 +315,17 @@
             height: 100%;
             object-fit: cover;
             border-radius: 12px;
-            background: #f5f5f5;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%);
+            min-height: 100px;
+            display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        
+        /* Ensure images are visible even if not loaded */
+        .category-images img[src=""],
+        .category-images img:not([src]) {
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
         }
 
         .category-image-large {
@@ -735,6 +745,96 @@
             return images;
         }
 
+        // Auto-fix category system - detects and FIXES miscategorized products
+        function autoFixProductCategories() {
+            const categoryKeywords = {
+                'מוצרי חשמל': ['חשמל', 'סוללה', 'טעינה', 'חשמלי', 'power', 'electric', 'battery', 'charger', 'cable', 'adapter', 'usb', 'כבל', 'מטען', 'led', 'אור', 'תאורה', 'lamp', 'light'],
+                'מטבח ובית': ['מטבח', 'בישול', 'כלי', 'סיר', 'kitchen', 'cook', 'utensil', 'pot', 'pan', 'plate', 'ניקוי', 'clean', 'ארגון', 'storage'],
+                'ספורט וכושר': ['ספורט', 'כושר', 'אימון', 'ריצה', 'sport', 'fitness', 'workout', 'running', 'gym', 'yoga', 'משקל', 'weight', 'training'],
+                'תיקים ואביזרים': ['תיק', 'ארנק', 'תרמיל', 'bag', 'backpack', 'wallet', 'purse', 'pouch', 'תיק גב'],
+                'כלי עבודה': ['כלי', 'מברג', 'פטיש', 'מקדחה', 'tool', 'drill', 'hammer', 'screwdriver', 'wrench', 'מפתח', 'ברגים', 'screw'],
+                'צעצועים': ['צעצוע', 'משחק', 'ילדים', 'toy', 'game', 'kids', 'children', 'play', 'בובה', 'doll', 'lego'],
+                'אופנה': ['חולצה', 'מכנס', 'שמלה', 'נעל', 'בגד', 'shirt', 'pants', 'dress', 'shoes', 'clothing', 'fashion', 'jacket', 'socks', 'גרביים', 'מעיל'],
+                'מוצרים לטלפון': ['טלפון', 'סמארטפון', 'מסך', 'מגן', 'phone', 'smartphone', 'screen', 'case', 'cover', 'mobile', 'iphone', 'samsung', 'אוזניות', 'earbuds', 'headphones']
+            };
+
+            let fixedCount = 0;
+            const fixes = [];
+            
+            allProducts.forEach((product, index) => {
+                const originalCategory = product['CATEGORY'];
+                const title = (product['TITLE'] || '').toLowerCase();
+                const description = (product['DESCRIPTION'] || '').toLowerCase();
+                const fullText = title + ' ' + description;
+                
+                // Check if category exists
+                if (!originalCategory || !CATEGORIES.find(c => c.name === originalCategory)) {
+                    // Try to find best category
+                    let bestMatch = {category: 'מוצרי חשמל', score: 0};
+                    
+                    Object.entries(categoryKeywords).forEach(([cat, keywords]) => {
+                        const matchCount = keywords.filter(kw => fullText.includes(kw.toLowerCase())).length;
+                        if (matchCount > bestMatch.score) {
+                            bestMatch = {category: cat, score: matchCount};
+                        }
+                    });
+                    
+                    product['CATEGORY'] = bestMatch.category;
+                    fixes.push({
+                        product: product['TITLE'],
+                        from: originalCategory || 'ללא קטגוריה',
+                        to: bestMatch.category,
+                        reason: 'קטגוריה חסרה או לא תקינה'
+                    });
+                    fixedCount++;
+                    return;
+                }
+                
+                // Check if product matches its assigned category
+                const categoryWords = categoryKeywords[originalCategory] || [];
+                const currentCategoryScore = categoryWords.filter(kw => fullText.includes(kw.toLowerCase())).length;
+                
+                // Find best matching category
+                let bestMatch = {category: originalCategory, score: currentCategoryScore};
+                Object.entries(categoryKeywords).forEach(([cat, keywords]) => {
+                    const matchCount = keywords.filter(kw => fullText.includes(kw.toLowerCase())).length;
+                    if (matchCount > bestMatch.score + 1) { // Need at least 2 more matches to switch
+                        bestMatch = {category: cat, score: matchCount};
+                    }
+                });
+                
+                // Auto-fix if better category found
+                if (bestMatch.category !== originalCategory && bestMatch.score > 0) {
+                    product['CATEGORY'] = bestMatch.category;
+                    fixes.push({
+                        product: product['TITLE'],
+                        from: originalCategory,
+                        to: bestMatch.category,
+                        reason: `זוהו ${bestMatch.score} מילות מפתח מתאימות`
+                    });
+                    fixedCount++;
+                }
+            });
+            
+            if (fixes.length > 0) {
+                console.group('🔧 תיקון אוטומטי של קטגוריות:');
+                console.log(`✅ תוקנו ${fixedCount} מוצרים אוטומטית!\n`);
+                fixes.forEach(fix => {
+                    console.log(`📦 ${fix.product}`);
+                    console.log(`   ❌ מקטגוריה: ${fix.from}`);
+                    console.log(`   ✅ לקטגוריה: ${fix.to}`);
+                    console.log(`   💡 סיבה: ${fix.reason}`);
+                    console.log('---');
+                });
+                console.groupEnd();
+                console.log(`\n✨ כל המוצרים עכשיו בקטגוריות הנכונות!\n`);
+            } else {
+                console.log('✅ כל המוצרים כבר בקטגוריות הנכונות!');
+            }
+            
+            return fixedCount;
+        }
+
         function displayCategories() {
             const container = document.getElementById('categoriesList');
             container.innerHTML = '';
@@ -749,19 +849,35 @@
                 
                 card.innerHTML = `
                     <div class="category-images">
-                        <img class="category-image-large" src="${images[0]}" alt="${category.name}" loading="lazy"
-                             onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
-                        <img src="${images[1]}" alt="${category.name}" loading="lazy"
-                             onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
-                        <img src="${images[2]}" alt="${category.name}" loading="lazy"
-                             onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
-                        <img src="${images[3]}" alt="${category.name}" loading="lazy"
-                             onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
-                        <img src="${images[4]}" alt="${category.name}" loading="lazy"
-                             onerror="this.src='https://via.placeholder.com/300x300/f5f5f5/999?text=📦'">
+                        <img class="category-image-large" 
+                             src="${images[0]}" 
+                             alt="${category.name}" 
+                             loading="eager"
+                             decoding="async"
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400/e0c3fc/8b5cf6?text=${encodeURIComponent(category.icon + ' ' + category.name)}'; console.warn('Image failed to load:', '${images[0]}');">
+                        <img src="${images[1]}" 
+                             alt="${category.name}"
+                             loading="eager"
+                             decoding="async"
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/200x200/e0c3fc/8b5cf6?text=📦';">
+                        <img src="${images[2]}" 
+                             alt="${category.name}"
+                             loading="eager"
+                             decoding="async"
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/200x200/e0c3fc/8b5cf6?text=📦';">
+                        <img src="${images[3]}" 
+                             alt="${category.name}"
+                             loading="eager"
+                             decoding="async"
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/200x200/e0c3fc/8b5cf6?text=📦';">
+                        <img src="${images[4]}" 
+                             alt="${category.name}"
+                             loading="eager"
+                             decoding="async"
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/200x200/e0c3fc/8b5cf6?text=📦';">
                     </div>
                     <div class="category-info">
-                        <div class="category-name">${category.name}</div>
+                        <div class="category-name">${category.icon} ${category.name}</div>
                         <div class="category-count">${count} products</div>
                     </div>
                 `;
@@ -914,6 +1030,7 @@
                         
                         // Show loading for a brief moment so users see something
                         setTimeout(() => {
+                            autoFixProductCategories();
                             displayCategories();
                         }, 100);
                         return;
@@ -937,6 +1054,7 @@
                     console.warn('Could not cache data:', e);
                 }
                 
+                autoFixProductCategories();
                 displayCategories();
             } catch (error) {
                 document.getElementById('categoriesList').innerHTML = '<div class="loading">שגיאה בטעינת המוצרים 😞</div>';
