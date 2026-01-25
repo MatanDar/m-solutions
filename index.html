@@ -13,25 +13,25 @@
     <meta name="robots" content="index, follow">
     
     <!-- Canonical Link -->
-    <link rel="canonical" href="https://m-solutions-fawn.vercel.app/">
+    <link rel="canonical" href="https://msolutions.co.il/">
     
     <!-- Sitemap -->
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://m-solutions-fawn.vercel.app/">
+    <meta property="og:url" content="https://msolutions.co.il/">
     <meta property="og:title" content="M-SOLUTIONS | מוצרים מומלצים מ-AliExpress">
     <meta property="og:description" content="מוצרים מומלצים מ-AliExpress במחירים משתלמים! מוצרי חשמל, מטבח, ספורט, תיקים, כלי עבודה, צעצועים ואופנה.">
-    <meta property="og:image" content="https://m-solutions-fawn.vercel.app/img/logo.png">
+    <meta property="og:image" content="https://msolutions.co.il/img/logo.png">
     <meta property="og:locale" content="he_IL">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://m-solutions-fawn.vercel.app/">
+    <meta property="twitter:url" content="https://msolutions.co.il/">
     <meta property="twitter:title" content="M-SOLUTIONS | מוצרים מומלצים מ-AliExpress">
     <meta property="twitter:description" content="מוצרים מומלצים מ-AliExpress במחירים משתלמים! משלוח מהיר ואיכות מובטחת.">
-    <meta property="twitter:image" content="https://m-solutions-fawn.vercel.app/img/logo.png">
+    <meta property="twitter:image" content="https://msolutions.co.il/img/logo.png">
     
     <link rel="icon" type="image/png" href="img/logo.png">
     <link rel="apple-touch-icon" href="img/logo.png">
@@ -47,11 +47,11 @@
       "@type": "WebSite",
       "name": "M-SOLUTIONS",
       "description": "מוצרים מומלצים מ-AliExpress במחירים משתלמים - מוצרי חשמל, מטבח, ספורט ועוד",
-      "url": "https://m-solutions-fawn.vercel.app/",
+      "url": "https://msolutions.co.il/",
       "inLanguage": "he",
       "potentialAction": {
         "@type": "SearchAction",
-        "target": "https://m-solutions-fawn.vercel.app/#search={search_term_string}",
+        "target": "https://msolutions.co.il/#search={search_term_string}",
         "query-input": "required name=search_term_string"
       }
     }
@@ -62,8 +62,8 @@
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "M-SOLUTIONS",
-      "url": "https://m-solutions-fawn.vercel.app/",
-      "logo": "https://m-solutions-fawn.vercel.app/img/logo.png",
+      "url": "https://msolutions.co.il/",
+      "logo": "https://msolutions.co.il/img/logo.png",
       "description": "חנות מקוונת למוצרים מומלצים מ-AliExpress"
     }
     </script>
@@ -210,6 +210,8 @@
             font-weight: 700;
             color: #1a202c;
             margin-bottom: 10px;
+            direction: rtl;
+            text-align: center;
         }
 
         .tagline {
@@ -305,7 +307,6 @@
             grid-template-rows: 1fr 1fr;
             gap: 10px;
             height: 350px;
-            margin-bottom: 35px;
             overflow: hidden;
         }
 
@@ -338,8 +339,8 @@
             position: relative;
             width: 100%;
             text-align: center;
-            padding: 10px 0 0 0;
-            margin-top: 0;
+            padding: 0 0 15px 0;
+            margin-bottom: 10px;
             clear: both;
             float: none;
         }
@@ -492,11 +493,14 @@
                 width: 45px;
                 height: 45px;
             }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
 
             .category-images {
                 height: 240px;
                 gap: 8px;
-                margin-bottom: 30px;
                 overflow: hidden;
             }
 
@@ -526,11 +530,14 @@
             #productsView {
                 padding: 0 15px;
             }
+            
+            h1 {
+                font-size: 1.2rem;
+            }
 
             .category-images {
                 height: 220px;
                 gap: 6px;
-                margin-bottom: 25px;
                 overflow: hidden;
             }
 
@@ -867,6 +874,10 @@
                 card.onclick = () => showProducts(category.name);
                 
                 card.innerHTML = `
+                    <div class="category-info">
+                        <div class="category-name">${category.icon} ${category.name}</div>
+                        <div class="category-count">${count} products</div>
+                    </div>
                     <div class="category-images">
                         <img class="category-image-large" 
                              src="${images[0]}" 
@@ -894,10 +905,6 @@
                              loading="eager"
                              decoding="async"
                              onerror="this.onerror=null; this.src='https://via.placeholder.com/200x200/e0c3fc/8b5cf6?text=📦';">
-                    </div>
-                    <div class="category-info">
-                        <div class="category-name">${category.icon} ${category.name}</div>
-                        <div class="category-count">${count} products</div>
                     </div>
                 `;
                 
