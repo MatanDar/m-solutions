@@ -761,7 +761,7 @@
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv';
         
-        const HEADERS = ["PRODUCT_URL", "TITLE", "DESCRIPTION", "IMAGE_URL", "AFFILIATE_LINK", "KEYWORDS", "CATEGORY"];
+        const HEADERS = ["URL", "Title", "Description", "Image", "Affiliate Link", "Last Updated", "CATEGORY"];
         const CATEGORIES = [
             { name: 'מוצרי חשמל', icon: '🔌' },
             { name: 'מטבח ובית', icon: '🍳' },
@@ -805,7 +805,7 @@
             const images = [];
             
             for (let i = 0; i < Math.min(5, categoryProducts.length); i++) {
-                let imageUrl = categoryProducts[i]['IMAGE_URL'];
+                let imageUrl = categoryProducts[i]['Image'];
                 if (imageUrl) {
                     imageUrl = imageUrl.toString().replace('.avif', '');
                     if (!imageUrl.includes('<') && !imageUrl.includes('>')) {
@@ -839,8 +839,8 @@
             
             allProducts.forEach((product, index) => {
                 const originalCategory = product['CATEGORY'];
-                const title = (product['TITLE'] || '').toLowerCase();
-                const description = (product['DESCRIPTION'] || '').toLowerCase();
+                const title = (product['Title'] || product['TITLE'] || '').toLowerCase();
+                const description = (product['Description'] || product['DESCRIPTION'] || '').toLowerCase();
                 const fullText = title + ' ' + description;
                 
                 // Check if category exists
@@ -857,7 +857,7 @@
                     
                     product['CATEGORY'] = bestMatch.category;
                     fixes.push({
-                        product: product['TITLE'],
+                        product: product['Title'] || product['TITLE'],
                         from: originalCategory || 'ללא קטגוריה',
                         to: bestMatch.category,
                         reason: 'קטגוריה חסרה או לא תקינה'
@@ -883,7 +883,7 @@
                 if (bestMatch.category !== originalCategory && bestMatch.score > 0) {
                     product['CATEGORY'] = bestMatch.category;
                     fixes.push({
-                        product: product['TITLE'],
+                        product: product['Title'] || product['TITLE'],
                         from: originalCategory,
                         to: bestMatch.category,
                         reason: `זוהו ${bestMatch.score} מילות מפתח מתאימות`
@@ -999,8 +999,8 @@
         function applyFilters() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             filteredProducts = allProducts.filter(product => {
-                const title = (product['TITLE'] || '').toLowerCase();
-                const description = (product['DESCRIPTION'] || '').toLowerCase();
+                const title = (product['Title'] || product['TITLE'] || '').toLowerCase();
+                const description = (product['Description'] || product['DESCRIPTION'] || '').toLowerCase();
                 const category = product['CATEGORY'] || '';
                 const matchesSearch = !searchTerm || title.includes(searchTerm) || description.includes(searchTerm);
                 const matchesCategory = category === currentCategory;
@@ -1028,13 +1028,13 @@
             const productsToShow = filteredProducts.slice(displayedCount, endIndex);
 
             productsToShow.forEach(product => {
-                const affiliateLink = product['AFFILIATE_LINK'];
-                const regularLink = product['PRODUCT_URL'];
+                const affiliateLink = product['Affiliate Link'] || product['AFFILIATE_LINK'];
+                const regularLink = product['URL'] || product['PRODUCT_URL'];
                 const finalLink = affiliateLink && affiliateLink.length > 5 ? affiliateLink : regularLink;
                 
-                const title = product['TITLE'];
-                const description = product['DESCRIPTION'];
-                let imageUrl = product['IMAGE_URL'];
+                const title = product['Title'] || product['TITLE'];
+                const description = product['Description'] || product['DESCRIPTION'];
+                let imageUrl = product['Image'];
                 
                 if (imageUrl) {
                     imageUrl = imageUrl.toString().replace('.avif', ''); 
@@ -1174,20 +1174,36 @@
             // Select random product
             const randomIndex = Math.floor(Math.random() * allProducts.length);
             const product = allProducts[randomIndex];
+            
+            // DEBUG: Show what we have
+            console.log('🔍 Selected product:', product);
+            console.log('📋 Available keys:', Object.keys(product));
 
-            // Get description (truncate if too long)
-            let description = product.Description || product.DESCRIPTION || '';
-            if (description.length > 200) {
-                description = description.substring(0, 200) + '...';
+            // Get values with ALL possible column name variations
+            const title = product.Title || product.TITLE || product.title || 'מוצר מומלץ';
+            const description = product.Description || product.DESCRIPTION || product.description || '';
+            const affiliateLink = product['Affiliate Link'] || product.LINK || product.Link || product.link || product.URL || product.url || '';
+            const imageUrl = product.Image || product.IMAGE || product.image || '';
+            
+            console.log('✅ Extracted values:');
+            console.log('  Title:', title);
+            console.log('  Description:', description.substring(0, 50) + '...');
+            console.log('  Affiliate Link:', affiliateLink);
+            console.log('  Image:', imageUrl);
+
+            // Truncate description
+            let shortDescription = description;
+            if (shortDescription.length > 200) {
+                shortDescription = shortDescription.substring(0, 200) + '...';
             }
 
-            // Format the message - SIMPLE: Title + Description + Link ONLY!
+            // Build message
             const message = `🔥 *מוצר היום מ-M-SOLUTIONS!* 🔥
 
-📦 *${product.Title || product.TITLE || 'מוצר מומלץ'}*
+📦 *${title}*
 
-${description ? description + '\n\n' : ''}🛒 *להזמנה ישירות באלי אקספרס:*
-${product['Affiliate Link'] || product.LINK || product.URL || 'https://msolutions.co.il'}
+${shortDescription ? shortDescription + '\n\n' : ''}🛒 *להזמנה ישירות באלי אקספרס:*
+${affiliateLink || '⚠️ אין קישור זמין'}
 
 ━━━━━━━━━━━━━━━━━━━━
 💎 משלוח מהיר | אחריות מלאה
@@ -1197,52 +1213,37 @@ ${product['Affiliate Link'] || product.LINK || product.URL || 'https://msolution
                 // Copy to clipboard
                 await navigator.clipboard.writeText(message);
                 
-                // Get product image URL (correct column name from Google Sheets)
-                const imageUrl = product.Image || product.IMAGE || '';
-                
-                // Show success message with instructions
+                // Show success message
                 let alertMessage = '✅ הודעה הועתקה בהצלחה!\n\n';
                 
+                // Check if we have image
                 if (imageUrl) {
-                    alertMessage += '📸 *חשוב!* לפני שליחה:\n';
-                    alertMessage += '1. פתח תמונה בדפדפן:\n' + imageUrl + '\n';
-                    alertMessage += '2. שמור/העתק את התמונה\n';
-                    alertMessage += '3. פתח קבוצת WhatsApp\n';
-                    alertMessage += '4. שלח את התמונה קודם\n';
-                    alertMessage += '5. הדבק את הטקסט (Ctrl+V)\n';
-                    alertMessage += '6. שלח! 🚀\n\n';
-                    alertMessage += '💡 טיפ: פתח את התמונה בטאב חדש';
+                    alertMessage += '📸 תמונה נפתחה בטאב חדש!\n';
+                    alertMessage += '1. שמור את התמונה\n';
+                    alertMessage += '2. פתח קבוצת WhatsApp\n';
+                    alertMessage += '3. שלח את התמונה\n';
+                    alertMessage += '4. הדבק את הטקסט (Ctrl+V)\n';
+                    alertMessage += '5. שלח! 🚀';
                     
                     // Open image in new tab
                     window.open(imageUrl, '_blank');
                 } else {
+                    alertMessage += '⚠️ אין תמונה למוצר הזה\n\n';
                     alertMessage += '📱 עכשיו:\n';
-                    alertMessage += '1. פתח את קבוצת WhatsApp\n';
+                    alertMessage += '1. פתח קבוצת WhatsApp\n';
                     alertMessage += '2. הדבק את ההודעה (Ctrl+V)\n';
                     alertMessage += '3. שלח! 🚀';
                 }
                 
                 alert(alertMessage);
                 
-                console.log('📱 WhatsApp message generated:', message);
-                console.log('📸 Product image:', imageUrl);
+                console.log('✅ Message copied to clipboard');
+                console.log('📱 Message content:', message);
             } catch (err) {
-                console.error('Failed to copy:', err);
-                // Fallback: show the message for manual copy
-                const textarea = document.createElement('textarea');
-                textarea.value = message;
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
-                    document.execCommand('copy');
-                    alert('✅ הודעה הועתקה!\n\n📱 הדבק ב-WhatsApp ושלח! 🚀');
-                } catch (err2) {
-                    alert('❌ לא ניתן להעתיק.\n\nהעתק מהקונסול (F12)');
-                    console.log('📋 Copy this message:\n\n' + message);
-                }
-                document.body.removeChild(textarea);
+                console.error('❌ Copy failed:', err);
+                alert('❌ העתקה נכשלה. בדוק את הקונסול (F12)');
+            }
+        }
             }
         }
 
