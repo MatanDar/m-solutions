@@ -1176,22 +1176,18 @@
             const product = allProducts[randomIndex];
 
             // Get description (truncate if too long)
-            let description = product.DESCRIPTION || '';
-            if (description.length > 150) {
-                description = description.substring(0, 150) + '...';
+            let description = product.Description || product.DESCRIPTION || '';
+            if (description.length > 200) {
+                description = description.substring(0, 200) + '...';
             }
 
-            // Format the message
+            // Format the message - SIMPLE: Title + Description + Link ONLY!
             const message = `🔥 *מוצר היום מ-M-SOLUTIONS!* 🔥
 
-📦 *${product.TITLE || 'מוצר מומלץ'}*
+📦 *${product.Title || product.TITLE || 'מוצר מומלץ'}*
 
-💰 *מחיר:* ₪${product.PRICE || 'N/A'}
-⭐ *דירוג:* ${product.RATING || 'N/A'}/5
-📊 *מספר הזמנות:* ${product.ORDERS || 'N/A'}+
-
-🛒 *להזמנה:*
-${product.LINK || 'https://msolutions.co.il'}
+${description ? description + '\n\n' : ''}🛒 *להזמנה ישירות באלי אקספרס:*
+${product['Affiliate Link'] || product.LINK || product.URL || 'https://msolutions.co.il'}
 
 ━━━━━━━━━━━━━━━━━━━━
 💎 משלוח מהיר | אחריות מלאה
@@ -1201,8 +1197,8 @@ ${product.LINK || 'https://msolutions.co.il'}
                 // Copy to clipboard
                 await navigator.clipboard.writeText(message);
                 
-                // Get product image URL
-                const imageUrl = product.IMAGE || '';
+                // Get product image URL (correct column name from Google Sheets)
+                const imageUrl = product.Image || product.IMAGE || '';
                 
                 // Show success message with instructions
                 let alertMessage = '✅ הודעה הועתקה בהצלחה!\n\n';
