@@ -1175,6 +1175,12 @@
             const randomIndex = Math.floor(Math.random() * allProducts.length);
             const product = allProducts[randomIndex];
 
+            // Get description (truncate if too long)
+            let description = product.DESCRIPTION || '';
+            if (description.length > 150) {
+                description = description.substring(0, 150) + '...';
+            }
+
             // Format the message
             const message = `🔥 *מוצר היום מ-M-SOLUTIONS!* 🔥
 
@@ -1189,17 +1195,41 @@ ${product.LINK || 'https://msolutions.co.il'}
 
 ━━━━━━━━━━━━━━━━━━━━
 💎 משלוח מהיר | אחריות מלאה
-🌐 https://msolutions.co.il
 ━━━━━━━━━━━━━━━━━━━━`;
 
             try {
                 // Copy to clipboard
                 await navigator.clipboard.writeText(message);
                 
-                // Show success message
-                alert('✅ הודעה הועתקה בהצלחה!\n\n📱 עכשיו:\n1. פתח את קבוצת WhatsApp\n2. הדבק את ההודעה (Ctrl+V)\n3. שלח! 🚀');
+                // Get product image URL
+                const imageUrl = product.IMAGE || '';
+                
+                // Show success message with instructions
+                let alertMessage = '✅ הודעה הועתקה בהצלחה!\n\n';
+                
+                if (imageUrl) {
+                    alertMessage += '📸 *חשוב!* לפני שליחה:\n';
+                    alertMessage += '1. פתח תמונה בדפדפן:\n' + imageUrl + '\n';
+                    alertMessage += '2. שמור/העתק את התמונה\n';
+                    alertMessage += '3. פתח קבוצת WhatsApp\n';
+                    alertMessage += '4. שלח את התמונה קודם\n';
+                    alertMessage += '5. הדבק את הטקסט (Ctrl+V)\n';
+                    alertMessage += '6. שלח! 🚀\n\n';
+                    alertMessage += '💡 טיפ: פתח את התמונה בטאב חדש';
+                    
+                    // Open image in new tab
+                    window.open(imageUrl, '_blank');
+                } else {
+                    alertMessage += '📱 עכשיו:\n';
+                    alertMessage += '1. פתח את קבוצת WhatsApp\n';
+                    alertMessage += '2. הדבק את ההודעה (Ctrl+V)\n';
+                    alertMessage += '3. שלח! 🚀';
+                }
+                
+                alert(alertMessage);
                 
                 console.log('📱 WhatsApp message generated:', message);
+                console.log('📸 Product image:', imageUrl);
             } catch (err) {
                 console.error('Failed to copy:', err);
                 // Fallback: show the message for manual copy
@@ -1211,9 +1241,9 @@ ${product.LINK || 'https://msolutions.co.il'}
                 textarea.select();
                 try {
                     document.execCommand('copy');
-                    alert('✅ הודעה הועתקה בהצלחה!\n\n📱 עכשיו:\n1. פתח את קבוצת WhatsApp\n2. הדבק את ההודעה (Ctrl+V)\n3. שלח! 🚀');
+                    alert('✅ הודעה הועתקה!\n\n📱 הדבק ב-WhatsApp ושלח! 🚀');
                 } catch (err2) {
-                    alert('❌ לא ניתן להעתיק אוטומטית.\n\nנסה שוב או העתק ידנית מהקונסול (F12)');
+                    alert('❌ לא ניתן להעתיק.\n\nהעתק מהקונסול (F12)');
                     console.log('📋 Copy this message:\n\n' + message);
                 }
                 document.body.removeChild(textarea);
