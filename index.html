@@ -1197,12 +1197,14 @@
                 shortDescription = shortDescription.substring(0, 200) + '...';
             }
 
-            // Build message
+            // Build message - exactly like the screenshot
             const message = `🔥 *מוצר היום מ-M-SOLUTIONS!* 🔥
 
 📦 *${title}*
 
-${shortDescription ? shortDescription + '\n\n' : ''}🛒 *להזמנה ישירות באלי אקספרס:*
+${shortDescription}
+
+🛒 *להזמנה ישירות באלי אקספרס:*
 ${affiliateLink || '⚠️ אין קישור זמין'}
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -1210,38 +1212,95 @@ ${affiliateLink || '⚠️ אין קישור זמין'}
 ━━━━━━━━━━━━━━━━━━━━`;
 
             try {
-                // Copy to clipboard
+                // Try Share API first (best for mobile!)
+                if (navigator.share && imageUrl) {
+                    console.log('📱 Trying Share API with image...');
+                    
+                    // Fetch image as blob
+                    try {
+                        const response = await fetch(imageUrl);
+                        const blob = await response.blob();
+                        const file = new File([blob], 'product.jpg', { type: blob.type });
+                        
+                        // Share with image and text
+                        await navigator.share({
+                            title: 'מוצר מומלץ מ-M-SOLUTIONS',
+                            text: message,
+                            files: [file]
+                        });
+                        
+                        console.log('✅ Shared successfully with image!');
+                        return; // Success! Exit function
+                        
+                    } catch (shareError) {
+                        console.log('⚠️ Share with image failed, trying text only...');
+                        
+                        // Fallback: Share text only + link to image
+                        const messageWithImageLink = message + `\n\n📸 תמונת המוצר:\n${imageUrl}`;
+                        
+                        await navigator.share({
+                            title: 'מוצר מומלץ מ-M-SOLUTIONS',
+                            text: messageWithImageLink
+                        });
+                        
+                        console.log('✅ Shared successfully (text + image link)!');
+                        return; // Success! Exit function
+                    }
+                    
+                } else if (navigator.share) {
+                    // No image, just share text
+                    console.log('📱 Trying Share API (text only)...');
+                    
+                    await navigator.share({
+                        title: 'מוצר מומלץ מ-M-SOLUTIONS',
+                        text: message
+                    });
+                    
+                    console.log('✅ Shared successfully!');
+                    return; // Success! Exit function
+                }
+                
+                // Fallback for desktop or browsers without Share API
+                console.log('💻 Share API not available - using WhatsApp Web...');
+                
+                // Copy message to clipboard
                 await navigator.clipboard.writeText(message);
                 
-                // Show success message
-                let alertMessage = '✅ הודעה הועתקה בהצלחה!\n\n';
+                // Open WhatsApp Web with pre-filled message
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappURL = `https://web.whatsapp.com/send?text=${encodedMessage}`;
+                window.open(whatsappURL, '_blank');
                 
-                // Check if we have image
+                // Show instructions
+                let alertMessage = '✅ הודעה הועתקה והוואטסאפ נפתח!\n\n';
                 if (imageUrl) {
-                    alertMessage += '📸 תמונה נפתחה בטאב חדש!\n';
-                    alertMessage += '1. שמור את התמונה\n';
-                    alertMessage += '2. פתח קבוצת WhatsApp\n';
-                    alertMessage += '3. שלח את התמונה\n';
-                    alertMessage += '4. הדבק את הטקסט (Ctrl+V)\n';
-                    alertMessage += '5. שלח! 🚀';
-                    
-                    // Open image in new tab
-                    window.open(imageUrl, '_blank');
+                    alertMessage += '📸 עכשיו:\n';
+                    alertMessage += '1. פתח תמונה: ' + imageUrl.substring(0, 40) + '...\n';
+                    alertMessage += '2. שמור אותה\n';
+                    alertMessage += '3. חזור לוואטסאפ\n';
+                    alertMessage += '4. העלה את התמונה\n';
+                    alertMessage += '5. הדבק את הטקסט (כבר מועתק)\n';
+                    alertMessage += '6. שלח! 🚀';
                 } else {
-                    alertMessage += '⚠️ אין תמונה למוצר הזה\n\n';
-                    alertMessage += '📱 עכשיו:\n';
-                    alertMessage += '1. פתח קבוצת WhatsApp\n';
-                    alertMessage += '2. הדבק את ההודעה (Ctrl+V)\n';
-                    alertMessage += '3. שלח! 🚀';
+                    alertMessage += '📱 בחר את הקבוצה ושלח!';
                 }
                 
                 alert(alertMessage);
                 
-                console.log('✅ Message copied to clipboard');
+                console.log('✅ Message copied and WhatsApp opened');
                 console.log('📱 Message content:', message);
+                
             } catch (err) {
-                console.error('❌ Copy failed:', err);
-                alert('❌ העתקה נכשלה. בדוק את הקונסול (F12)');
+                console.error('❌ Error:', err);
+                
+                // Last resort fallback - just copy to clipboard
+                try {
+                    await navigator.clipboard.writeText(message);
+                    alert('📋 הודעה הועתקה!\n\nפתח את WhatsApp ידנית והדבק את ההודעה.\n\n' + 
+                          (imageUrl ? '📸 קישור לתמונה:\n' + imageUrl : ''));
+                } catch (clipErr) {
+                    alert('❌ שגיאה. נסה שוב או בדוק את ההגדרות של הדפדפן.');
+                }
             }
         }
 
