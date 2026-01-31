@@ -719,7 +719,7 @@
             <div style="margin-bottom: 20px;">
                 <h3 style="font-size: 1.1rem; font-weight: 700; color: #4a5568; margin-bottom: 15px;">קישורים מהירים</h3>
                 <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 15px;">
-                    <a href="#categories" onclick="showCategories(); return false;" style="color: #a78bfa; text-decoration: none; font-weight: 500;">🏠 עמוד הבית</a>
+                    <a href="/" onclick="showCategories(); return false;" style="color: #a78bfa; text-decoration: none; font-weight: 500;">🏠 עמוד הבית</a>
                     <a href="#categories" style="color: #a78bfa; text-decoration: none; font-weight: 500;">📦 כל הקטגוריות</a>
                     <a href="https://www.aliexpress.com" target="_blank" rel="noopener noreferrer" style="color: #a78bfa; text-decoration: none; font-weight: 500;">🛒 AliExpress</a>
                     <a href="https://www.instagram.com/matan_dar/" target="_blank" rel="noopener noreferrer" style="color: #a78bfa; text-decoration: none; font-weight: 500;">📷 Instagram</a>
@@ -974,9 +974,9 @@
                 behavior: 'smooth'
             });
             
-            // Update browser history only when explicitly requested
+            // Update browser history - use clean URL without #categories
             if (addToHistory) {
-                history.pushState({view: 'categories'}, '', '#categories');
+                history.pushState({view: 'categories'}, '', window.location.pathname);
             }
         }
 
@@ -1327,9 +1327,9 @@ ${affiliateLink || '⚠️ אין קישור זמין'}
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Set initial history state
+            // Set initial history state - DON'T add #categories to URL
             if (!window.location.hash) {
-                history.replaceState({view: 'categories'}, '', '#categories');
+                history.replaceState({view: 'categories'}, '', window.location.pathname);
             }
             
             loadProducts();
