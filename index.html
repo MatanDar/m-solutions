@@ -761,7 +761,7 @@
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv';
         
-        const HEADERS = ["URL", "Title", "Description", "Image", "Affiliate Link", "Last Updated", "CATEGORY"];
+        const HEADERS = ["URL", "Title", "Description", "Image", "Affiliate Link", "Last Updated", "CATEGORY", "Short Link"];
         const CATEGORIES = [
             { name: 'מוצרי חשמל', icon: '🔌' },
             { name: 'מטבח ובית', icon: '🍳' },
@@ -1182,12 +1182,15 @@
             // Get values with ALL possible column name variations
             const title = product.Title || product.TITLE || product.title || 'מוצר מומלץ';
             const description = product.Description || product.DESCRIPTION || product.description || '';
-            const affiliateLink = product['Affiliate Link'] || product.LINK || product.Link || product.link || product.URL || product.url || '';
+            // Try to get Short Link first (column H), fallback to Affiliate Link (column E)
+            const shortLink = product['Short Link'] || product['SHORT LINK'] || product['short link'] || '';
+            const affiliateLink = shortLink || product['Affiliate Link'] || product.LINK || product.Link || product.link || product.URL || product.url || '';
             const imageUrl = product.Image || product.IMAGE || product.image || '';
             
             console.log('✅ Extracted values:');
             console.log('  Title:', title);
             console.log('  Description:', description.substring(0, 50) + '...');
+            console.log('  Short Link:', shortLink);
             console.log('  Affiliate Link:', affiliateLink);
             console.log('  Image:', imageUrl);
 
