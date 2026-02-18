@@ -720,7 +720,8 @@
             { name: 'כלי עבודה', icon: '🔧' },
             { name: 'צעצועים', icon: '🎮' },
             { name: 'אופנה', icon: '👔' },
-            { name: 'מוצרים לטלפון', icon: '📱' }
+            { name: 'מוצרים לטלפון', icon: '📱' },
+            { name: 'שונות', icon: '📦' }
         ];
 
         let allProducts = [];
@@ -1029,25 +1030,28 @@
                 });
 
                 // מציאת הקטגוריה הטובה ביותר
+                const MIN_SCORE = 4; // לפחות ביטוי של 2 מילים (wordCount*2 = 4)
                 const bestCategory = Object.keys(scores).length > 0
                     ? Object.keys(scores).reduce((a, b) => scores[a] >= scores[b] ? a : b)
                     : null;
+                // בדיקת סף ניקוד — ניקוד נמוך מדי = שונות
+                const validBest = (bestCategory && scores[bestCategory] >= MIN_SCORE) ? bestCategory : null;
 
                 const hasValidCategory = originalCategory && CATEGORIES.find(c => c.name === originalCategory);
 
                 if (!hasValidCategory) {
                     // קטגוריה חסרה/לא תקינה - מקצה לפי הניקוד הטוב ביותר
-                    const newCat = bestCategory || 'מוצרי חשמל';
+                    const newCat = validBest || 'שונות';
                     product['CATEGORY'] = newCat;
                     fixes.push({ title, from: originalCategory || 'ללא', to: newCat, score: scores[newCat] || 0 });
                     fixedCount++;
-                } else if (bestCategory && bestCategory !== originalCategory) {
+                } else if (validBest && validBest !== originalCategory) {
                     const currentScore = scores[originalCategory] || 0;
-                    const bestScore = scores[bestCategory];
-                    // תיקון רק אם הקטגוריה החדשה מנצחת בפחות 4 נקודות (כדי למנוע תיקון יתר)
-                    if (bestScore >= 4 && bestScore > currentScore + 3) {
-                        product['CATEGORY'] = bestCategory;
-                        fixes.push({ title, from: originalCategory, to: bestCategory, score: bestScore });
+                    const bestScore = scores[validBest];
+                    // תיקון רק אם הקטגוריה החדשה מנצחת ב-4+ נקודות (כדי למנוע תיקון יתר)
+                    if (bestScore > currentScore + 3) {
+                        product['CATEGORY'] = validBest;
+                        fixes.push({ title, from: originalCategory, to: validBest, score: bestScore });
                         fixedCount++;
                     }
                 }

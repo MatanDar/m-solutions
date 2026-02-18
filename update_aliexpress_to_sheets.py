@@ -282,12 +282,18 @@ def map_to_category(title, description, aliexpress_category):
         if score > 0:
             category_scores[category] = score
 
+    # סף ניקוד מינימלי: 15 נקודות
+    # ביטוי מילה אחת בכותרת = 5 נקודות (לא מספיק)
+    # ביטוי 2 מילים בכותרת = 4×5 = 20 נקודות (מספיק)
+    MIN_SCORE = 15
+
     if category_scores:
         best_category = max(category_scores, key=category_scores.get)
-        return best_category
+        if category_scores[best_category] >= MIN_SCORE:
+            return best_category
 
-    # ברירת מחדל: מוצרי חשמל (הכי נפוץ ומדויק ברוב המקרים)
-    return 'מוצרי חשמל'
+    # ניקוד נמוך מדי / אין התאמה — שונות
+    return 'שונות'
 
 # ============ REST OF THE CODE ============
 
@@ -500,9 +506,24 @@ def get_existing_products():
         print(f"Error loading products: {e}")
         return []
 
+def shorten_with_isgd(long_url):
+    """קיצור URL עם is.gd — חינמי ומהיר"""
+    try:
+        api_url = f"https://is.gd/create.php?format=simple&url={requests.utils.quote(long_url, safe='')}"
+        response = requests.get(api_url, timeout=5)
+        if response.status_code == 200:
+            short_url = response.text.strip()
+            if short_url.startswith('https://is.gd/') and len(short_url) < 30:
+                return short_url
+        return ''
+    except Exception as e:
+        print(f"  ⚠️ Short link failed: {e}")
+        return ''
+
+
 def add_products_to_sheet(products):
     print(f"\nAdding {len(products)} products to sheet...")
-    
+
     try:
         credentials_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
         credentials_dict = json.loads(credentials_json)
@@ -510,30 +531,43 @@ def add_products_to_sheet(products):
             credentials_dict,
             scopes=['https://www.googleapis.com/auth/spreadsheets']
         )
-        
+
         service = build('sheets', 'v4', credentials=credentials)
-        
-        rows = [[
-            p.get('url', ''),
-            p.get('title', ''),
-            p.get('description', ''),
-            p.get('image', ''),
-            p.get('affiliate_link', ''),
-            p.get('last_updated', ''),
-            p.get('category', 'מוצרים לטלפון')
-        ] for p in products]
-        
+
+        rows = []
+        for i, p in enumerate(products):
+            affiliate_link = p.get('affiliate_link', '')
+            # יצירת Short Link אוטומטית
+            short_link = ''
+            if affiliate_link:
+                print(f"  🔗 Shortening link {i+1}/{len(products)}...")
+                short_link = shorten_with_isgd(affiliate_link)
+                if short_link:
+                    print(f"     ✅ {short_link}")
+                time.sleep(0.5)  # מניעת rate limit
+
+            rows.append([
+                p.get('url', ''),
+                p.get('title', ''),
+                p.get('description', ''),
+                p.get('image', ''),
+                affiliate_link,
+                p.get('last_updated', ''),
+                p.get('category', 'שונות'),
+                short_link
+            ])
+
         body = {'values': rows}
-        
+
         result = service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID,
-            range=f'{SHEET_NAME}!A:G',
+            range=f'{SHEET_NAME}!A:H',
             valueInputOption='RAW',
             body=body
         ).execute()
-        
+
         print(f"✅ Added {result.get('updates', {}).get('updatedRows', 0)} rows")
-        
+
     except Exception as e:
         print(f"Error adding products: {e}")
         import traceback

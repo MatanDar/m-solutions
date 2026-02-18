@@ -143,21 +143,35 @@ const CATEGORY_KEYWORDS = {
   ],
 
   'כלי עבודה': [
-    'tool', 'tools', 'hand tool', 'power tool',
-    'screwdriver', 'drill', 'impact driver', 'hammer', 'wrench', 'spanner',
-    'pliers', 'wire cutter', 'cutter', 'saw', 'jigsaw',
-    'grinder', 'sander', 'polisher',
-    'tape measure', 'measuring tape', 'ruler', 'level',
-    'toolbox', 'tool bag', 'tool set', 'tool kit',
-    'workbench', 'vise', 'clamp',
-    'soldering iron', 'heat gun', 'glue gun',
-    'multimeter', 'voltage tester', 'circuit tester',
-    'car tool', 'car jack', 'tire inflator', 'air pump', 'compressor',
-    'car wax', 'car polish', 'car wash', 'windshield',
-    'car cover', 'seat cover', 'steering wheel cover',
-    'snow chain', 'jump starter', 'jump cable',
-    'paint brush', 'paint roller', 'spray gun',
-    'ladder', 'scaffold'
+    // כלי יד — ספציפיים בלבד
+    'tool set', 'tool kit', 'hand tool', 'power tool',
+    'screwdriver set', 'screwdriver bit', 'electric screwdriver',
+    'cordless drill', 'electric drill', 'drill bit', 'drill press',
+    'impact driver', 'impact wrench',
+    'claw hammer', 'rubber mallet', 'sledge hammer',
+    'adjustable wrench', 'torque wrench', 'socket wrench', 'wrench set',
+    'combination pliers', 'needle nose pliers', 'locking pliers',
+    'wire cutter', 'cable cutter', 'pipe cutter', 'bolt cutter',
+    'jigsaw', 'circular saw', 'reciprocating saw', 'hand saw',
+    'angle grinder', 'bench grinder', 'belt sander', 'orbital sander',
+    // מדידה — ספציפי
+    'measuring tape', 'tape measure',
+    'spirit level', 'laser level', 'bubble level',
+    'digital caliper', 'vernier caliper', 'laser distance',
+    // ארגון כלים
+    'toolbox', 'tool box', 'tool bag', 'tool organizer', 'tool chest',
+    // חשמל ואלקטרוניקה
+    'soldering iron', 'soldering station', 'heat gun', 'hot glue gun',
+    'multimeter', 'voltage tester', 'wire stripper', 'crimping tool',
+    // בטיחות עבודה
+    'safety glasses', 'work gloves', 'ear muffs', 'dust mask', 'face shield',
+    // רכב
+    'car jack', 'floor jack', 'jump starter', 'tire inflator',
+    'obd scanner', 'automotive tool', 'car repair tool',
+    // עבודות גינה ובנייה
+    'step ladder', 'extension ladder', 'folding ladder',
+    'sandpaper', 'grinding disc', 'cutting disc', 'abrasive pad',
+    'cable tie', 'zip tie', 'hose clamp'
   ],
 
   'צעצועים': [
@@ -226,12 +240,22 @@ function smartCategorize(title, description) {
     if (score > 0) scores[category] = score;
   }
 
+  // סף ניקוד מינימלי: 15 נקודות = לפחות התאמה אחת של ביטוי 2 מילים בכותרת
+  // ביטוי מילה אחת בכותרת = 5 נקודות (לא מספיק)
+  // ביטוי 2 מילים בכותרת = 4×5 = 20 נקודות (מספיק)
+  const MIN_SCORE = 15;
+
   if (Object.keys(scores).length === 0) {
-    Logger.log(`No match for: "${titleLower.substring(0, 60)}" → default: מוצרי חשמל`);
-    return 'מוצרי חשמל';
+    Logger.log(`No match for: "${titleLower.substring(0, 60)}" → שונות`);
+    return 'שונות';
   }
 
   const best = Object.keys(scores).reduce((a, b) => scores[a] >= scores[b] ? a : b);
+  if (scores[best] < MIN_SCORE) {
+    Logger.log(`Weak match (${scores[best]} pts) for: "${titleLower.substring(0, 50)}" → שונות`);
+    return 'שונות';
+  }
+
   Logger.log(`Categorized: "${titleLower.substring(0, 50)}..." → ${best} (score: ${scores[best]})`);
   return best;
 }
@@ -465,7 +489,7 @@ function buildWhatsAppMessage(title, description, link, category) {
   const emojis = {
     'מוצרי חשמל': '🔌', 'מטבח ובית': '🍳', 'ספורט וכושר': '⚽',
     'תיקים ואביזרים': '👜', 'כלי עבודה': '🔧', 'צעצועים': '🎮',
-    'אופנה': '👔', 'מוצרים לטלפון': '📱'
+    'אופנה': '👔', 'מוצרים לטלפון': '📱', 'שונות': '📦'
   };
   const emoji = emojis[category] || '🛍️';
 
