@@ -139,37 +139,6 @@
             transition: all 0.3s ease;
         }
 
-        /* WhatsApp Button */
-        .whatsapp-btn {
-            position: absolute;
-            top: 20px;
-            left: 85px;
-            width: 50px;
-            height: 50px;
-            background: #25D366;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
-            transition: all 0.3s ease;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .whatsapp-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
-            background: #20BA5A;
-        }
-
-        .whatsapp-btn svg {
-            fill: white;
-            width: 28px;
-            height: 28px;
-        }
-
         /* QR Code Section */
         .qr-code-container {
             position: fixed;
@@ -525,18 +494,6 @@
                 height: 45px;
             }
             
-            .whatsapp-btn {
-                top: 15px;
-                left: 15px;
-                width: 45px;
-                height: 45px;
-            }
-            
-            .whatsapp-btn svg {
-                width: 24px;
-                height: 24px;
-            }
-            
             h1 {
                 font-size: 1.5rem;
             }
@@ -601,13 +558,6 @@
         <button class="share-btn" onclick="shareWebsite()" title="שתף את האתר">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
-            </svg>
-        </button>
-        
-        <!-- WhatsApp Daily Message Button -->
-        <button class="whatsapp-btn" onclick="generateWhatsAppMessage()" title="צור הודעה יומית ל-WhatsApp">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
             </svg>
         </button>
         
@@ -821,93 +771,299 @@
             return images;
         }
 
-        // Auto-fix category system - detects and FIXES miscategorized products
+        // ============================================================
+        // מיון חכם לפי כותרת בלבד - Title-Only Smart Categorization
+        // ============================================================
         function autoFixProductCategories() {
+            // מילות מפתח מדויקות - phrases מרובות מילים מקבלות ניקוד גבוה יותר
+            // משתמשים בכותרת בלבד (לא בתיאור) - הרבה יותר מדויק!
             const categoryKeywords = {
-                'מוצרי חשמל': ['חשמל', 'סוללה', 'טעינה', 'חשמלי', 'power', 'electric', 'battery', 'charger', 'cable', 'adapter', 'usb', 'כבל', 'מטען', 'led', 'אור', 'תאורה', 'lamp', 'light'],
-                'מטבח ובית': ['מטבח', 'בישול', 'כלי', 'סיר', 'kitchen', 'cook', 'utensil', 'pot', 'pan', 'plate', 'ניקוי', 'clean', 'ארגון', 'storage'],
-                'ספורט וכושר': ['ספורט', 'כושר', 'אימון', 'ריצה', 'sport', 'fitness', 'workout', 'running', 'gym', 'yoga', 'משקל', 'weight', 'training'],
-                'תיקים ואביזרים': ['תיק', 'ארנק', 'תרמיל', 'bag', 'backpack', 'wallet', 'purse', 'pouch', 'תיק גב'],
-                'כלי עבודה': ['כלי', 'מברג', 'פטיש', 'מקדחה', 'tool', 'drill', 'hammer', 'screwdriver', 'wrench', 'מפתח', 'ברגים', 'screw'],
-                'צעצועים': ['צעצוע', 'משחק', 'ילדים', 'toy', 'game', 'kids', 'children', 'play', 'בובה', 'doll', 'lego'],
-                'אופנה': ['חולצה', 'מכנס', 'שמלה', 'נעל', 'בגד', 'shirt', 'pants', 'dress', 'shoes', 'clothing', 'fashion', 'jacket', 'socks', 'גרביים', 'מעיל'],
-                'מוצרים לטלפון': ['טלפון', 'סמארטפון', 'מסך', 'מגן', 'phone', 'smartphone', 'screen', 'case', 'cover', 'mobile', 'iphone', 'samsung', 'אוזניות', 'earbuds', 'headphones']
+                'מוצרים לטלפון': [
+                    // מגנים ומסכים
+                    'phone case', 'iphone case', 'samsung case', 'phone cover', 'phone skin', 'back cover',
+                    'screen protector', 'tempered glass', 'glass protector', 'privacy glass',
+                    // סלפי ואחיזה
+                    'selfie stick', 'selfie ring', 'ring light', 'phone grip', 'phone ring',
+                    // עמדות ומחזיקים
+                    'phone holder', 'phone mount', 'car mount', 'car phone mount', 'phone stand',
+                    'phone dock', 'phone wallet', 'phone strap', 'phone pouch',
+                    // טעינה לטלפון
+                    'power bank', 'wireless charger', 'magsafe', 'magnetic charger', 'fast charger pad',
+                    // אוזניות
+                    'earbuds', 'airpods', 'tws', 'true wireless', 'in-ear',
+                    // כבלים לטלפון
+                    'lightning cable', 'lightning charger', 'for iphone', 'for ipad',
+                    'for samsung', 'for android', 'for xiaomi', 'for huawei',
+                    // מצלמה לטלפון
+                    'phone lens', 'phone camera lens', 'clip lens', 'fisheye lens',
+                    // מותגים שמשמעותם טלפון
+                    'ipad', 'airpods',
+                    // מפורשות טלפון
+                    'mobile phone', 'smartphone', 'android phone'
+                ],
+                'מוצרי חשמל': [
+                    // בית חכם
+                    'smart home', 'smart plug', 'smart switch', 'smart bulb', 'smart light',
+                    'smart lamp', 'smart socket', 'alexa compatible', 'google home',
+                    // מצלמות אבטחה
+                    'security camera', 'ip camera', 'wifi camera', 'cctv', 'nvr', 'dvr',
+                    'outdoor camera', 'indoor camera', 'baby monitor',
+                    // שואבי אבק ומנקות
+                    'robot vacuum', 'vacuum cleaner', 'robotic cleaner', 'floor cleaner',
+                    // מזגנים ומאווררים
+                    'air conditioner', 'air cooler', 'cooling fan', 'electric fan',
+                    'tower fan', 'ceiling fan', 'portable ac',
+                    // מטהרי אוויר
+                    'air purifier', 'humidifier', 'dehumidifier', 'air diffuser',
+                    // תאורה
+                    'led strip', 'led light strip', 'strip light', 'neon light',
+                    'desk lamp', 'floor lamp', 'table lamp', 'bedside lamp', 'led bulb',
+                    // מקרנים
+                    'projector', 'mini projector', 'portable projector', 'home theater',
+                    // מצלמות
+                    'dash cam', 'dashcam', 'car camera', 'action camera', 'body camera',
+                    // רמקולים
+                    'bluetooth speaker', 'portable speaker', 'soundbar', 'sound bar',
+                    'wireless speaker', 'outdoor speaker',
+                    // שעוני חכם
+                    'smart watch', 'smartwatch', 'fitness band', 'fitness tracker', 'smart band',
+                    // מוצרי טיפוח חשמלי
+                    'electric kettle', 'electric razor', 'electric shaver', 'electric toothbrush',
+                    'hair dryer', 'hair straightener', 'curling iron', 'epilator',
+                    // ציוד חשמלי
+                    'usb hub', 'usb splitter', 'power strip', 'extension cord', 'surge protector',
+                    'voltage tester', 'multimeter', 'soldering iron', 'heat gun',
+                    'battery charger', 'battery pack', 'solar panel', 'solar charger',
+                    // רחפנים ורכבים
+                    'drone', 'quadcopter', 'fpv', 'rc plane', 'rc drone',
+                    // טלוויזיה ומולטימדיה
+                    'smart tv', 'tv box', 'android box', 'media player', 'hdmi',
+                    // תחבורה חשמלית
+                    'electric scooter', 'electric bicycle', 'e-bike', 'electric skateboard'
+                ],
+                'מטבח ובית': [
+                    // בישול ואפייה
+                    'kitchen', 'cooking', 'baking', 'frying pan', 'sauce pan', 'wok', 'pot set',
+                    'knife set', 'cutting board', 'chopping board', 'peeler', 'grater', 'colander',
+                    'spatula', 'ladle', 'tongs', 'whisk', 'rolling pin',
+                    // אחסון מזון
+                    'food container', 'lunch box', 'food storage', 'mason jar', 'vacuum seal bag',
+                    'meal prep', 'bento box',
+                    // ממוצרי קפה ותה
+                    'coffee maker', 'coffee grinder', 'french press', 'tea infuser', 'tea strainer',
+                    'blender', 'juicer', 'toaster', 'waffle maker', 'sandwich maker', 'egg cooker',
+                    // ארגון מטבח
+                    'dish rack', 'dish drying', 'kitchen organizer', 'spice rack',
+                    'drawer organizer', 'cabinet organizer', 'countertop organizer',
+                    // אמבטיה ושירותים
+                    'toilet brush', 'shower curtain', 'soap dispenser', 'bath towel',
+                    'bathroom organizer', 'toilet paper holder',
+                    // כביסה וניקיון
+                    'laundry bag', 'clothes hanger', 'clothes rack', 'ironing board',
+                    'mop', 'broom', 'cleaning brush', 'sponge', 'microfiber cloth', 'dustpan',
+                    // מיטה ושינה
+                    'bed sheet', 'pillow case', 'blanket', 'quilt', 'duvet cover', 'mattress',
+                    // עיצוב הבית
+                    'curtain', 'tablecloth', 'placemats', 'coaster', 'candle holder',
+                    'picture frame', 'wall sticker', 'wall art', 'wall clock', 'plant pot',
+                    'doormat', 'bath mat', 'rug', 'carpet', 'chair cushion', 'sofa cover',
+                    // כלים לחדר אוכל
+                    'dinnerware', 'plate set', 'bowl set', 'mug', 'glass set', 'cutlery set'
+                ],
+                'ספורט וכושר': [
+                    // ציוד כושר
+                    'yoga mat', 'resistance band', 'pull up bar', 'push up board', 'ab roller',
+                    'jump rope', 'skipping rope', 'dumbbell', 'kettlebell', 'barbell', 'weight plate',
+                    'gym gloves', 'weightlifting belt', 'knee support', 'knee brace',
+                    'wrist wrap', 'ankle support', 'elbow support',
+                    // ביגוד ספורט
+                    'running shoes', 'sports shoes', 'hiking boots', 'cycling shoes', 'trail shoes',
+                    'sports bra', 'gym shorts', 'compression pants', 'sportswear',
+                    'running shirt', 'athletic wear',
+                    // כדורים ומחבטים
+                    'football', 'soccer ball', 'basketball', 'volleyball', 'tennis racket',
+                    'badminton racket', 'table tennis', 'ping pong paddle', 'golf club',
+                    // שחייה
+                    'swimming goggles', 'swim cap', 'swimwear', 'diving mask', 'snorkel',
+                    // קמפינג וטיולים
+                    'camping tent', 'sleeping bag', 'hiking backpack', 'trekking pole', 'camping stove',
+                    // אופניים
+                    'bicycle', 'bike helmet', 'cycling gloves', 'cycling jersey', 'bike light',
+                    // אגרוף ואומנויות לחימה
+                    'boxing gloves', 'punching bag', 'martial arts', 'mma gloves',
+                    // יוגה ופילאטיס
+                    'yoga block', 'yoga strap', 'foam roller', 'pilates', 'stretching'
+                ],
+                'תיקים ואביזרים': [
+                    // תרמילים ותיקים
+                    'backpack', 'school bag', 'laptop bag', 'shoulder bag', 'crossbody bag',
+                    'messenger bag', 'sling bag', 'fanny pack', 'waist bag', 'belt bag',
+                    'tote bag', 'handbag', 'clutch bag', 'evening bag', 'work bag',
+                    'travel bag', 'duffel bag', 'gym bag', 'weekender bag', 'diaper bag',
+                    'camera bag', 'hiking bag',
+                    // ארנקים
+                    'wallet', 'card holder', 'money clip', 'coin purse', 'passport holder',
+                    'card wallet', 'slim wallet', 'leather wallet',
+                    // מזוודות
+                    'luggage', 'suitcase', 'trolley bag', 'travel organizer', 'packing cube',
+                    // תכשיטים
+                    'necklace', 'bracelet', 'earrings', 'ring jewelry', 'anklet',
+                    'pendant', 'charm bracelet', 'statement necklace',
+                    // משקפיים
+                    'sunglasses', 'reading glasses', 'eyeglass frame', 'blue light glasses',
+                    // כובעים ומטפחות
+                    'baseball cap', 'trucker hat', 'beanie hat', 'bucket hat', 'sun hat',
+                    'wool hat', 'snapback', 'visor hat',
+                    // אביזרי שיער וצעיפים
+                    'scarf', 'shawl', 'hair band', 'hair clip', 'hair scrunchie', 'hair accessory',
+                    // חגורות ורצועות שעון
+                    'leather belt', 'watch band', 'watch strap', 'apple watch band'
+                ],
+                'כלי עבודה': [
+                    // כלי יד
+                    'screwdriver set', 'wrench set', 'pliers', 'hammer', 'saw', 'handsaw',
+                    'hex key', 'allen key', 'socket set', 'torque wrench', 'adjustable wrench',
+                    // מדידה
+                    'measuring tape', 'tape measure', 'spirit level', 'laser level', 'laser measure',
+                    'digital caliper', 'ruler', 'angle finder',
+                    // כלי חיתוך
+                    'utility knife', 'box cutter', 'wire stripper', 'crimping tool', 'cable cutter',
+                    // כלים חשמליים
+                    'electric drill', 'cordless drill', 'drill bit', 'impact driver', 'electric screwdriver',
+                    'jigsaw', 'circular saw', 'angle grinder', 'soldering iron', 'heat gun', 'hot glue gun',
+                    // ארגון כלים
+                    'tool set', 'tool kit', 'tool box', 'tool bag', 'workbench', 'tool organizer',
+                    // פנסים ותאורת עבודה
+                    'flashlight', 'headlamp', 'work light', 'led torch', 'tactical light',
+                    // סולמות
+                    'ladder', 'step ladder', 'extension ladder', 'folding ladder',
+                    // חומרים
+                    'sandpaper', 'grinding disc', 'cutting disc', 'abrasive',
+                    // בטיחות
+                    'safety glasses', 'work gloves', 'ear protection', 'dust mask', 'face shield',
+                    // רכב ואוטומוטיב
+                    'cable tie', 'zip tie', 'hose clamp', 'car jack', 'car repair tool',
+                    'automotive tool', 'oil filter wrench', 'tire inflator', 'jump starter'
+                ],
+                'צעצועים': [
+                    // לגו ובלוקים
+                    'lego', 'building blocks', 'wooden blocks', 'magnetic tiles',
+                    'construction toy', 'block set',
+                    // פאזלים
+                    'puzzle', 'jigsaw puzzle', '3d puzzle', 'wooden puzzle',
+                    // מכוניות שלט
+                    'remote control car', 'rc car', 'rc truck', 'rc robot', 'rc helicopter',
+                    'remote control vehicle', 'electric car toy',
+                    // רכבים לילדים
+                    'toy car', 'toy truck', 'toy train', 'train set', 'diecast car',
+                    // פיגרות ומודלים
+                    'action figure', 'anime figure', 'model kit', 'model airplane',
+                    // בובות
+                    'doll house', 'baby doll', 'stuffed animal', 'plush toy', 'teddy bear',
+                    'stuffed dinosaur', 'plush unicorn',
+                    // פידג\'ט וסנסורי
+                    'fidget spinner', 'fidget cube', 'pop it', 'stress ball', 'sensory toy',
+                    'kinetic sand', 'slime kit', 'play doh',
+                    // משחקי קופסה
+                    'board game', 'card game', 'chess set', 'checkers', 'dominoes',
+                    // משחקי חוץ
+                    'kite', 'water gun', 'bubble wand', 'frisbee', 'outdoor toy',
+                    // צעצועים חינוכיים
+                    'educational toy', 'learning toy', 'montessori toy', 'stem toy',
+                    'alphabet toy', 'number toy',
+                    // אופניים וקורקינטים לילדים
+                    'kids bicycle', 'balance bike', 'kids scooter', 'tricycle', 'ride on'
+                ],
+                'אופנה': [
+                    // חולצות
+                    't-shirt', 'tshirt', 'polo shirt', 'dress shirt', 'blouse', 'crop top',
+                    'tank top', 'tube top', 'off shoulder',
+                    // מכנסיים
+                    'jeans', 'denim jeans', 'chinos', 'trousers', 'joggers', 'sweatpants',
+                    'wide leg', 'cargo pants', 'skinny pants',
+                    // שמלות וחצאיות
+                    'dress', 'skirt', 'mini skirt', 'maxi dress', 'sundress',
+                    'evening dress', 'party dress', 'floral dress',
+                    // ג\'קטים ומעילים
+                    'denim jacket', 'leather jacket', 'bomber jacket', 'windbreaker jacket',
+                    'down jacket', 'puffer jacket', 'winter coat', 'trench coat', 'parka',
+                    'hoodie', 'sweatshirt', 'cardigan', 'sweater', 'pullover',
+                    // הלבשה תחתונה וגרביים
+                    'underwear', 'boxers', 'briefs', 'bra', 'lingerie',
+                    'socks', 'stockings', 'leggings', 'tights',
+                    // נעלים
+                    'sneakers', 'running shoes', 'casual shoes', 'loafers', 'oxford shoes',
+                    'ankle boots', 'knee boots', 'chelsea boots', 'sandals', 'flip flops',
+                    'high heels', 'wedge heels', 'platform shoes', 'slippers',
+                    // בגדי ים
+                    'bikini', 'one piece swimsuit', 'swimming trunks', 'beach shorts',
+                    'cover up', 'beach dress',
+                    // ביגוד מיוחד
+                    'plus size', 'oversized', 'slim fit', 'regular fit',
+                    "men's shirt", "women's dress", "ladies blouse", "kids clothes"
+                ]
             };
 
             let fixedCount = 0;
             const fixes = [];
-            
-            allProducts.forEach((product, index) => {
+
+            allProducts.forEach(product => {
                 const originalCategory = product['CATEGORY'];
-                const title = (product['Title'] || product['TITLE'] || '').toLowerCase();
-                const description = (product['Description'] || product['DESCRIPTION'] || '').toLowerCase();
-                const fullText = title + ' ' + description;
-                
-                // Check if category exists
-                if (!originalCategory || !CATEGORIES.find(c => c.name === originalCategory)) {
-                    // Try to find best category
-                    let bestMatch = {category: 'מוצרי חשמל', score: 0};
-                    
-                    Object.entries(categoryKeywords).forEach(([cat, keywords]) => {
-                        const matchCount = keywords.filter(kw => fullText.includes(kw.toLowerCase())).length;
-                        if (matchCount > bestMatch.score) {
-                            bestMatch = {category: cat, score: matchCount};
-                        }
-                    });
-                    
-                    product['CATEGORY'] = bestMatch.category;
-                    fixes.push({
-                        product: product['Title'] || product['TITLE'],
-                        from: originalCategory || 'ללא קטגוריה',
-                        to: bestMatch.category,
-                        reason: 'קטגוריה חסרה או לא תקינה'
-                    });
-                    fixedCount++;
-                    return;
-                }
-                
-                // Check if product matches its assigned category
-                const categoryWords = categoryKeywords[originalCategory] || [];
-                const currentCategoryScore = categoryWords.filter(kw => fullText.includes(kw.toLowerCase())).length;
-                
-                // Find best matching category
-                let bestMatch = {category: originalCategory, score: currentCategoryScore};
+                // ===== שימוש בכותרת בלבד - Title ONLY =====
+                const title = (product['Title'] || product['TITLE'] || '').toLowerCase().trim();
+
+                if (!title) return;
+
+                // חישוב ניקוד לכל קטגוריה לפי התאמת מילות מפתח בכותרת
+                const scores = {};
                 Object.entries(categoryKeywords).forEach(([cat, keywords]) => {
-                    const matchCount = keywords.filter(kw => fullText.includes(kw.toLowerCase())).length;
-                    if (matchCount > bestMatch.score + 1) { // Need at least 2 more matches to switch
-                        bestMatch = {category: cat, score: matchCount};
+                    let score = 0;
+                    for (const keyword of keywords) {
+                        if (title.includes(keyword.toLowerCase())) {
+                            // ביטויים מרובי מילים מקבלים ניקוד גבוה יותר (יותר מדויקים)
+                            const wordCount = keyword.trim().split(/\s+/).length;
+                            score += wordCount >= 2 ? wordCount * 2 : 1;
+                        }
                     }
+                    if (score > 0) scores[cat] = score;
                 });
-                
-                // Auto-fix if better category found
-                if (bestMatch.category !== originalCategory && bestMatch.score > 0) {
-                    product['CATEGORY'] = bestMatch.category;
-                    fixes.push({
-                        product: product['Title'] || product['TITLE'],
-                        from: originalCategory,
-                        to: bestMatch.category,
-                        reason: `זוהו ${bestMatch.score} מילות מפתח מתאימות`
-                    });
+
+                // מציאת הקטגוריה הטובה ביותר
+                const bestCategory = Object.keys(scores).length > 0
+                    ? Object.keys(scores).reduce((a, b) => scores[a] >= scores[b] ? a : b)
+                    : null;
+
+                const hasValidCategory = originalCategory && CATEGORIES.find(c => c.name === originalCategory);
+
+                if (!hasValidCategory) {
+                    // קטגוריה חסרה/לא תקינה - מקצה לפי הניקוד הטוב ביותר
+                    const newCat = bestCategory || 'מוצרי חשמל';
+                    product['CATEGORY'] = newCat;
+                    fixes.push({ title, from: originalCategory || 'ללא', to: newCat, score: scores[newCat] || 0 });
                     fixedCount++;
+                } else if (bestCategory && bestCategory !== originalCategory) {
+                    const currentScore = scores[originalCategory] || 0;
+                    const bestScore = scores[bestCategory];
+                    // תיקון רק אם הקטגוריה החדשה מנצחת בפחות 4 נקודות (כדי למנוע תיקון יתר)
+                    if (bestScore >= 4 && bestScore > currentScore + 3) {
+                        product['CATEGORY'] = bestCategory;
+                        fixes.push({ title, from: originalCategory, to: bestCategory, score: bestScore });
+                        fixedCount++;
+                    }
                 }
             });
-            
+
             if (fixes.length > 0) {
-                console.group('🔧 תיקון אוטומטי של קטגוריות:');
-                console.log(`✅ תוקנו ${fixedCount} מוצרים אוטומטית!\n`);
+                console.group(`🔧 מיון חכם (כותרת בלבד) - תוקנו ${fixedCount} מוצרים:`);
                 fixes.forEach(fix => {
-                    console.log(`📦 ${fix.product}`);
-                    console.log(`   ❌ מקטגוריה: ${fix.from}`);
-                    console.log(`   ✅ לקטגוריה: ${fix.to}`);
-                    console.log(`   💡 סיבה: ${fix.reason}`);
-                    console.log('---');
+                    console.log(`📦 "${fix.title.substring(0, 50)}..."`);
+                    console.log(`   ${fix.from} → ✅ ${fix.to} (ניקוד: ${fix.score})`);
                 });
                 console.groupEnd();
-                console.log(`\n✨ כל המוצרים עכשיו בקטגוריות הנכונות!\n`);
             } else {
-                console.log('✅ כל המוצרים כבר בקטגוריות הנכונות!');
+                console.log('✅ כל המוצרים בקטגוריות הנכונות!');
             }
-            
+
             return fixedCount;
         }
 
@@ -1160,149 +1316,6 @@
                     } catch (clipErr) {
                         alert('לא ניתן לשתף כרגע 😔');
                     }
-                }
-            }
-        }
-
-        async function generateWhatsAppMessage() {
-            // Check if products are loaded
-            if (!allProducts || allProducts.length === 0) {
-                alert('⏳ אנא המתן שהמוצרים ייטענו...');
-                return;
-            }
-
-            // Select random product
-            const randomIndex = Math.floor(Math.random() * allProducts.length);
-            const product = allProducts[randomIndex];
-            
-            // DEBUG: Show what we have
-            console.log('🔍 Selected product:', product);
-            console.log('📋 Available keys:', Object.keys(product));
-
-            // Get values with ALL possible column name variations
-            const title = product.Title || product.TITLE || product.title || 'מוצר מומלץ';
-            const description = product.Description || product.DESCRIPTION || product.description || '';
-            // Try to get Short Link first (column H), fallback to Affiliate Link (column E)
-            const shortLink = product['Short Link'] || product['SHORT LINK'] || product['short link'] || '';
-            const affiliateLink = shortLink || product['Affiliate Link'] || product.LINK || product.Link || product.link || product.URL || product.url || '';
-            const imageUrl = product.Image || product.IMAGE || product.image || '';
-            
-            console.log('✅ Extracted values:');
-            console.log('  Title:', title);
-            console.log('  Description:', description.substring(0, 50) + '...');
-            console.log('  Short Link:', shortLink);
-            console.log('  Affiliate Link:', affiliateLink);
-            console.log('  Image:', imageUrl);
-
-            // Truncate description
-            let shortDescription = description;
-            if (shortDescription.length > 200) {
-                shortDescription = shortDescription.substring(0, 200) + '...';
-            }
-
-            // Build message - exactly like the screenshot
-            const message = `🔥 *מוצר היום מ-M-SOLUTIONS!* 🔥
-
-📦 *${title}*
-
-${shortDescription}
-
-🛒 *להזמנה ישירות באלי אקספרס:*
-${affiliateLink || '⚠️ אין קישור זמין'}
-
-━━━━━━━━━━━━━━━━━━━━
-💎 משלוח מהיר | אחריות מלאה
-━━━━━━━━━━━━━━━━━━━━`;
-
-            try {
-                // Try Share API first (best for mobile!)
-                if (navigator.share && imageUrl) {
-                    console.log('📱 Trying Share API with image...');
-                    
-                    // Fetch image as blob
-                    try {
-                        const response = await fetch(imageUrl);
-                        const blob = await response.blob();
-                        const file = new File([blob], 'product.jpg', { type: blob.type });
-                        
-                        // Share with image and text
-                        await navigator.share({
-                            title: 'מוצר מומלץ מ-M-SOLUTIONS',
-                            text: message,
-                            files: [file]
-                        });
-                        
-                        console.log('✅ Shared successfully with image!');
-                        return; // Success! Exit function
-                        
-                    } catch (shareError) {
-                        console.log('⚠️ Share with image failed, trying text only...');
-                        
-                        // Fallback: Share text only + link to image
-                        const messageWithImageLink = message + `\n\n📸 תמונת המוצר:\n${imageUrl}`;
-                        
-                        await navigator.share({
-                            title: 'מוצר מומלץ מ-M-SOLUTIONS',
-                            text: messageWithImageLink
-                        });
-                        
-                        console.log('✅ Shared successfully (text + image link)!');
-                        return; // Success! Exit function
-                    }
-                    
-                } else if (navigator.share) {
-                    // No image, just share text
-                    console.log('📱 Trying Share API (text only)...');
-                    
-                    await navigator.share({
-                        title: 'מוצר מומלץ מ-M-SOLUTIONS',
-                        text: message
-                    });
-                    
-                    console.log('✅ Shared successfully!');
-                    return; // Success! Exit function
-                }
-                
-                // Fallback for desktop or browsers without Share API
-                console.log('💻 Share API not available - using WhatsApp Web...');
-                
-                // Copy message to clipboard
-                await navigator.clipboard.writeText(message);
-                
-                // Open WhatsApp Web with pre-filled message
-                const encodedMessage = encodeURIComponent(message);
-                const whatsappURL = `https://web.whatsapp.com/send?text=${encodedMessage}`;
-                window.open(whatsappURL, '_blank');
-                
-                // Show instructions
-                let alertMessage = '✅ הודעה הועתקה והוואטסאפ נפתח!\n\n';
-                if (imageUrl) {
-                    alertMessage += '📸 עכשיו:\n';
-                    alertMessage += '1. פתח תמונה: ' + imageUrl.substring(0, 40) + '...\n';
-                    alertMessage += '2. שמור אותה\n';
-                    alertMessage += '3. חזור לוואטסאפ\n';
-                    alertMessage += '4. העלה את התמונה\n';
-                    alertMessage += '5. הדבק את הטקסט (כבר מועתק)\n';
-                    alertMessage += '6. שלח! 🚀';
-                } else {
-                    alertMessage += '📱 בחר את הקבוצה ושלח!';
-                }
-                
-                alert(alertMessage);
-                
-                console.log('✅ Message copied and WhatsApp opened');
-                console.log('📱 Message content:', message);
-                
-            } catch (err) {
-                console.error('❌ Error:', err);
-                
-                // Last resort fallback - just copy to clipboard
-                try {
-                    await navigator.clipboard.writeText(message);
-                    alert('📋 הודעה הועתקה!\n\nפתח את WhatsApp ידנית והדבק את ההודעה.\n\n' + 
-                          (imageUrl ? '📸 קישור לתמונה:\n' + imageUrl : ''));
-                } catch (clipErr) {
-                    alert('❌ שגיאה. נסה שוב או בדוק את ההגדרות של הדפדפן.');
                 }
             }
         }

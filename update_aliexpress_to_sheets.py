@@ -19,81 +19,275 @@ except ImportError:
     TRANSLATOR_AVAILABLE = False
     print("⚠️ googletrans not available, using English only")
 
-# ============ CATEGORY MAPPING ============
-# מיפוי חכם של מילות מפתח לקטגוריות
+# ============ CATEGORY MAPPING - Title-First Smart System ============
+# מיפוי חכם: הכותרת מקבלת משקל גבוה, phrases מרובות מילים = יותר מדויק
+# ברירת מחדל: מוצרי חשמל (לא מוצרים לטלפון - מדויק יותר)
+
 CATEGORY_MAPPING = {
+    'מוצרים לטלפון': [
+        # מגנים ומסכים - ספציפי מאוד
+        'phone case', 'iphone case', 'samsung case', 'phone cover', 'phone skin', 'back cover',
+        'screen protector', 'tempered glass', 'glass protector', 'privacy glass',
+        # סלפי ואחיזה
+        'selfie stick', 'selfie ring', 'phone grip', 'phone ring holder', 'finger ring holder',
+        # עמדות ומחזיקים לטלפון
+        'phone holder', 'phone mount', 'car mount', 'car phone mount', 'phone stand',
+        'phone dock', 'phone wallet case', 'phone strap', 'phone pouch',
+        # טעינה ספציפית לטלפון
+        'power bank', 'wireless charger', 'magsafe', 'magnetic charger', 'charging pad',
+        # אוזניות
+        'earbuds', 'airpods', 'tws', 'true wireless', 'in-ear headphone',
+        # כבלים ספציפיים לטלפון
+        'lightning cable', 'lightning charger', 'for iphone', 'for ipad',
+        'for samsung galaxy', 'for android phone', 'for xiaomi', 'for huawei',
+        # עדשות לטלפון
+        'phone lens', 'phone camera lens', 'clip on lens',
+        # מותגים ספציפיים = טלפון
+        'iphone', 'ipad', 'airpods',
+        # מפורשות טלפון
+        'mobile phone', 'smartphone', 'android phone', 'cell phone'
+    ],
     'מוצרי חשמל': [
-        'consumer electronics', 'lights', 'lighting', 'electrical', 'led', 'lamp', 
-        'bulb', 'power', 'battery', 'appliances', 'gadget', 'device'
+        # בית חכם
+        'smart home', 'smart plug', 'smart switch', 'smart bulb', 'smart light',
+        'smart lamp', 'smart socket', 'wifi smart', 'smart doorbell',
+        # מצלמות אבטחה
+        'security camera', 'ip camera', 'wifi camera', 'cctv', 'nvr system', 'dvr system',
+        'outdoor security', 'indoor security', 'baby monitor',
+        # שואבי אבק חשמליים
+        'robot vacuum', 'vacuum cleaner', 'robotic vacuum', 'cordless vacuum',
+        # מזגנים ומאווררים
+        'air conditioner', 'portable ac', 'air cooler', 'cooling fan',
+        'electric fan', 'tower fan', 'ceiling fan', 'bladeless fan',
+        # מטהרי אוויר ולחות
+        'air purifier', 'humidifier', 'dehumidifier', 'air diffuser', 'essential oil diffuser',
+        # תאורה
+        'led strip', 'led light strip', 'strip light', 'neon light', 'rgb light',
+        'desk lamp', 'floor lamp', 'table lamp', 'bedside lamp', 'led bulb', 'smart bulb',
+        'led grow light', 'grow light',
+        # מקרנים
+        'projector', 'mini projector', 'portable projector', 'home projector',
+        # מצלמות
+        'dash cam', 'dashcam', 'action camera', 'body camera', 'car recorder',
+        # רמקולים (לא אוזניות)
+        'bluetooth speaker', 'portable speaker', 'soundbar', 'sound bar',
+        'wireless speaker', 'outdoor speaker', 'desktop speaker',
+        # שעוני חכם ופיטנס
+        'smart watch', 'smartwatch', 'fitness band', 'fitness tracker', 'smart band',
+        'gps watch', 'sport watch',
+        # מוצרי טיפוח חשמליים
+        'electric kettle', 'electric razor', 'electric shaver', 'electric toothbrush',
+        'hair dryer', 'hair straightener', 'curling iron', 'hair curler', 'epilator',
+        'face massager', 'skin care device',
+        # ציוד חשמלי כללי
+        'usb hub', 'usb splitter', 'power strip', 'extension cord', 'surge protector',
+        'voltage tester', 'multimeter', 'clamp meter', 'soldering iron', 'heat gun', 'hot glue gun',
+        'battery charger', 'solar panel', 'solar charger', 'power inverter',
+        # רחפנים
+        'drone', 'quadcopter', 'fpv drone', 'rc drone', 'aerial drone',
+        # טלוויזיה ומולטימדיה
+        'smart tv', 'tv box', 'android tv box', 'media player', 'hdmi switch',
+        # תחבורה חשמלית
+        'electric scooter', 'e-scooter', 'electric bicycle', 'e-bike', 'electric skateboard',
+        'hover board'
     ],
     'מטבח ובית': [
-        'home', 'kitchen', 'dining', 'tableware', 'cookware', 'appliances',
-        'furniture', 'bedding', 'bath', 'storage', 'organization', 'decor',
-        'garden', 'cleaning', 'laundry', 'towel', 'curtain', 'pillow', 'blanket'
+        # בישול ואפייה
+        'kitchen', 'cooking', 'baking', 'frying pan', 'sauce pan', 'wok pan', 'pot set',
+        'knife set', 'cutting board', 'chopping board', 'peeler', 'grater', 'colander',
+        'spatula', 'ladle', 'silicone tongs', 'whisk', 'rolling pin', 'pizza cutter',
+        # אחסון מזון
+        'food container', 'lunch box', 'food storage', 'mason jar', 'vacuum seal',
+        'meal prep container', 'bento box', 'airtight container',
+        # מוצרי קפה ותה
+        'coffee maker', 'coffee grinder', 'french press', 'tea infuser', 'pour over',
+        'blender', 'juicer', 'toaster oven', 'waffle maker', 'sandwich maker', 'egg cooker',
+        'rice cooker', 'slow cooker', 'instant pot', 'pressure cooker',
+        # ארגון מטבח
+        'dish rack', 'dish drying rack', 'kitchen organizer', 'spice rack', 'spice jar',
+        'drawer organizer', 'cabinet organizer', 'pot rack',
+        # אמבטיה ושירותים
+        'toilet brush', 'shower curtain', 'soap dispenser', 'bath mat set',
+        'bathroom organizer', 'toilet paper holder', 'shower caddy',
+        # כביסה וניקיון
+        'laundry bag', 'clothes hanger', 'drying rack', 'ironing board', 'lint roller',
+        'mop set', 'broom dustpan', 'cleaning brush', 'scrub sponge', 'microfiber towel',
+        # מיטה ושינה
+        'bed sheet set', 'pillow case', 'throw blanket', 'quilt cover', 'duvet cover', 'mattress topper',
+        # עיצוב הבית
+        'shower curtain', 'tablecloth', 'placemats', 'coaster set', 'candle holder',
+        'picture frame', 'wall sticker', 'wall art print', 'wall clock', 'planter pot',
+        'doormat', 'bath mat', 'area rug', 'chair cushion', 'sofa cover', 'throw pillow',
+        # כלים לחדר אוכל
+        'dinnerware set', 'plate set', 'bowl set', 'ceramic mug', 'wine glass', 'cutlery set'
     ],
     'ספורט וכושר': [
-        'sports', 'fitness', 'gym', 'exercise', 'yoga', 'running', 'cycling',
-        'outdoor', 'camping', 'hiking', 'swimming', 'workout', 'training',
-        'athletic', 'ball', 'racket', 'dumbbell', 'weight'
+        # ציוד כושר
+        'yoga mat', 'resistance band', 'pull up bar', 'push up board', 'ab roller wheel',
+        'jump rope', 'skipping rope', 'dumbbell set', 'kettlebell', 'barbell', 'weight plate',
+        'gym gloves', 'weightlifting belt', 'knee sleeve', 'knee brace',
+        'wrist wrap', 'ankle support', 'elbow brace', 'compression sleeve',
+        # ביגוד ספורט
+        'running shoes', 'trail running', 'hiking boots', 'cycling shoes', 'tennis shoes',
+        'sports bra', 'gym shorts', 'compression leggings', 'athletic wear',
+        'running jacket', 'wind breaker running', 'track suit',
+        # כדורים ומחבטים
+        'soccer ball', 'basketball', 'volleyball', 'tennis racket', 'badminton racket',
+        'table tennis paddle', 'ping pong', 'golf club', 'golf ball',
+        # שחייה
+        'swimming goggles', 'swim cap', 'wetsuit', 'diving mask', 'snorkel set',
+        # קמפינג וטיולים
+        'camping tent', 'sleeping bag', 'hiking backpack', 'trekking pole', 'camping stove',
+        'camping lantern', 'survival kit', 'carabiner', 'hammock',
+        # אופניים
+        'bike helmet', 'cycling gloves', 'cycling jersey', 'bike light', 'bike lock',
+        # אגרוף ואומנויות לחימה
+        'boxing gloves', 'punching bag', 'mma gloves', 'kick boxing',
+        # יוגה ופילאטיס
+        'yoga block', 'yoga strap', 'foam roller', 'pilates ring', 'stretching band'
     ],
     'תיקים ואביזרים': [
-        'bags', 'bag', 'luggage', 'backpack', 'wallet', 'handbag', 'purse', 
-        'case', 'pouch', 'travel', 'accessories', 'jewelry', 'watches', 'watch',
-        'sunglasses', 'glasses', 'belt', 'scarf', 'hat', 'gloves', 'bracelet',
-        'necklace', 'earrings', 'ring'
+        # תרמילים ותיקים
+        'backpack', 'school bag', 'laptop backpack', 'shoulder bag', 'crossbody bag',
+        'messenger bag', 'sling bag', 'fanny pack', 'waist bag', 'belt bag',
+        'tote bag', 'handbag', 'clutch purse', 'evening bag', 'work tote',
+        'travel bag', 'duffel bag', 'gym bag', 'weekender bag', 'diaper bag', 'camera bag',
+        # ארנקים
+        'wallet', 'card holder', 'money clip', 'coin purse', 'passport wallet',
+        'rfid wallet', 'slim wallet', 'leather wallet', 'bifold wallet',
+        # מזוודות
+        'luggage set', 'suitcase', 'carry on bag', 'travel organizer', 'packing cube',
+        # תכשיטים
+        'necklace', 'pendant necklace', 'bracelet', 'earrings', 'stud earrings',
+        'anklet', 'charm bracelet', 'statement necklace', 'ring jewelry',
+        # משקפיים
+        'sunglasses', 'reading glasses', 'blue light glasses', 'eyeglass frame',
+        # כובעים
+        'baseball cap', 'trucker hat', 'beanie hat', 'bucket hat', 'sun hat', 'snapback',
+        # אביזרי שיער
+        'hair band', 'scrunchie', 'hair clip', 'hair accessory', 'headband',
+        # חגורות ורצועות שעון
+        'leather belt', 'watch band', 'watch strap', 'apple watch band', 'smartwatch band'
     ],
     'כלי עבודה': [
-        'tools', 'tool', 'hardware', 'construction', 'drill', 'saw', 'hammer',
-        'wrench', 'screwdriver', 'measuring', 'safety', 'industrial',
-        'automotive', 'repair', 'maintenance', 'flashlight', 'knife'
+        # כלי יד
+        'screwdriver set', 'wrench set', 'combination pliers', 'claw hammer', 'hand saw',
+        'hex key set', 'allen wrench', 'socket wrench', 'torque wrench', 'adjustable spanner',
+        # מדידה
+        'measuring tape', 'laser level', 'spirit level', 'laser distance', 'digital caliper',
+        'angle finder', 'protractor',
+        # כלי חיתוך
+        'utility knife', 'box cutter', 'wire stripper', 'crimping tool', 'cable cutter', 'pipe cutter',
+        # כלים חשמליים
+        'electric drill', 'cordless drill', 'drill bit set', 'impact driver', 'rotary tool',
+        'jigsaw', 'circular saw', 'angle grinder', 'belt sander', 'orbital sander',
+        # ארגון כלים
+        'tool set', 'hand tool kit', 'tool box', 'tool bag', 'tool organizer',
+        # פנסים ותאורת עבודה
+        'flashlight', 'headlamp', 'work light', 'tactical flashlight', 'torch',
+        # סולמות
+        'step ladder', 'extension ladder', 'folding ladder', 'telescoping ladder',
+        # בטיחות
+        'safety glasses', 'work gloves', 'ear muffs', 'dust mask', 'n95 mask', 'face shield',
+        # רכב
+        'car jack', 'floor jack', 'jump starter', 'tire inflator', 'oil filter wrench',
+        'automotive tool', 'car repair', 'obd scanner',
+        # חומרים
+        'cable tie', 'zip tie', 'hose clamp', 'sandpaper', 'grinding wheel', 'cutting wheel'
     ],
     'צעצועים': [
-        'toys', 'toy', 'games', 'game', 'hobbies', 'kids', 'children', 'baby', 
-        'puzzle', 'doll', 'action figure', 'model', 'educational', 'remote control',
-        'stuffed', 'plush', 'lego', 'block'
+        # לגו ובלוקים
+        'lego set', 'building blocks', 'wooden blocks', 'magnetic tiles', 'construction set',
+        # פאזלים
+        'jigsaw puzzle', '3d puzzle', 'wooden puzzle', 'floor puzzle',
+        # מכוניות שלט
+        'remote control car', 'rc car', 'rc truck', 'rc robot', 'rc helicopter', 'rc boat',
+        # רכבים לילדים
+        'toy car set', 'toy truck', 'toy train set', 'diecast model', 'die cast car',
+        # פיגרות ומודלים
+        'action figure', 'anime figure', 'model kit', 'gundam',
+        # בובות
+        'doll house', 'baby doll', 'plush toy', 'stuffed animal', 'teddy bear', 'plush unicorn',
+        # פידג׳ט
+        'fidget spinner', 'pop it', 'stress relief toy', 'sensory toy', 'kinetic sand',
+        # יצירה
+        'slime kit', 'play doh set', 'diy craft kit', 'paint set for kids',
+        # משחקי קופסה
+        'board game', 'card game', 'chess set', 'monopoly style', 'tabletop game',
+        # משחקי חוץ
+        'kite flying', 'water gun toy', 'bubble machine', 'lawn game',
+        # צעצועים חינוכיים
+        'educational toy', 'montessori toy', 'stem kit', 'science kit',
+        # אופניים וקורקינטים לילדים
+        'kids bicycle', 'balance bike', 'kids kick scooter', 'ride on toy', 'push car'
     ],
     'אופנה': [
-        'clothing', 'fashion', 'apparel', 'shoes', 'shoe', 'men', 'women', 'dress',
-        'shirt', 'pants', 'jacket', 'coat', 'sweater', 'underwear', 'socks',
-        'boots', 'sneakers', 'sandals', 't-shirt', 'jeans'
-    ],
-    'מוצרים לטלפון': [
-        'phone', 'mobile', 'smartphone', 'charger', 'cable', 'adapter', 
-        'headphone', 'earphone', 'earbuds', 'speaker', 'bluetooth', 'wireless',
-        'usb', 'screen protector', 'phone case', 'selfie stick', 'power bank',
-        'holder', 'stand', 'mount', 'tablet', 'iphone', 'android', 'samsung'
+        # חולצות
+        't-shirt', 'graphic tee', 'polo shirt', 'dress shirt', 'blouse', 'crop top', 'tank top',
+        # מכנסיים
+        'jeans', 'denim pants', 'chino pants', 'cargo trousers', 'jogger pants', 'wide leg pants',
+        # שמלות וחצאיות
+        'midi dress', 'maxi dress', 'mini dress', 'floral dress', 'bodycon dress',
+        'a-line skirt', 'mini skirt', 'pleated skirt',
+        # ג׳קטים ומעילים
+        'denim jacket', 'leather jacket', 'varsity jacket', 'bomber jacket',
+        'hoodie sweatshirt', 'zip up hoodie', 'cardigan sweater', 'knit sweater',
+        'down puffer jacket', 'winter parka', 'trench coat', 'overcoat', 'windbreaker',
+        # הלבשה תחתונה
+        'men underwear', 'women underwear', 'boxer briefs', 'seamless bra', 'sports bra set',
+        'compression socks', 'ankle socks', 'knee high socks',
+        # נעלים
+        'fashion sneakers', 'casual sneakers', 'slip on shoes', 'loafer shoes',
+        'oxford dress shoes', 'ankle boots women', 'knee high boots', 'chelsea boots',
+        'platform sandals', 'flip flops beach', 'high heel pumps', 'wedge sandals',
+        # בגדי ים
+        'bikini set', 'one piece swimsuit', 'swim trunks', 'board shorts', 'rash guard',
+        # ביגוד מיוחד
+        'plus size dress', 'oversized hoodie', 'streetwear', 'vintage style clothing'
     ]
 }
 
+
 def map_to_category(title, description, aliexpress_category):
     """
-    מיפוי חכם לקטגוריה לפי:
-    1. מילות מפתח בכותרת
-    2. מילות מפתח בתיאור
-    3. קטגוריית AliExpress
+    מיפוי חכם לפי כותרת בלבד - Title-First categorization
+
+    עקרונות:
+    1. הכותרת מקבלת משקל x5 (הכי חשוב)
+    2. קטגוריית AliExpress מקבלת x2 (כללי יותר)
+    3. התיאור מקבל x1 (לא משתמשים בו)
+    4. ביטויים מרובי מילים מקבלים ניקוד גבוה יותר (יותר ספציפיים)
+    5. ברירת מחדל: מוצרי חשמל (לא מוצרים לטלפון)
     """
-    text_to_search = f"{title} {description} {aliexpress_category}".lower()
-    
+    title_lower = title.lower()
+    aliexpress_cat_lower = aliexpress_category.lower()
+
     category_scores = {}
-    
+
     for category, keywords in CATEGORY_MAPPING.items():
         score = 0
         for keyword in keywords:
-            if keyword in text_to_search:
-                if keyword in title.lower():
-                    score += 3
-                else:
-                    score += 1
-        
+            kw_lower = keyword.lower()
+            word_count = len(kw_lower.split())
+            # ניקוד גבוה יותר לביטויים ספציפיים (מרובי מילים)
+            phrase_bonus = word_count * 2 if word_count >= 2 else 1
+
+            if kw_lower in title_lower:
+                # כותרת = ניקוד גבוה ביותר (x5)
+                score += phrase_bonus * 5
+            elif kw_lower in aliexpress_cat_lower:
+                # קטגוריית AliExpress = ניקוד בינוני (x2)
+                score += phrase_bonus * 2
+
         if score > 0:
             category_scores[category] = score
-    
+
     if category_scores:
         best_category = max(category_scores, key=category_scores.get)
         return best_category
-    
-    # ברירת מחדל - מוצרים לטלפון
-    return 'מוצרים לטלפון'
+
+    # ברירת מחדל: מוצרי חשמל (הכי נפוץ ומדויק ברוב המקרים)
+    return 'מוצרי חשמל'
 
 # ============ REST OF THE CODE ============
 
