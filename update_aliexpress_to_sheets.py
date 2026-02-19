@@ -559,6 +559,94 @@ def scan_additional_prices(still_missing_url_to_row):
     return found_prices
 
 
+def fetch_prices_by_product_search(missing_products):
+    """
+    Fallback אחרון: מחפש מחיר לכל מוצר חסר דרך aliexpress.affiliate.product.query
+    (חיפוש לפי מילות מפתח מהכותרת).
+    עובד על מוצרים שאינם מופיעים בכלל בתוצאות hotproduct.query.
+    missing_products = list of {'url': str, 'row': int, 'title': str}
+    מחזיר list of {'row': int, 'price': float}
+    """
+    if not missing_products:
+        return []
+
+    print(f"\n🔎 Keyword search fallback: מחפש מחירים ל-{len(missing_products)} מוצרים...")
+    found_prices = []
+
+    for i, item in enumerate(missing_products):
+        url   = item.get('url', '')
+        row   = item.get('row')
+        title = item.get('title', '')
+        target_pid = extract_product_id(url)
+
+        if not target_pid or not title or not row:
+            continue
+
+        # 5 מילות חיפוש ראשונות (לפחות 3 תווים) מהכותרת
+        words = [w for w in title.split() if len(w) >= 3][:5]
+        keywords = ' '.join(words)
+        if not keywords:
+            continue
+
+        try:
+            params = {
+                'app_key':        str(ALIEXPRESS_APP_KEY),
+                'timestamp':      str(int(time.time() * 1000)),
+                'method':         'aliexpress.affiliate.product.query',
+                'sign_method':    'md5',
+                'format':         'json',
+                'v':              '2.0',
+                'keywords':       keywords,
+                'page_size':      '20',
+                'page_no':        '1',
+                'target_currency':'USD',
+                'target_language':'EN',
+                'tracking_id':    str(ALIEXPRESS_TRACKING_ID),
+            }
+            params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
+
+            response = requests.get("https://api-sg.aliexpress.com/sync", params=params, timeout=20)
+            data = response.json()
+
+            result_key = 'aliexpress_affiliate_product_query_response'
+            if result_key not in data:
+                # הצגת תגובה לאבחון בפעם הראשונה בלבד
+                if i == 0:
+                    print(f"    ⚠️ מפתח לא צפוי: {list(data.keys())[:3]}")
+                continue
+
+            products = (data[result_key]
+                        .get('resp_result', {})
+                        .get('result', {})
+                        .get('products', {})
+                        .get('product', []))
+
+            for product in products:
+                if str(product.get('product_id', '')) == target_pid:
+                    price_raw = (product.get('target_sale_price') or
+                                 product.get('sale_price') or
+                                 product.get('target_original_price') or 0)
+                    try:
+                        price = round(float(str(price_raw).replace(',', '') or 0), 2)
+                        if price > 0:
+                            found_prices.append({'row': row, 'price': price})
+                            print(f"    ✅ [{i+1}] ${price} — {title[:45]}")
+                    except (ValueError, TypeError):
+                        pass
+                    break
+
+        except Exception as e:
+            print(f"    ⚠️ שגיאה [{i+1}] {title[:30]}: {e}")
+
+        time.sleep(0.5)  # מניעת rate limit
+
+        if (i + 1) % 20 == 0:
+            print(f"  📊 התקדמות: {i+1}/{len(missing_products)}, נמצאו {len(found_prices)} עד כה...")
+
+    print(f"  ✅ keyword search: נמצאו {len(found_prices)} | {len(missing_products) - len(found_prices)} ללא מחיר")
+    return found_prices
+
+
 def generate_signature(params, secret):
     sorted_params = sorted(params.items())
     sign_string = secret
@@ -1052,27 +1140,46 @@ def main():
         print(f"\n📊 מחירים שנמצאו בסריקה: {len(price_updates)}")
         update_prices_in_sheet(price_updates)
 
-        # Fallback: link.generate עבור מוצרים שלא נמצאו בסריקה ועדיין ללא מחיר
+        # ─── שלב 1: Fallback hotproduct בסדרי מיון שונים ───
         updated_rows = {u['row'] for u in price_updates}
-        still_missing = {
-            p['url']: p['row']
+        still_missing_list = [
+            {'url': p['url'], 'row': p['row'], 'title': p['title']}
             for p in existing_products
             if p.get('row')
             and p['row'] not in updated_rows
-            and not p.get('has_price')  # לא היה מחיר גם לפני ריצה זו
+            and not p.get('has_price')   # לא היה מחיר לפני ריצה זו
             and p.get('url')
-        }
-        if still_missing:
-            extra_prices = scan_additional_prices(still_missing)
+        ]
+
+        if not still_missing_list:
+            print("\n✅ כל המוצרים עודכנו עם מחיר!")
+        else:
+            # Hotproduct supplementary scan
+            still_missing_url_to_row = {item['url']: item['row'] for item in still_missing_list}
+            extra_prices = scan_additional_prices(still_missing_url_to_row)
             if extra_prices:
                 update_prices_in_sheet(extra_prices)
-                remaining_count = len(still_missing) - len(extra_prices)
-                if remaining_count > 0:
-                    print(f"  ℹ️  {remaining_count} מוצרים עדיין ללא מחיר (לא מופיעים בסריקות hotproduct)")
+
+            # ─── שלב 2: Fallback keyword search ───
+            found_rows_extra = {u['row'] for u in extra_prices}
+            still_after_scan = [
+                item for item in still_missing_list
+                if item['row'] not in found_rows_extra
+            ]
+
+            if not still_after_scan:
+                print("\n✅ כל המוצרים עודכנו עם מחיר!")
             else:
-                print(f"  ⚠️  לא נמצאו מחירים נוספים — {len(still_missing)} מוצרים ללא מחיר")
-        else:
-            print("\n✅ כל המוצרים עודכנו עם מחיר!")
+                print(f"\n  ℹ️  {len(still_after_scan)} מוצרים עדיין ללא מחיר — מנסה keyword search...")
+                keyword_prices = fetch_prices_by_product_search(still_after_scan)
+                if keyword_prices:
+                    update_prices_in_sheet(keyword_prices)
+
+                final_missing = len(still_after_scan) - len(keyword_prices)
+                if final_missing > 0:
+                    print(f"  ⚠️  {final_missing} מוצרים ללא מחיר (ייתכן שהוסרו מ-AliExpress)")
+                else:
+                    print("\n✅ כל המוצרים עודכנו עם מחיר!")
 
         print("\n✅ Done!")
         

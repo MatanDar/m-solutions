@@ -569,13 +569,14 @@
             }
 
             .filter-strip {
-                flex-direction: column;
+                flex-wrap: nowrap;
                 gap: 8px;
             }
 
             .filter-select {
-                width: 100%;
-                min-width: unset;
+                min-width: 0;
+                font-size: 0.82rem;
+                padding-left: 28px;
             }
         }
 
@@ -636,12 +637,6 @@
                 <p class="tagline">מוצרים מומלצים מ-AliExpress במחירים משתלמים</p>
                 <p class="subtitle">בחר קטגוריה לצפייה במוצרים 🛍️</p>
                 
-                <!-- About Us Button -->
-                <div style="text-align: center; margin-top: 15px;">
-                    <button onclick="toggleAboutModal()" style="background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%); color: white; border: none; padding: 10px 25px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(167, 139, 250, 0.3); transition: all 0.3s ease;">
-                        📖 קצת עלינו
-                    </button>
-                </div>
             </header>
 
         <!-- About Us Modal (Hidden by default, contains SEO content) -->
@@ -749,6 +744,7 @@
                 <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 15px;">
                     <a href="/" onclick="showCategories(); return false;" style="color: #a78bfa; text-decoration: none; font-weight: 500;">🏠 עמוד הבית</a>
                     <a href="#categories" style="color: #a78bfa; text-decoration: none; font-weight: 500;">📦 כל הקטגוריות</a>
+                    <a href="#" onclick="toggleAboutModal(); return false;" style="color: #a78bfa; text-decoration: none; font-weight: 500;">📖 קצת עלינו</a>
                     <a href="https://www.aliexpress.com" target="_blank" rel="noopener noreferrer" style="color: #a78bfa; text-decoration: none; font-weight: 500;">🛒 AliExpress</a>
                     <a href="https://www.instagram.com/matan_dar/" target="_blank" rel="noopener noreferrer" style="color: #a78bfa; text-decoration: none; font-weight: 500;">📷 Instagram</a>
                     <a href="https://www.facebook.com/profile.php?id=61584063023645" target="_blank" rel="noopener noreferrer" style="color: #a78bfa; text-decoration: none; font-weight: 500;">📘 Facebook</a>
