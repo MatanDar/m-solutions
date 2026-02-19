@@ -459,90 +459,104 @@ def update_prices_in_sheet(price_updates):
         traceback.print_exc()
 
 
-def fetch_prices_from_pages(url_to_row):
+def scan_additional_prices(still_missing_url_to_row):
     """
-    שליפת מחירים ישירות מדפי המוצרים ב-AliExpress (web scraping).
-    מחפש og:price:amount ו-JSON-LD בHTML של הדף.
-    url_to_row = dict { url: row_number }
+    סריקה נוספת של hotproduct.query עם sort orders שונים,
+    כדי למצוא מחירים למוצרים שלא כוסו בסריקה הראשית.
+    מנסה: NEWEST, TRANSACTION_DESC — ללא ship_to_country לכסות מספר גדול יותר של מוצרים.
+    still_missing_url_to_row = dict { url: row_number }
     מחזיר list of {'row': int, 'price': float}
     """
-    import re
-    from concurrent.futures import ThreadPoolExecutor, as_completed
+    if not still_missing_url_to_row:
+        return []
 
-    results = []
-    if not url_to_row:
-        return results
+    # בניית מיפוי: product_id → row_number
+    pid_to_row = {}
+    for url, row in still_missing_url_to_row.items():
+        pid = extract_product_id(url)
+        if pid:
+            pid_to_row[pid] = row
 
-    print(f"\n🌐 Web scraping: מנסה למלא {len(url_to_row)} מחירים חסרים...")
+    if not pid_to_row:
+        print(f"  ⚠️ לא הצלחתי לחלץ Product IDs מ-{len(still_missing_url_to_row)} URLs")
+        return []
 
-    HEADERS = {
-        'User-Agent': (
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-            'AppleWebKit/537.36 (KHTML, like Gecko) '
-            'Chrome/120.0.0.0 Safari/537.36'
-        ),
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    }
+    remaining = set(pid_to_row.keys())
+    found_prices = []
 
-    def parse_price(html):
-        """נסה כמה תבניות חיפוש מחיר ב-HTML"""
-        # 1) og:price:amount  (שתי סדרי אטריביוטים אפשריים)
-        for pat in [
-            r'og:price:amount["\']?\s+content=["\']([0-9]+\.?[0-9]*)["\']',
-            r'content=["\']([0-9]+\.?[0-9]*)["\'][^>]+og:price:amount',
-            r'product:price:amount["\']?\s+content=["\']([0-9]+\.?[0-9]*)["\']',
-        ]:
-            m = re.search(pat, html)
-            if m:
-                v = float(m.group(1))
-                if v > 0:
-                    return v
+    # sort orders שונים מהסריקה הראשית — מכסים קטגוריות אחרות
+    sort_orders = ['NEWEST', 'TRANSACTION_DESC', 'LAST_VOLUME_DESC']
 
-        # 2) JSON-LD "@type":"Offer" / "@type":"Product"
-        m = re.search(r'"price"\s*:\s*"?([0-9]+\.?[0-9]*)"?', html)
-        if m:
-            v = float(m.group(1))
-            if v > 0:
-                return v
+    print(f"\n🔍 סריקה נוספת: מחפש מחירים ל-{len(remaining)} מוצרים ללא מחיר...")
 
-        # 3) window.runParams price data (AliExpress React bundle)
-        m = re.search(r'"salePrice"\s*:\s*\{\s*"minPrice"\s*:\s*"?([0-9]+\.?[0-9]*)"?', html)
-        if m:
-            v = float(m.group(1))
-            if v > 0:
-                return v
+    for sort_order in sort_orders:
+        if not remaining:
+            break
 
-        return None
+        print(f"  📄 סורק עם sort={sort_order} (נשאר {len(remaining)} מוצרים)...")
 
-    def fetch_one(args):
-        url, row = args
-        try:
-            clean = url.split('?')[0]
-            resp = requests.get(clean, headers=HEADERS, timeout=12)
-            if resp.status_code == 200:
-                price = parse_price(resp.text)
-                return row, price
-        except Exception:
-            pass
-        return row, None
+        for page in range(1, 31):
+            if not remaining:
+                break
 
-    items = list(url_to_row.items())
-    success = 0
-    failed = 0
+            params = {
+                'app_key': str(ALIEXPRESS_APP_KEY),
+                'timestamp': str(int(time.time() * 1000)),
+                'method': 'aliexpress.affiliate.hotproduct.query',
+                'sign_method': 'md5',
+                'format': 'json',
+                'v': '2.0',
+                'page_size': '50',
+                'page_no': str(page),
+                'sort': sort_order,
+                'target_currency': 'USD',
+                'target_language': 'EN',
+                'tracking_id': str(ALIEXPRESS_TRACKING_ID),
+                # ללא ship_to_country — מכסה יותר מוצרים מסוגים שונים
+            }
 
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        futures = {executor.submit(fetch_one, item): item[0] for item in items}
-        for future in as_completed(futures):
-            row, price = future.result()
-            if price and price > 0:
-                results.append({'row': row, 'price': round(price, 2)})
-                success += 1
-            else:
-                failed += 1
+            params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
 
-    print(f"  ✅ נמצאו {success} מחירים | ❌ נכשל {failed}")
-    return results
+            try:
+                response = requests.get("https://api-sg.aliexpress.com/sync", params=params, timeout=30)
+                data = response.json()
+
+                if 'aliexpress_affiliate_hotproduct_query_response' not in data:
+                    print(f"    ⚠️ תגובה לא צפויה בעמוד {page}, עוצר")
+                    break
+
+                result = data['aliexpress_affiliate_hotproduct_query_response']['resp_result']
+                if result.get('resp_code') != 200:
+                    print(f"    ⚠️ resp_code={result.get('resp_code')} — עוצר")
+                    break
+
+                products = result.get('result', {}).get('products', {}).get('product', [])
+                if not products:
+                    break  # אין יותר תוצאות בסדרה זו
+
+                for product in products:
+                    pid = str(product.get('product_id', ''))
+                    if pid not in remaining:
+                        continue
+                    price_raw = (product.get('target_sale_price') or
+                                 product.get('sale_price') or
+                                 product.get('target_original_price') or 0)
+                    try:
+                        price = round(float(str(price_raw).replace(',', '') or 0), 2)
+                        if price > 0:
+                            found_prices.append({'row': pid_to_row[pid], 'price': price})
+                            remaining.discard(pid)
+                    except (ValueError, TypeError):
+                        pass
+
+            except Exception as e:
+                print(f"    ⚠️ שגיאה בדף {page}: {e}")
+                break
+
+            time.sleep(1)
+
+    print(f"  ✅ נמצאו {len(found_prices)} מחירים נוספים | {len(remaining)} עדיין ללא מחיר")
+    return found_prices
 
 
 def generate_signature(params, secret):
@@ -1049,14 +1063,14 @@ def main():
             and p.get('url')
         }
         if still_missing:
-            scraped_prices = fetch_prices_from_pages(still_missing)
-            if scraped_prices:
-                update_prices_in_sheet(scraped_prices)
-                remaining = len(still_missing) - len(scraped_prices)
-                if remaining > 0:
-                    print(f"  ℹ️  {remaining} מוצרים עדיין ללא מחיר (דפי מוצר לא נגישים)")
+            extra_prices = scan_additional_prices(still_missing)
+            if extra_prices:
+                update_prices_in_sheet(extra_prices)
+                remaining_count = len(still_missing) - len(extra_prices)
+                if remaining_count > 0:
+                    print(f"  ℹ️  {remaining_count} מוצרים עדיין ללא מחיר (לא מופיעים בסריקות hotproduct)")
             else:
-                print(f"  ⚠️  Web scraping נכשל — {len(still_missing)} מוצרים ללא מחיר")
+                print(f"  ⚠️  לא נמצאו מחירים נוספים — {len(still_missing)} מוצרים ללא מחיר")
         else:
             print("\n✅ כל המוצרים עודכנו עם מחיר!")
 

@@ -472,78 +472,40 @@
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
         }
 
-        /* ─── Filter Bar ─── */
-        .filter-bar {
+        /* ─── Permanent Filter Strip ─── */
+        .filter-strip {
             display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 22px;
-            flex-wrap: wrap;
         }
 
-        .filter-categories {
-            display: flex;
-            gap: 7px;
-            flex-wrap: wrap;
+        .filter-select {
             flex: 1;
-        }
-
-        .filter-pill {
-            padding: 6px 14px;
-            border-radius: 20px;
+            min-width: 145px;
+            padding: 10px 14px 10px 36px;
+            border-radius: 12px;
             border: 1.5px solid #e9d5ff;
             background: white;
-            color: #7c3aed;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
+            color: #4a5568;
+            font-size: 0.88rem;
             font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a855f7' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            background-clip: padding-box;
         }
 
-        .filter-pill:hover {
-            background: #f3e8ff;
+        .filter-select:focus,
+        .filter-select:hover {
             border-color: #a855f7;
-        }
-
-        .filter-pill.active {
-            background: linear-gradient(135deg, #7c3aed, #a855f7);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
-        }
-
-        .filter-sort {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-
-        .sort-btn {
-            padding: 6px 13px;
-            border-radius: 20px;
-            border: 1.5px solid #e5e7eb;
-            background: white;
-            color: #6b7280;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-            font-family: 'DM Sans', sans-serif;
-        }
-
-        .sort-btn:hover {
-            border-color: #e74c3c;
-            color: #e74c3c;
-        }
-
-        .sort-btn.active {
-            background: linear-gradient(135deg, #e74c3c, #ff6b35);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.28);
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
         }
 
         /* Footer */
@@ -606,20 +568,14 @@
                 height: 180px;
             }
 
-            .filter-bar {
+            .filter-strip {
                 flex-direction: column;
-                align-items: flex-start;
                 gap: 8px;
             }
 
-            .filter-sort {
+            .filter-select {
                 width: 100%;
-                justify-content: flex-start;
-            }
-
-            .sort-btn {
-                flex: 1;
-                text-align: center;
+                min-width: unset;
             }
         }
 
@@ -748,6 +704,18 @@
             </div>
         </div>
 
+        <!-- Permanent Filter Strip — visible on ALL views -->
+        <div class="filter-strip" id="filterStrip">
+            <select id="categoryDropdown" class="filter-select" onchange="onCategoryDropdownChange()">
+                <option value="">🛍️ כל הקטגוריות</option>
+            </select>
+            <select id="priceSort" class="filter-select" onchange="onSortDropdownChange()">
+                <option value="">💰 מיון לפי מחיר</option>
+                <option value="asc">↑ מחיר: נמוך לגבוה</option>
+                <option value="desc">↓ מחיר: גבוה לנמוך</option>
+            </select>
+        </div>
+
         <!-- Categories View -->
         <div id="categoriesView">
             <input type="text" id="categorySearch" class="search-input" placeholder="🔍 חפש קטגוריה...">
@@ -767,17 +735,6 @@
         <div id="productsView" class="hidden">
             <button class="back-btn" onclick="showCategories()">← חזרה לקטגוריות</button>
             <input type="text" id="searchInput" class="search-input" placeholder="🔍 חפש מוצר...">
-
-            <!-- Filter Bar -->
-            <div class="filter-bar" id="filterBar">
-                <div class="filter-categories" id="filterPills">
-                    <!-- Pills generated by buildFilterBar() -->
-                </div>
-                <div class="filter-sort">
-                    <button class="sort-btn" id="sortAsc" onclick="setSortOrder('asc')">↑ נמוך לגבוה</button>
-                    <button class="sort-btn" id="sortDesc" onclick="setSortOrder('desc')">↓ גבוה לנמוך</button>
-                </div>
-            </div>
 
             <div id="productsList" class="products-grid">
                 <div class="loading">טוען מוצרים...</div>
@@ -1251,6 +1208,9 @@
             document.getElementById('productsView').classList.add('hidden');
             document.querySelector('.subtitle').textContent = 'בחר קטגוריה לצפייה במוצרים 🛍️';
             currentCategory = '';
+            // Sync dropdown back to "כל הקטגוריות"
+            const catDropdown = document.getElementById('categoryDropdown');
+            if (catDropdown) catDropdown.value = '';
             
             // Scroll to top smoothly
             window.scrollTo({
@@ -1268,8 +1228,11 @@
             currentCategory = category;
             document.getElementById('categoriesView').classList.add('hidden');
             document.getElementById('productsView').classList.remove('hidden');
-            document.querySelector('.subtitle').textContent = `${category} 🛍️`;
-            buildFilterBar();
+            const catObj = CATEGORIES.find(c => c.name === category);
+            document.querySelector('.subtitle').textContent = `${catObj ? catObj.icon + ' ' : ''}${category} 🛍️`;
+            // Sync the dropdown to the selected category
+            const catDropdown = document.getElementById('categoryDropdown');
+            if (catDropdown) catDropdown.value = category;
             applyFilters();
             
             // Scroll to top smoothly when entering category
@@ -1281,55 +1244,46 @@
             }
         }
 
-        /* ─── Filter Bar Logic ─── */
-        function buildFilterBar() {
-            const pills = document.getElementById('filterPills');
-            pills.innerHTML = '';
-
-            // "הכל" pill
-            const allPill = document.createElement('button');
-            allPill.className = 'filter-pill' + (currentCategory === '__all__' ? ' active' : '');
-            allPill.textContent = '🛍️ הכל';
-            allPill.onclick = () => setFilterCategory('__all__');
-            pills.appendChild(allPill);
-
-            // One pill per non-empty category
+        /* ─── Dropdown Filter Logic ─── */
+        function buildDropdowns() {
+            const catDropdown = document.getElementById('categoryDropdown');
+            catDropdown.innerHTML = '<option value="">🛍️ כל הקטגוריות</option>';
             CATEGORIES.forEach(cat => {
                 const count = allProducts.filter(p => p['CATEGORY'] === cat.name).length;
                 if (count === 0) return;
-                const btn = document.createElement('button');
-                btn.className = 'filter-pill' + (currentCategory === cat.name ? ' active' : '');
-                btn.textContent = `${cat.icon} ${cat.name}`;
-                btn.dataset.category = cat.name;
-                btn.onclick = () => setFilterCategory(cat.name);
-                pills.appendChild(btn);
+                const opt = document.createElement('option');
+                opt.value = cat.name;
+                opt.textContent = `${cat.icon} ${cat.name}`;
+                catDropdown.appendChild(opt);
             });
+            // Sync with current state
+            catDropdown.value = (currentCategory && currentCategory !== '__all__') ? currentCategory : '';
+            document.getElementById('priceSort').value = currentSort;
         }
 
-        function setFilterCategory(cat) {
-            currentCategory = cat;
-            // Update active pill
-            document.querySelectorAll('.filter-pill').forEach(btn => {
-                const isAll = cat === '__all__' && btn.textContent.includes('הכל');
-                const isCat = btn.dataset.category === cat;
-                btn.classList.toggle('active', isAll || isCat);
-            });
-            // Update page subtitle
-            if (cat === '__all__') {
-                document.querySelector('.subtitle').textContent = 'כל המוצרים 🛍️';
+        function onCategoryDropdownChange() {
+            const selected = document.getElementById('categoryDropdown').value;
+            const inProductsView = !document.getElementById('productsView').classList.contains('hidden');
+            if (!selected) {
+                if (inProductsView) {
+                    // Show all products when on products view
+                    currentCategory = '__all__';
+                    document.querySelector('.subtitle').textContent = 'כל המוצרים 🛍️';
+                    applyFilters();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                // On categories view: "כל הקטגוריות" keeps us here — nothing to do
             } else {
-                const catObj = CATEGORIES.find(c => c.name === cat);
-                document.querySelector('.subtitle').textContent = `${catObj ? catObj.icon + ' ' : ''}${cat} 🛍️`;
+                showProducts(selected);
             }
-            applyFilters();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function setSortOrder(order) {
-            currentSort = currentSort === order ? '' : order;
-            document.getElementById('sortAsc').classList.toggle('active', currentSort === 'asc');
-            document.getElementById('sortDesc').classList.toggle('active', currentSort === 'desc');
-            applyFilters();
+        function onSortDropdownChange() {
+            currentSort = document.getElementById('priceSort').value;
+            const inProductsView = !document.getElementById('productsView').classList.contains('hidden');
+            if (inProductsView) {
+                applyFilters();
+            }
         }
 
         function applyFilters() {
@@ -1467,18 +1421,19 @@
                         setTimeout(() => {
                             autoFixProductCategories();
                             displayCategories();
+                            buildDropdowns();
                         }, 100);
                         return;
                     }
                 }
-                
+
                 // Fetch fresh data from Google Sheets
                 console.log('🌐 Fetching fresh data from Google Sheets...');
                 const response = await fetch(SHEET_URL);
                 const csvText = await response.text();
                 allProducts = parseCSV(csvText, HEADERS);
                 allProducts.reverse();
-                
+
                 // Save to localStorage cache
                 try {
                     localStorage.setItem('msolutions_products_cache', JSON.stringify(allProducts));
@@ -1488,9 +1443,10 @@
                     // localStorage might be full or disabled - ignore
                     console.warn('Could not cache data:', e);
                 }
-                
+
                 autoFixProductCategories();
                 displayCategories();
+                buildDropdowns();
             } catch (error) {
                 document.getElementById('categoriesList').innerHTML = '<div class="loading">שגיאה בטעינת המוצרים 😞</div>';
                 console.error('Error:', error);
