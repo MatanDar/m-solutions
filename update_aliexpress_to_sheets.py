@@ -575,9 +575,20 @@ def add_products_to_sheet(products):
         traceback.print_exc()
 
 def extract_product_id(url):
-    """חילוץ Product ID מ-URL של AliExpress"""
+    """חילוץ Product ID מ-URL של AliExpress — תומך בפורמטים שונים"""
     import re
+    if not url:
+        return None
+    # פורמט רגיל: /item/1005003xxxxxx.html
     match = re.search(r'/item/(\d{10,})', url)
+    if match:
+        return match.group(1)
+    # פורמט קצר: ?productId=xxxxxx
+    match = re.search(r'[?&](?:productId|product_id)=(\d{10,})', url)
+    if match:
+        return match.group(1)
+    # פורמט מספרי בסוף URL
+    match = re.search(r'(\d{12,})\.html', url)
     if match:
         return match.group(1)
     return None
@@ -609,11 +620,26 @@ def fetch_product_prices_batch(product_ids):
 
         result_key = 'aliexpress_affiliate_productdetail_get_response'
         if result_key not in data:
-            print(f"    ⚠️ Unexpected API response: {list(data.keys())}")
+            # הדפסת התגובה המלאה לאבחון
+            print(f"    ⚠️ Unexpected API response keys: {list(data.keys())}")
+            # בדיקה אם יש שגיאה מה-API
+            error_resp = data.get('error_response', {})
+            if error_resp:
+                print(f"    ❌ API Error: code={error_resp.get('code')}, msg={error_resp.get('msg')}, sub_msg={error_resp.get('sub_msg', '')}")
+            else:
+                import json as _json
+                print(f"    📋 Full response (first 500 chars): {_json.dumps(data)[:500]}")
             return prices
 
         result = data[result_key].get('result', {})
+
+        # בדיקת שגיאה ב-result
+        if not result.get('is_finished', True) and not result.get('products'):
+            print(f"    ⚠️ API result: {result}")
+            return prices
+
         product_list = result.get('products', {}).get('product', [])
+        print(f"    ✅ Got {len(product_list)} products from API")
 
         for product in product_list:
             pid = str(product.get('product_id', ''))
@@ -627,8 +653,12 @@ def fetch_product_prices_batch(product_ids):
             except (ValueError, TypeError):
                 pass
 
+        print(f"    💰 Valid prices found: {len(prices)}")
+
     except Exception as e:
         print(f"    ⚠️ API error in price fetch: {e}")
+        import traceback
+        traceback.print_exc()
 
     return prices
 
@@ -668,8 +698,15 @@ def refresh_all_prices():
             if pid:
                 to_update.append({'row': i, 'pid': pid})
 
+        # דיאגנוסטיקה: הצגת 3 URLs ראשונות לבדיקה
+        print(f"  📋 דוגמת URLs מהגיליון:")
+        for row in rows[1:4]:
+            url = row[0] if row else ''
+            pid = extract_product_id(url)
+            print(f"     URL: {url[:70]}... → ID: {pid}")
+
         if not to_update:
-            print("  לא נמצאו Product IDs ב-URLs")
+            print("  ❌ לא נמצאו Product IDs ב-URLs — בדוק שעמודה A מכילה לינקים של AliExpress")
             return
 
         print(f"  נמצאו {len(to_update)} מוצרים לרענון")
@@ -707,7 +744,13 @@ def refresh_all_prices():
 
             time.sleep(1)  # מניעת rate limit בין batches
 
-        print(f"  ✅ עודכנו: {updated} | לא נמצאו: {failed}")
+        if updated > 0:
+            print(f"  ✅ מחירים עודכנו בהצלחה: {updated} מוצרים")
+        else:
+            print(f"  ⚠️ לא עודכנו מחירים — ייתכן ש-API productdetail.get אינו זמין לחשבונך")
+            print(f"     (המחירים נשמרים בכל זאת בזמן הוספת מוצרים חדשים)")
+        if failed > 0:
+            print(f"  ℹ️  {failed} מוצרים ללא מחיר (לא הוחזרו מה-API)")
 
     except Exception as e:
         print(f"  ❌ שגיאה: {e}")
@@ -768,9 +811,13 @@ def main():
                 description = create_description(product)
                 last_updated = datetime.now().strftime('%Y-%m-%d %H:%M')
 
-                # שמירת מחיר נוכחי
+                # שמירת מחיר נוכחי — ניסיון מכמה שדות
                 try:
-                    price = float(product.get('target_sale_price', 0) or 0)
+                    price_raw = (product.get('target_sale_price') or
+                                 product.get('sale_price') or
+                                 product.get('target_original_price') or
+                                 product.get('original_price') or 0)
+                    price = round(float(str(price_raw).replace(',', '') or 0), 2)
                 except (ValueError, TypeError):
                     price = 0.0
 
@@ -790,7 +837,8 @@ def main():
                 
                 existing_products.append({'url': url, 'title': title})
                 
-                print(f"✅ Added ({len(all_new)}): {title[:40]}... → {category}")
+                price_str = f"${price:.2f}" if price > 0 else "no price"
+                print(f"✅ Added ({len(all_new)}): {title[:40]}... → {category} [{price_str}]")
                 
                 if len(all_new) >= 5:
                     print(f"\n🎉 Success! Found {len(all_new)} quality products!")
