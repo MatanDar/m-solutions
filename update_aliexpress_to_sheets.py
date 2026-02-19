@@ -459,6 +459,89 @@ def update_prices_in_sheet(price_updates):
         traceback.print_exc()
 
 
+def fetch_prices_via_link_generate(url_to_row):
+    """
+    שליפת מחירים עבור מוצרים ללא מחיר, עם aliexpress.affiliate.link.generate.
+    url_to_row = dict { url: row_number }
+    מחזיר list of {'row': int, 'price': float}
+    """
+    results = []
+    if not url_to_row:
+        return results
+
+    urls = list(url_to_row.keys())
+    BATCH = 12   # link.generate מקבל עד 12 URLs
+    print(f"\n🔗 link.generate: מנסה למלא {len(urls)} מחירים חסרים...")
+
+    for start in range(0, len(urls), BATCH):
+        batch_urls = urls[start:start + BATCH]
+        # נקה URL — הסר query params שעלולים לבלבל את ה-API
+        clean_urls = []
+        for u in batch_urls:
+            clean = u.split('?')[0]
+            clean_urls.append(clean)
+
+        try:
+            params = {
+                'app_key': str(ALIEXPRESS_APP_KEY),
+                'timestamp': str(int(time.time() * 1000)),
+                'method': 'aliexpress.affiliate.link.generate',
+                'sign_method': 'md5',
+                'format': 'json',
+                'v': '2.0',
+                'source_values': ','.join(clean_urls),
+                'tracking_id': str(ALIEXPRESS_TRACKING_ID),
+                'promotion_link_type': '0',
+            }
+            params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
+
+            response = requests.get('https://api-sg.aliexpress.com/sync', params=params, timeout=20)
+            data = response.json()
+
+            result_key = 'aliexpress_affiliate_link_generate_response'
+            if result_key not in data:
+                print(f"  ⚠️ link.generate unexpected keys: {list(data.keys())}")
+                break
+
+            import json as _json
+            resp_result = data[result_key].get('resp_result', {})
+            links = (resp_result.get('result', {})
+                                .get('promotion_links', {})
+                                .get('promotion_link', []))
+
+            if start == 0:
+                print(f"  📋 Batch 1: {len(links)} links returned")
+                if not links:
+                    print(f"  📋 Response (first 400): {_json.dumps(resp_result)[:400]}")
+
+            for link in links:
+                source_url = link.get('source_value', '')
+                price_str = (link.get('target_sale_price') or
+                             link.get('sale_price') or
+                             link.get('original_price') or '0')
+                try:
+                    price = float(str(price_str).replace(',', ''))
+                    # מצא את ה-row המקורי (מול ה-URL המלא)
+                    matched_row = None
+                    for orig_url, row in url_to_row.items():
+                        if orig_url.split('?')[0] == source_url:
+                            matched_row = row
+                            break
+                    if price > 0 and matched_row:
+                        results.append({'row': matched_row, 'price': round(price, 2)})
+                except (ValueError, TypeError):
+                    pass
+
+        except Exception as e:
+            print(f"  ⚠️ link.generate error: {e}")
+            break
+
+        time.sleep(0.5)
+
+    print(f"  💰 link.generate מצא {len(results)} מחירים")
+    return results
+
+
 def generate_signature(params, secret):
     sorted_params = sorted(params.items())
     sign_string = secret
@@ -543,24 +626,33 @@ def get_existing_products():
         service = build('sheets', 'v4', credentials=credentials)
         result = service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
-            range=f'{SHEET_NAME}!A:G'
+            range=f'{SHEET_NAME}!A:I'
         ).execute()
-        
+
         values = result.get('values', [])
-        
+
         if not values or len(values) < 2:
             return []
-        
+
         products = []
+        no_price_count = 0
         for i, row in enumerate(values[1:]):
             if len(row) >= 2:
+                price_val = row[8] if len(row) > 8 else ''
+                try:
+                    has_price = bool(price_val and float(str(price_val)) > 0)
+                except (ValueError, TypeError):
+                    has_price = False
+                if not has_price:
+                    no_price_count += 1
                 products.append({
                     'url': row[0] if len(row) > 0 else '',
                     'title': row[1] if len(row) > 1 else '',
-                    'row': i + 2   # מספר שורה ב-Sheets (1-based, שורה 1 = כותרת)
+                    'row': i + 2,   # מספר שורה ב-Sheets (1-based, שורה 1 = כותרת)
+                    'has_price': has_price
                 })
-        
-        print(f"Found {len(products)} existing products\n")
+
+        print(f"Found {len(products)} existing products ({no_price_count} without price)\n")
         return products
         
     except Exception as e:
@@ -942,6 +1034,25 @@ def main():
         # עדכון מחירים ממה שנמצא בסריקה
         print(f"\n📊 מחירים שנמצאו בסריקה: {len(price_updates)}")
         update_prices_in_sheet(price_updates)
+
+        # Fallback: link.generate עבור מוצרים שלא נמצאו בסריקה ועדיין ללא מחיר
+        updated_rows = {u['row'] for u in price_updates}
+        still_missing = {
+            p['url']: p['row']
+            for p in existing_products
+            if p.get('row')
+            and p['row'] not in updated_rows
+            and not p.get('has_price')  # לא היה מחיר גם לפני ריצה זו
+            and p.get('url')
+        }
+        if still_missing:
+            link_prices = fetch_prices_via_link_generate(still_missing)
+            if link_prices:
+                update_prices_in_sheet(link_prices)
+            else:
+                print(f"  ℹ️  link.generate לא החזיר מחירים — {len(still_missing)} מוצרים עדיין ללא מחיר")
+        else:
+            print("\n✅ כל המוצרים עודכנו עם מחיר!")
 
         print("\n✅ Done!")
         
