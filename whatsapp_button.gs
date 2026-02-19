@@ -28,7 +28,7 @@
 const SHEET_NAME = 'Affiliate Table';
 
 // עמודות: A=URL, B=Title, C=Description, D=Image,
-//          E=AffiliateLink, F=LastUpdated, G=Category, H=ShortLink
+//          E=AffiliateLink, F=LastUpdated, G=Category, H=ShortLink, I=Price
 const COL = {
   URL: 0,
   TITLE: 1,
@@ -37,7 +37,8 @@ const COL = {
   AFFILIATE_LINK: 4,
   LAST_UPDATED: 5,
   CATEGORY: 6,
-  SHORT_LINK: 7
+  SHORT_LINK: 7,
+  PRICE: 8
 };
 
 
@@ -458,7 +459,7 @@ function sendWhatsAppProduct() {
     return;
   }
 
-  const data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+  const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
   const validRows = data.filter(row => row[COL.TITLE] && row[COL.TITLE].toString().trim() !== '');
   if (validRows.length === 0) {
     SpreadsheetApp.getUi().alert('⚠️', 'לא נמצאו מוצרים תקינים!', SpreadsheetApp.getUi().ButtonSet.OK);
@@ -475,17 +476,21 @@ function sendWhatsAppProduct() {
   const affLink     = (product[COL.AFFILIATE_LINK] || '').toString().trim();
   const category    = (product[COL.CATEGORY] || '').toString().trim();
   const finalLink   = shortLink || affLink || '';
+  const priceRaw    = product[COL.PRICE];
+  const price       = priceRaw && parseFloat(priceRaw) > 0
+    ? `$${parseFloat(priceRaw).toFixed(2)}`
+    : '';
 
   let shortDesc = description;
   if (shortDesc.length > 200) shortDesc = shortDesc.substring(0, 200) + '...';
 
-  const message = buildWhatsAppMessage(title, shortDesc, finalLink, category);
+  const message = buildWhatsAppMessage(title, shortDesc, finalLink, category, price);
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
 
-  showMessageDialog(title, message, whatsappUrl, imageUrl, randomIndex + 1, validRows.length);
+  showMessageDialog(title, message, whatsappUrl, imageUrl, randomIndex + 1, validRows.length, price);
 }
 
-function buildWhatsAppMessage(title, description, link, category) {
+function buildWhatsAppMessage(title, description, link, category, price) {
   const emojis = {
     'מוצרי חשמל': '🔌', 'מטבח ובית': '🍳', 'ספורט וכושר': '⚽',
     'תיקים ואביזרים': '👜', 'כלי עבודה': '🔧', 'צעצועים': '🎮',
@@ -495,6 +500,7 @@ function buildWhatsAppMessage(title, description, link, category) {
 
   let msg = `🔥 *מוצר היום מ-M-SOLUTIONS!* 🔥\n\n`;
   msg += `📦 *${title}*\n\n`;
+  if (price) msg += `💰 *מחיר: ${price}*\n\n`;
   if (description) msg += `${description}\n\n`;
   msg += `🛒 *להזמנה ישירות באלי אקספרס:*\n`;
   msg += link || '⚠️ אין קישור זמין';
@@ -505,7 +511,7 @@ function buildWhatsAppMessage(title, description, link, category) {
   return msg;
 }
 
-function showMessageDialog(title, message, whatsappUrl, imageUrl, productNum, totalProducts) {
+function showMessageDialog(title, message, whatsappUrl, imageUrl, productNum, totalProducts, price) {
   const htmlContent = `
 <!DOCTYPE html>
 <html dir="rtl">
@@ -538,7 +544,7 @@ function showMessageDialog(title, message, whatsappUrl, imageUrl, productNum, to
     <h2>📲 הודעת WhatsApp מוכנה!</h2>
     <p>מוצר #${productNum} מתוך ${totalProducts}</p>
   </div>
-  <div class="product-title">📦 ${title}</div>
+  <div class="product-title">📦 ${title}${price ? ` — <span style="color:#25D366;font-weight:700">${price}</span>` : ''}</div>
   ${imageUrl ? `
   <div class="image-preview">
     <img src="${imageUrl}" alt="תמונה" onerror="this.style.display='none'">

@@ -554,14 +554,15 @@ def add_products_to_sheet(products):
                 affiliate_link,
                 p.get('last_updated', ''),
                 p.get('category', 'שונות'),
-                short_link
+                short_link,
+                p.get('price', '')   # עמודה I - מחיר נוכחי
             ])
 
         body = {'values': rows}
 
         result = service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID,
-            range=f'{SHEET_NAME}!A:H',
+            range=f'{SHEET_NAME}!A:I',
             valueInputOption='RAW',
             body=body
         ).execute()
@@ -622,13 +623,19 @@ def main():
                 promotion_link = product.get('promotion_link', url)
                 image = product.get('product_main_image_url', '')
                 image = fix_image_url(image)
-                
+
                 description = create_description(product)
                 last_updated = datetime.now().strftime('%Y-%m-%d %H:%M')
-                
+
+                # שמירת מחיר נוכחי
+                try:
+                    price = float(product.get('target_sale_price', 0) or 0)
+                except (ValueError, TypeError):
+                    price = 0.0
+
                 aliexpress_category = product.get('second_level_category_name', '')
                 category = map_to_category(title, description, aliexpress_category)
-                
+
                 all_new.append({
                     'url': url,
                     'title': title,
@@ -636,7 +643,8 @@ def main():
                     'image': image,
                     'affiliate_link': promotion_link,
                     'last_updated': last_updated,
-                    'category': category
+                    'category': category,
+                    'price': price
                 })
                 
                 existing_products.append({'url': url, 'title': title})

@@ -429,6 +429,18 @@
             -webkit-box-orient: vertical;
         }
 
+        .product-price {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #ff6b35, #f7c59f);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
         /* Load More Button */
         .load-more-btn {
             display: block;
@@ -711,7 +723,7 @@
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv';
         
-        const HEADERS = ["URL", "Title", "Description", "Image", "Affiliate Link", "Last Updated", "CATEGORY", "Short Link"];
+        const HEADERS = ["URL", "Title", "Description", "Image", "Affiliate Link", "Last Updated", "CATEGORY", "Short Link", "Price"];
         const CATEGORIES = [
             { name: 'מוצרי חשמל', icon: '🔌' },
             { name: 'מטבח ובית', icon: '🍳' },
@@ -1077,6 +1089,8 @@
 
             CATEGORIES.forEach(category => {
                 const count = allProducts.filter(p => p['CATEGORY'] === category.name).length;
+                // הסתרת קטגוריות ריקות לחלוטין (כולל "שונות" כשאין בה מוצרים)
+                if (count === 0) return;
                 const images = getCategoryImages(category.name);
                 
                 const card = document.createElement('div');
@@ -1194,6 +1208,10 @@
                 
                 const title = product['Title'] || product['TITLE'];
                 const description = product['Description'] || product['DESCRIPTION'];
+                const priceRaw = product['Price'] || product['PRICE'] || '';
+                const price = priceRaw && parseFloat(priceRaw) > 0
+                    ? `$${parseFloat(priceRaw).toFixed(2)}`
+                    : '';
                 let imageUrl = product['Image'];
                 
                 if (imageUrl) {
@@ -1218,6 +1236,7 @@
                         <div class="product-info">
                             <div class="product-title">${title}</div>
                             <div class="product-description">${description || 'לחץ לפרטים נוספים'}</div>
+                            ${price ? `<div class="product-price">${price}</div>` : ''}
                         </div>
                     `;
                     
