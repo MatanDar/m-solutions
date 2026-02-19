@@ -399,6 +399,66 @@ def is_duplicate(url, title, existing_products):
     
     return False
 
+def find_existing_product(url, title, existing_products):
+    """
+    מחפש מוצר קיים לפי URL או דמיון כותרת.
+    מחזיר את dict המוצר (כולל 'row') אם נמצא, אחרת None.
+    """
+    title_lower = title.lower()
+    for existing in existing_products:
+        if url == existing.get('url'):
+            return existing
+        if len(title_lower) > 10:
+            words_new = set(title_lower.split())
+            words_existing = set(existing.get('title', '').lower().split())
+            if words_new and words_existing:
+                similarity = len(words_new & words_existing) / len(words_new | words_existing)
+                if similarity > 0.9:
+                    return existing
+        if title_lower == existing.get('title', '').lower():
+            return existing
+    return None
+
+
+def update_prices_in_sheet(price_updates):
+    """
+    כותב עדכוני מחירים לעמודה I בגוגל שיטס.
+    price_updates = list of {'row': int, 'price': float}
+    """
+    if not price_updates:
+        print("  💰 אין עדכוני מחירים להכניס")
+        return
+    print(f"\n💰 מעדכן {len(price_updates)} מחירים בגיליון (מתוך סריקת hotproduct)...")
+    try:
+        credentials_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
+        credentials_dict = json.loads(credentials_json)
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_dict,
+            scopes=['https://www.googleapis.com/auth/spreadsheets']
+        )
+        service = build('sheets', 'v4', credentials=credentials)
+
+        batch_data = [
+            {
+                'range': f"{SHEET_NAME}!I{item['row']}",
+                'values': [[item['price']]]
+            }
+            for item in price_updates
+        ]
+
+        service.spreadsheets().values().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body={'valueInputOption': 'RAW', 'data': batch_data}
+        ).execute()
+
+        print(f"  ✅ {len(price_updates)} מחירים עודכנו בהצלחה!")
+
+    except Exception as e:
+        print(f"  ❌ שגיאה בעדכון מחירים: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def generate_signature(params, secret):
     sorted_params = sorted(params.items())
     sign_string = secret
@@ -492,11 +552,12 @@ def get_existing_products():
             return []
         
         products = []
-        for row in values[1:]:
+        for i, row in enumerate(values[1:]):
             if len(row) >= 2:
                 products.append({
                     'url': row[0] if len(row) > 0 else '',
-                    'title': row[1] if len(row) > 1 else ''
+                    'title': row[1] if len(row) > 1 else '',
+                    'row': i + 2   # מספר שורה ב-Sheets (1-based, שורה 1 = כותרת)
                 })
         
         print(f"Found {len(products)} existing products\n")
@@ -800,32 +861,24 @@ def main():
         
         print(f"\nFiltering products...")
         all_new = []
+        price_updates = []   # עדכוני מחירים למוצרים קיימים
         products_checked = 0
-        
+        found_enough_new = False
+
         for product in products:
             try:
                 products_checked += 1
-                
+
                 url = product.get('product_detail_url', '')
                 title = product.get('product_title', '')
-                
+
                 if not url or not title:
                     continue
-                
+
                 if not is_quality_product(product):
                     continue
-                
-                if is_duplicate(url, title, existing_products):
-                    continue
-                
-                promotion_link = product.get('promotion_link', url)
-                image = product.get('product_main_image_url', '')
-                image = fix_image_url(image)
 
-                description = create_description(product)
-                last_updated = datetime.now().strftime('%Y-%m-%d %H:%M')
-
-                # שמירת מחיר נוכחי — ניסיון מכמה שדות
+                # חילוץ מחיר לפני בדיקת כפל — כדי לעדכן גם מוצרים קיימים
                 try:
                     price_raw = (product.get('target_sale_price') or
                                  product.get('sale_price') or
@@ -834,6 +887,24 @@ def main():
                     price = round(float(str(price_raw).replace(',', '') or 0), 2)
                 except (ValueError, TypeError):
                     price = 0.0
+
+                # בדיקת כפל — אם קיים, נשמור רק עדכון מחיר
+                existing = find_existing_product(url, title, existing_products)
+                if existing:
+                    if price > 0 and existing.get('row'):
+                        price_updates.append({'row': existing['row'], 'price': price})
+                    continue
+
+                # מוצר חדש — הוסף רק אם עוד לא הגענו ל-5
+                if found_enough_new:
+                    continue
+
+                promotion_link = product.get('promotion_link', url)
+                image = product.get('product_main_image_url', '')
+                image = fix_image_url(image)
+
+                description = create_description(product)
+                last_updated = datetime.now().strftime('%Y-%m-%d %H:%M')
 
                 aliexpress_category = product.get('second_level_category_name', '')
                 category = map_to_category(title, description, aliexpress_category)
@@ -848,28 +919,29 @@ def main():
                     'category': category,
                     'price': price
                 })
-                
-                existing_products.append({'url': url, 'title': title})
-                
+
+                existing_products.append({'url': url, 'title': title, 'row': None})
+
                 price_str = f"${price:.2f}" if price > 0 else "no price"
                 print(f"✅ Added ({len(all_new)}): {title[:40]}... → {category} [{price_str}]")
-                
+
                 if len(all_new) >= 5:
-                    print(f"\n🎉 Success! Found {len(all_new)} quality products!")
-                    break
-                
+                    print(f"\n🎉 Found {len(all_new)} new products! Continuing scan for price updates...")
+                    found_enough_new = True
+
             except Exception as e:
                 print(f"  Error: {e}")
                 continue
-        
+
         if all_new:
-            print(f"\n✅ Found {len(all_new)} new products!")
+            print(f"\n✅ Adding {len(all_new)} new products to sheet...")
             add_products_to_sheet(all_new)
         else:
             print("\n⚠️ No new quality products found")
 
-        # רענון מחירים לכל המוצרים הקיימים בגיליון
-        refresh_all_prices()
+        # עדכון מחירים ממה שנמצא בסריקה
+        print(f"\n📊 מחירים שנמצאו בסריקה: {len(price_updates)}")
+        update_prices_in_sheet(price_updates)
 
         print("\n✅ Done!")
         
