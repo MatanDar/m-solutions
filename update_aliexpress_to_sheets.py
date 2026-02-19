@@ -574,6 +574,147 @@ def add_products_to_sheet(products):
         import traceback
         traceback.print_exc()
 
+def extract_product_id(url):
+    """חילוץ Product ID מ-URL של AliExpress"""
+    import re
+    match = re.search(r'/item/(\d{10,})', url)
+    if match:
+        return match.group(1)
+    return None
+
+
+def fetch_product_prices_batch(product_ids):
+    """
+    שליפת מחירים עדכניים מ-AliExpress עבור batch של product IDs.
+    מחזיר dict: { product_id_str: price_float }
+    """
+    prices = {}
+    try:
+        params = {
+            'app_key': str(ALIEXPRESS_APP_KEY),
+            'timestamp': str(int(time.time() * 1000)),
+            'method': 'aliexpress.affiliate.productdetail.get',
+            'sign_method': 'md5',
+            'format': 'json',
+            'v': '2.0',
+            'product_ids': ','.join(str(pid) for pid in product_ids),
+            'tracking_id': str(ALIEXPRESS_TRACKING_ID),
+            'target_currency': 'USD',
+            'target_language': 'EN',
+        }
+        params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
+
+        response = requests.get('https://api-sg.aliexpress.com/sync', params=params, timeout=20)
+        data = response.json()
+
+        result_key = 'aliexpress_affiliate_productdetail_get_response'
+        if result_key not in data:
+            print(f"    ⚠️ Unexpected API response: {list(data.keys())}")
+            return prices
+
+        result = data[result_key].get('result', {})
+        product_list = result.get('products', {}).get('product', [])
+
+        for product in product_list:
+            pid = str(product.get('product_id', ''))
+            price_str = (product.get('target_sale_price') or
+                         product.get('sale_price') or
+                         product.get('target_original_price') or '0')
+            try:
+                price = float(str(price_str).replace(',', ''))
+                if price > 0:
+                    prices[pid] = round(price, 2)
+            except (ValueError, TypeError):
+                pass
+
+    except Exception as e:
+        print(f"    ⚠️ API error in price fetch: {e}")
+
+    return prices
+
+
+def refresh_all_prices():
+    """
+    מרענן מחירים לכל המוצרים הקיימים בגיליון.
+    קורא product IDs מעמודה A, מביא מחירים עדכניים מ-API, כותב לעמודה I.
+    """
+    print("\n💰 מרענן מחירים עבור כל המוצרים...")
+
+    try:
+        credentials_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
+        credentials_dict = json.loads(credentials_json)
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_dict,
+            scopes=['https://www.googleapis.com/auth/spreadsheets']
+        )
+        service = build('sheets', 'v4', credentials=credentials)
+
+        # קריאת כל השורות (עמודה A = URL, עמודה I = Price)
+        result = service.spreadsheets().values().get(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f'{SHEET_NAME}!A:A'
+        ).execute()
+        rows = result.get('values', [])
+
+        if len(rows) < 2:
+            print("  אין מוצרים לרענן")
+            return
+
+        # מיפוי row_index → product_id
+        to_update = []
+        for i, row in enumerate(rows[1:], start=2):  # i = אינדקס שורה בגיליון (מ-2)
+            url = row[0] if row else ''
+            pid = extract_product_id(url)
+            if pid:
+                to_update.append({'row': i, 'pid': pid})
+
+        if not to_update:
+            print("  לא נמצאו Product IDs ב-URLs")
+            return
+
+        print(f"  נמצאו {len(to_update)} מוצרים לרענון")
+
+        # עדכון מחירים — batches של 50
+        updated = 0
+        failed = 0
+        BATCH = 50
+
+        for start in range(0, len(to_update), BATCH):
+            batch = to_update[start:start + BATCH]
+            pids = [b['pid'] for b in batch]
+
+            print(f"  שולח batch {start // BATCH + 1} ({len(pids)} מוצרים)...")
+            prices = fetch_product_prices_batch(pids)
+
+            # כתיבה לגיליון: כל עמודה I בנפרד
+            batch_data = []
+            for item in batch:
+                pid = item['pid']
+                if pid in prices:
+                    batch_data.append({
+                        'range': f"{SHEET_NAME}!I{item['row']}",
+                        'values': [[prices[pid]]]
+                    })
+                    updated += 1
+                else:
+                    failed += 1
+
+            if batch_data:
+                service.spreadsheets().values().batchUpdate(
+                    spreadsheetId=SPREADSHEET_ID,
+                    body={'valueInputOption': 'RAW', 'data': batch_data}
+                ).execute()
+
+            time.sleep(1)  # מניעת rate limit בין batches
+
+        print(f"  ✅ עודכנו: {updated} | לא נמצאו: {failed}")
+
+    except Exception as e:
+        print(f"  ❌ שגיאה: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def main():
     print("🔥 AliExpress Auto-Update - 4x Daily 🔥")
     print("=" * 60)
@@ -664,7 +805,10 @@ def main():
             add_products_to_sheet(all_new)
         else:
             print("\n⚠️ No new quality products found")
-        
+
+        # רענון מחירים לכל המוצרים הקיימים בגיליון
+        refresh_all_prices()
+
         print("\n✅ Done!")
         
     except Exception as e:

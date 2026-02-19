@@ -401,8 +401,12 @@
         }
 
         .product-info {
-            padding: 15px;
+            padding: 16px 18px 18px;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 140px;      /* גובה מינימלי — מוודא שמחיר לא נחתך */
         }
 
         .product-title {
@@ -410,35 +414,38 @@
             font-weight: 600;
             color: #1a202c;
             margin-bottom: 8px;
-            line-height: 1.4;
-            height: 42px;
+            line-height: 1.5;
+            max-height: 72px;       /* 3 שורות מקסימום */
             overflow: hidden;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 3;  /* הגדלה מ-2 ל-3 שורות */
             -webkit-box-orient: vertical;
+            width: 100%;
         }
 
         .product-description {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: #718096;
-            line-height: 1.3;
-            height: 36px;
+            line-height: 1.35;
+            max-height: 36px;
             overflow: hidden;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
+            width: 100%;
         }
 
         .product-price {
             display: inline-block;
-            margin-top: 10px;
-            padding: 4px 12px;
-            background: linear-gradient(135deg, #ff6b35, #f7c59f);
+            margin-top: 12px;
+            padding: 5px 16px;
+            background: linear-gradient(135deg, #e74c3c, #ff6b35);
             color: white;
             border-radius: 20px;
-            font-size: 0.95rem;
-            font-weight: 700;
+            font-size: 1rem;
+            font-weight: 800;
             letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.35);
         }
 
         /* Load More Button */
@@ -1271,14 +1278,15 @@
                 // - Database instead of Google Sheets
                 // - API with search/filter endpoints
                 
-                // Check localStorage cache first (expires after 1 hour)
+                // Cache: 10 דקות — כך כל רענון שולף נתונים טריים מ-Google Sheets
+                // (המחירים מתעדכנים בשיטס ע"י הסקריפט כל ~6 שעות)
                 const cachedData = localStorage.getItem('msolutions_products_cache');
                 const cacheTime = localStorage.getItem('msolutions_products_cache_time');
-                const ONE_HOUR = 60 * 60 * 1000;
-                
+                const TEN_MINUTES = 10 * 60 * 1000;
+
                 if (cachedData && cacheTime) {
                     const age = Date.now() - parseInt(cacheTime);
-                    if (age < ONE_HOUR) {
+                    if (age < TEN_MINUTES) {
                         // Use cached data - instant load!
                         console.log('📦 Loading from cache (instant!)');
                         allProducts = JSON.parse(cachedData);
