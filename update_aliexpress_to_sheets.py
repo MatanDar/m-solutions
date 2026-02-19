@@ -644,12 +644,17 @@ def fetch_prices_by_product_search(missing_products):
         kw1 = ' '.join(all_words[:5])
         price = search_product(target_pid, kw1, max_pages=3)
 
-        # אסטרטגיה 2: אם לא נמצא — מילים 2-6 (מדלגים על שם המותג הראשון)
+        # אסטרטגיה 2: מילים 2-6 (מדלגים על שם המותג)
         if price is None and len(all_words) > 3:
             kw2 = ' '.join(all_words[1:6])
             if kw2 != kw1:
                 time.sleep(0.3)
                 price = search_product(target_pid, kw2, max_pages=2)
+
+        # אסטרטגיה 3: חיפוש לפי product ID ישיר — מחזיר תוצאה מדויקת
+        if price is None:
+            time.sleep(0.3)
+            price = search_product(target_pid, target_pid, max_pages=1)
 
         if price is not None:
             found_prices.append({'row': row, 'price': price})
