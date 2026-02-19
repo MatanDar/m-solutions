@@ -573,6 +573,60 @@ def fetch_prices_by_product_search(missing_products):
     print(f"\n🔎 Keyword search fallback: מחפש מחירים ל-{len(missing_products)} מוצרים...")
     found_prices = []
 
+    def search_product(target_pid, keywords, max_pages=3):
+        """מחפש product_id בתוצאות חיפוש keyword — עד max_pages עמודים"""
+        for page in range(1, max_pages + 1):
+            try:
+                params = {
+                    'app_key':        str(ALIEXPRESS_APP_KEY),
+                    'timestamp':      str(int(time.time() * 1000)),
+                    'method':         'aliexpress.affiliate.product.query',
+                    'sign_method':    'md5',
+                    'format':         'json',
+                    'v':              '2.0',
+                    'keywords':       keywords,
+                    'page_size':      '20',
+                    'page_no':        str(page),
+                    'target_currency':'USD',
+                    'target_language':'EN',
+                    'tracking_id':    str(ALIEXPRESS_TRACKING_ID),
+                }
+                params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
+                response = requests.get("https://api-sg.aliexpress.com/sync", params=params, timeout=20)
+                data = response.json()
+
+                result_key = 'aliexpress_affiliate_product_query_response'
+                if result_key not in data:
+                    return None
+
+                products = (data[result_key]
+                            .get('resp_result', {})
+                            .get('result', {})
+                            .get('products', {})
+                            .get('product', []))
+
+                if not products:
+                    break  # אין עוד תוצאות
+
+                for product in products:
+                    if str(product.get('product_id', '')) == target_pid:
+                        price_raw = (product.get('target_sale_price') or
+                                     product.get('sale_price') or
+                                     product.get('target_original_price') or 0)
+                        try:
+                            price = round(float(str(price_raw).replace(',', '') or 0), 2)
+                            if price > 0:
+                                return price
+                        except (ValueError, TypeError):
+                            pass
+                        return None  # נמצא אבל בלי מחיר
+
+                time.sleep(0.3)
+
+            except Exception:
+                break
+        return None
+
     for i, item in enumerate(missing_products):
         url   = item.get('url', '')
         row   = item.get('row')
@@ -582,63 +636,26 @@ def fetch_prices_by_product_search(missing_products):
         if not target_pid or not title or not row:
             continue
 
-        # 5 מילות חיפוש ראשונות (לפחות 3 תווים) מהכותרת
-        words = [w for w in title.split() if len(w) >= 3][:5]
-        keywords = ' '.join(words)
-        if not keywords:
+        all_words = [w for w in title.split() if len(w) >= 3]
+        if not all_words:
             continue
 
-        try:
-            params = {
-                'app_key':        str(ALIEXPRESS_APP_KEY),
-                'timestamp':      str(int(time.time() * 1000)),
-                'method':         'aliexpress.affiliate.product.query',
-                'sign_method':    'md5',
-                'format':         'json',
-                'v':              '2.0',
-                'keywords':       keywords,
-                'page_size':      '20',
-                'page_no':        '1',
-                'target_currency':'USD',
-                'target_language':'EN',
-                'tracking_id':    str(ALIEXPRESS_TRACKING_ID),
-            }
-            params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
+        # אסטרטגיה 1: 5 מילות החיפוש הראשונות
+        kw1 = ' '.join(all_words[:5])
+        price = search_product(target_pid, kw1, max_pages=3)
 
-            response = requests.get("https://api-sg.aliexpress.com/sync", params=params, timeout=20)
-            data = response.json()
+        # אסטרטגיה 2: אם לא נמצא — מילים 2-6 (מדלגים על שם המותג הראשון)
+        if price is None and len(all_words) > 3:
+            kw2 = ' '.join(all_words[1:6])
+            if kw2 != kw1:
+                time.sleep(0.3)
+                price = search_product(target_pid, kw2, max_pages=2)
 
-            result_key = 'aliexpress_affiliate_product_query_response'
-            if result_key not in data:
-                # הצגת תגובה לאבחון בפעם הראשונה בלבד
-                if i == 0:
-                    print(f"    ⚠️ מפתח לא צפוי: {list(data.keys())[:3]}")
-                continue
+        if price is not None:
+            found_prices.append({'row': row, 'price': price})
+            print(f"    ✅ [{i+1}] ${price} — {title[:45]}")
 
-            products = (data[result_key]
-                        .get('resp_result', {})
-                        .get('result', {})
-                        .get('products', {})
-                        .get('product', []))
-
-            for product in products:
-                if str(product.get('product_id', '')) == target_pid:
-                    price_raw = (product.get('target_sale_price') or
-                                 product.get('sale_price') or
-                                 product.get('target_original_price') or 0)
-                    try:
-                        price = round(float(str(price_raw).replace(',', '') or 0), 2)
-                        if price > 0:
-                            found_prices.append({'row': row, 'price': price})
-                            print(f"    ✅ [{i+1}] ${price} — {title[:45]}")
-                    except (ValueError, TypeError):
-                        pass
-                    break
-
-        except Exception as e:
-            print(f"    ⚠️ שגיאה [{i+1}] {title[:30]}: {e}")
-
-        time.sleep(0.5)  # מניעת rate limit
+        time.sleep(0.4)  # מניעת rate limit
 
         if (i + 1) % 20 == 0:
             print(f"  📊 התקדמות: {i+1}/{len(missing_products)}, נמצאו {len(found_prices)} עד כה...")
