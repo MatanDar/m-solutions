@@ -612,6 +612,7 @@ def fetch_product_prices_batch(product_ids):
             'tracking_id': str(ALIEXPRESS_TRACKING_ID),
             'target_currency': 'USD',
             'target_language': 'EN',
+            'fields': 'product_id,target_sale_price,sale_price,target_original_price,product_title',
         }
         params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
 
@@ -632,13 +633,15 @@ def fetch_product_prices_batch(product_ids):
             return prices
 
         result = data[result_key].get('result', {})
-
-        # בדיקת שגיאה ב-result
-        if not result.get('is_finished', True) and not result.get('products'):
-            print(f"    ⚠️ API result: {result}")
-            return prices
+        import json as _json
 
         product_list = result.get('products', {}).get('product', [])
+
+        if not product_list:
+            # הצגת ה-result המלא כדי להבין למה אין מוצרים
+            print(f"    ⚠️ No products returned. Full result: {_json.dumps(result)[:600]}")
+            return prices
+
         print(f"    ✅ Got {len(product_list)} products from API")
 
         for product in product_list:
@@ -720,8 +723,19 @@ def refresh_all_prices():
             batch = to_update[start:start + BATCH]
             pids = [b['pid'] for b in batch]
 
-            print(f"  שולח batch {start // BATCH + 1} ({len(pids)} מוצרים)...")
+            batch_num = start // BATCH + 1
+            print(f"  שולח batch {batch_num} ({len(pids)} מוצרים)...")
+
+            # הדפסת IDs לאבחון (רק batch ראשון)
+            if batch_num == 1:
+                print(f"    🔍 Sample PIDs: {pids[:5]}")
+
             prices = fetch_product_prices_batch(pids)
+
+            # אם ה-batch הראשון כבר ריק, אין טעם להמשיך — חסוך API calls
+            if batch_num == 1 and not prices:
+                print(f"  ⚠️ Batch ראשון החזיר 0 תוצאות — עוצר. בדוק את הלוג למעלה.")
+                break
 
             # כתיבה לגיליון: כל עמודה I בנפרד
             batch_data = []
