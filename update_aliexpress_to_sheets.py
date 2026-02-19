@@ -459,86 +459,89 @@ def update_prices_in_sheet(price_updates):
         traceback.print_exc()
 
 
-def fetch_prices_via_link_generate(url_to_row):
+def fetch_prices_from_pages(url_to_row):
     """
-    שליפת מחירים עבור מוצרים ללא מחיר, עם aliexpress.affiliate.link.generate.
+    שליפת מחירים ישירות מדפי המוצרים ב-AliExpress (web scraping).
+    מחפש og:price:amount ו-JSON-LD בHTML של הדף.
     url_to_row = dict { url: row_number }
     מחזיר list of {'row': int, 'price': float}
     """
+    import re
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     results = []
     if not url_to_row:
         return results
 
-    urls = list(url_to_row.keys())
-    BATCH = 12   # link.generate מקבל עד 12 URLs
-    print(f"\n🔗 link.generate: מנסה למלא {len(urls)} מחירים חסרים...")
+    print(f"\n🌐 Web scraping: מנסה למלא {len(url_to_row)} מחירים חסרים...")
 
-    for start in range(0, len(urls), BATCH):
-        batch_urls = urls[start:start + BATCH]
-        # נקה URL — הסר query params שעלולים לבלבל את ה-API
-        clean_urls = []
-        for u in batch_urls:
-            clean = u.split('?')[0]
-            clean_urls.append(clean)
+    HEADERS = {
+        'User-Agent': (
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/120.0.0.0 Safari/537.36'
+        ),
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    }
 
+    def parse_price(html):
+        """נסה כמה תבניות חיפוש מחיר ב-HTML"""
+        # 1) og:price:amount  (שתי סדרי אטריביוטים אפשריים)
+        for pat in [
+            r'og:price:amount["\']?\s+content=["\']([0-9]+\.?[0-9]*)["\']',
+            r'content=["\']([0-9]+\.?[0-9]*)["\'][^>]+og:price:amount',
+            r'product:price:amount["\']?\s+content=["\']([0-9]+\.?[0-9]*)["\']',
+        ]:
+            m = re.search(pat, html)
+            if m:
+                v = float(m.group(1))
+                if v > 0:
+                    return v
+
+        # 2) JSON-LD "@type":"Offer" / "@type":"Product"
+        m = re.search(r'"price"\s*:\s*"?([0-9]+\.?[0-9]*)"?', html)
+        if m:
+            v = float(m.group(1))
+            if v > 0:
+                return v
+
+        # 3) window.runParams price data (AliExpress React bundle)
+        m = re.search(r'"salePrice"\s*:\s*\{\s*"minPrice"\s*:\s*"?([0-9]+\.?[0-9]*)"?', html)
+        if m:
+            v = float(m.group(1))
+            if v > 0:
+                return v
+
+        return None
+
+    def fetch_one(args):
+        url, row = args
         try:
-            params = {
-                'app_key': str(ALIEXPRESS_APP_KEY),
-                'timestamp': str(int(time.time() * 1000)),
-                'method': 'aliexpress.affiliate.link.generate',
-                'sign_method': 'md5',
-                'format': 'json',
-                'v': '2.0',
-                'source_values': ','.join(clean_urls),
-                'tracking_id': str(ALIEXPRESS_TRACKING_ID),
-                'promotion_link_type': '0',
-            }
-            params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
+            clean = url.split('?')[0]
+            resp = requests.get(clean, headers=HEADERS, timeout=12)
+            if resp.status_code == 200:
+                price = parse_price(resp.text)
+                return row, price
+        except Exception:
+            pass
+        return row, None
 
-            response = requests.get('https://api-sg.aliexpress.com/sync', params=params, timeout=20)
-            data = response.json()
+    items = list(url_to_row.items())
+    success = 0
+    failed = 0
 
-            result_key = 'aliexpress_affiliate_link_generate_response'
-            if result_key not in data:
-                print(f"  ⚠️ link.generate unexpected keys: {list(data.keys())}")
-                break
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(fetch_one, item): item[0] for item in items}
+        for future in as_completed(futures):
+            row, price = future.result()
+            if price and price > 0:
+                results.append({'row': row, 'price': round(price, 2)})
+                success += 1
+            else:
+                failed += 1
 
-            import json as _json
-            resp_result = data[result_key].get('resp_result', {})
-            links = (resp_result.get('result', {})
-                                .get('promotion_links', {})
-                                .get('promotion_link', []))
-
-            if start == 0:
-                print(f"  📋 Batch 1: {len(links)} links returned")
-                if not links:
-                    print(f"  📋 Response (first 400): {_json.dumps(resp_result)[:400]}")
-
-            for link in links:
-                source_url = link.get('source_value', '')
-                price_str = (link.get('target_sale_price') or
-                             link.get('sale_price') or
-                             link.get('original_price') or '0')
-                try:
-                    price = float(str(price_str).replace(',', ''))
-                    # מצא את ה-row המקורי (מול ה-URL המלא)
-                    matched_row = None
-                    for orig_url, row in url_to_row.items():
-                        if orig_url.split('?')[0] == source_url:
-                            matched_row = row
-                            break
-                    if price > 0 and matched_row:
-                        results.append({'row': matched_row, 'price': round(price, 2)})
-                except (ValueError, TypeError):
-                    pass
-
-        except Exception as e:
-            print(f"  ⚠️ link.generate error: {e}")
-            break
-
-        time.sleep(0.5)
-
-    print(f"  💰 link.generate מצא {len(results)} מחירים")
+    print(f"  ✅ נמצאו {success} מחירים | ❌ נכשל {failed}")
     return results
 
 
@@ -1046,11 +1049,14 @@ def main():
             and p.get('url')
         }
         if still_missing:
-            link_prices = fetch_prices_via_link_generate(still_missing)
-            if link_prices:
-                update_prices_in_sheet(link_prices)
+            scraped_prices = fetch_prices_from_pages(still_missing)
+            if scraped_prices:
+                update_prices_in_sheet(scraped_prices)
+                remaining = len(still_missing) - len(scraped_prices)
+                if remaining > 0:
+                    print(f"  ℹ️  {remaining} מוצרים עדיין ללא מחיר (דפי מוצר לא נגישים)")
             else:
-                print(f"  ℹ️  link.generate לא החזיר מחירים — {len(still_missing)} מוצרים עדיין ללא מחיר")
+                print(f"  ⚠️  Web scraping נכשל — {len(still_missing)} מוצרים ללא מחיר")
         else:
             print("\n✅ כל המוצרים עודכנו עם מחיר!")
 
