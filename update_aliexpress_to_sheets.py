@@ -669,6 +669,91 @@ def fetch_prices_by_product_search(missing_products):
     return found_prices
 
 
+def fetch_prices_from_link_generate(missing_products):
+    """
+    Fallback דרך aliexpress.affiliate.link.generate —
+    מקבל URL ישיר של מוצר ומחזיר affiliate link + מחיר.
+    עובד על מוצרים שאינם מאונדקסים בחיפוש אבל קיימים בקטלוג ה-affiliate.
+    missing_products = list of {'url': str, 'row': int, 'title': str}
+    מחזיר list of {'row': int, 'price': float}
+    """
+    if not missing_products:
+        return []
+
+    print(f"\n🔗 Link.generate fallback: {len(missing_products)} מוצרים...")
+    found_prices = []
+    BATCH = 12
+    first_batch = True
+
+    for start in range(0, len(missing_products), BATCH):
+        batch = missing_products[start:start + BATCH]
+        url_to_row = {item['url']: item['row'] for item in batch}
+
+        try:
+            params = {
+                'app_key':              str(ALIEXPRESS_APP_KEY),
+                'timestamp':            str(int(time.time() * 1000)),
+                'method':               'aliexpress.affiliate.link.generate',
+                'sign_method':          'md5',
+                'format':               'json',
+                'v':                    '2.0',
+                'promotion_link_type':  '0',
+                'source_values':        ','.join(url_to_row.keys()),
+                'tracking_id':          str(ALIEXPRESS_TRACKING_ID),
+                'target_currency':      'USD',
+            }
+            params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
+
+            response = requests.get("https://api-sg.aliexpress.com/sync", params=params, timeout=20)
+            data = response.json()
+
+            result_key = 'aliexpress_affiliate_link_generate_response'
+            if result_key not in data:
+                if first_batch:
+                    print(f"    ⚠️ מפתח לא צפוי: {list(data.keys())[:3]}")
+                first_batch = False
+                continue
+
+            links = (data[result_key]
+                     .get('resp_result', {})
+                     .get('result', {})
+                     .get('promotion_links', {})
+                     .get('promotion_link', []))
+
+            # בדיקת תגובה מלאה ב-batch הראשון
+            if first_batch:
+                sample = links[0] if links else {}
+                price_fields = {k: v for k, v in sample.items()
+                                if 'price' in k.lower() or 'sale' in k.lower()}
+                print(f"    📋 שדות מחיר בתגובה: {price_fields or 'לא נמצאו'}")
+                first_batch = False
+
+            for link_data in links:
+                source_url = link_data.get('source_value', '')
+                row = url_to_row.get(source_url)
+                if not row:
+                    continue
+
+                price_raw = (link_data.get('target_sale_price') or
+                             link_data.get('sale_price') or
+                             link_data.get('target_app_sale_price') or
+                             link_data.get('target_original_price') or 0)
+                try:
+                    price = round(float(str(price_raw).replace(',', '') or 0), 2)
+                    if price > 0:
+                        found_prices.append({'row': row, 'price': price})
+                except (ValueError, TypeError):
+                    pass
+
+        except Exception as e:
+            print(f"    ⚠️ שגיאה: {e}")
+
+        time.sleep(1)
+
+    print(f"  ✅ link.generate: נמצאו {len(found_prices)} מחירים")
+    return found_prices
+
+
 def generate_signature(params, secret):
     sorted_params = sorted(params.items())
     sign_string = secret
@@ -1197,11 +1282,26 @@ def main():
                 if keyword_prices:
                     update_prices_in_sheet(keyword_prices)
 
-                final_missing = len(still_after_scan) - len(keyword_prices)
-                if final_missing > 0:
-                    print(f"  ⚠️  {final_missing} מוצרים ללא מחיר (ייתכן שהוסרו מ-AliExpress)")
-                else:
+                # ─── שלב 3: Fallback link.generate — לפי URL ישיר של המוצר ───
+                found_rows_keyword = {u['row'] for u in keyword_prices}
+                still_after_keyword = [
+                    item for item in still_after_scan
+                    if item['row'] not in found_rows_keyword
+                ]
+
+                if not still_after_keyword:
                     print("\n✅ כל המוצרים עודכנו עם מחיר!")
+                else:
+                    print(f"\n  ℹ️  {len(still_after_keyword)} מוצרים עדיין ללא מחיר — מנסה link.generate...")
+                    link_prices = fetch_prices_from_link_generate(still_after_keyword)
+                    if link_prices:
+                        update_prices_in_sheet(link_prices)
+
+                    final_missing = len(still_after_keyword) - len(link_prices)
+                    if final_missing > 0:
+                        print(f"  ⚠️  {final_missing} מוצרים ללא מחיר")
+                    else:
+                        print("\n✅ כל המוצרים עודכנו עם מחיר!")
 
         print("\n✅ Done!")
         
