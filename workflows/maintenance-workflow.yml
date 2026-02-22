@@ -1,0 +1,58 @@
+name: 🔧 Maintenance — בדיקת מוצרים מתים + עדכון מחירים מלא
+
+# הפעלה ידנית בלבד (דרך GitHub Actions → Run workflow)
+# מומלץ להריץ פעם בשבוע
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (בדיקה בלבד, ללא שינויים בגיליון)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60   # עד שעה — מספיק ל-300+ מוצרים
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install requests google-auth google-auth-oauthlib \
+                      google-auth-httplib2 google-api-python-client
+
+      - name: Run maintenance script
+        env:
+          ALIEXPRESS_APP_KEY:      ${{ secrets.ALIEXPRESS_APP_KEY }}
+          ALIEXPRESS_APP_SECRET:   ${{ secrets.ALIEXPRESS_APP_SECRET }}
+          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
+        run: |
+          echo "🔧 Starting maintenance..."
+          echo "📅 Date: $(date)"
+          echo "🔑 Checking secrets..."
+          if [ -z "$ALIEXPRESS_APP_KEY" ];    then echo "❌ Missing ALIEXPRESS_APP_KEY";    exit 1; fi
+          if [ -z "$ALIEXPRESS_APP_SECRET" ]; then echo "❌ Missing ALIEXPRESS_APP_SECRET"; exit 1; fi
+          if [ -z "$GOOGLE_SHEETS_CREDENTIALS" ]; then echo "❌ Missing GOOGLE_SHEETS_CREDENTIALS"; exit 1; fi
+          echo "✅ All secrets OK"
+          python maintenance.py
+          echo "✅ Maintenance completed"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "🔧 Maintenance job finished at $(date)"
+          echo "Check logs above for:"
+          echo "  - מוצרים שנמחקו (מתים)"
+          echo "  - מחירים שעודכנו"
+          echo "  - מוצרים שנותרו ללא מחיר"
