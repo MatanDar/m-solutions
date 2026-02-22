@@ -505,7 +505,7 @@ function buildWhatsAppMessage(title, description, link, category, price) {
   msg += `🛒 *להזמנה ישירות באלי אקספרס:*\n`;
   msg += link || '⚠️ אין קישור זמין';
   msg += `\n\n━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `💎 משלוח מהיר | אחריות מלאה`;
+  msg += `💎 משלוח מהיר`;
   if (category) msg += `\n${emoji} קטגוריה: ${category}`;
   msg += `\n━━━━━━━━━━━━━━━━━━━━`;
   return msg;

@@ -77,7 +77,7 @@
 
         body {
             font-family: 'DM Sans', sans-serif;
-            background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 55%, #2563eb 100%);
+            background: linear-gradient(135deg, #a78bfa 0%, #818cf8 55%, #6366f1 100%);
             min-height: 100vh;
             padding: 40px 20px;
             display: flex;
@@ -325,7 +325,7 @@
         /* Ensure images are visible even if not loaded */
         .category-images img[src=""],
         .category-images img:not([src]) {
-            background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 55%, #2563eb 100%);
+            background: linear-gradient(135deg, #a78bfa 0%, #818cf8 55%, #6366f1 100%);
         }
 
         .category-image-large {
@@ -766,6 +766,9 @@
             </p>
             <p style="font-size: 0.75rem; color: #a0aec0; margin-top: 5px;">
                 כל הזכויות שמורות | Made by Matan
+            </p>
+            <p style="font-size: 0.68rem; color: #b0bec5; margin-top: 10px; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+                * המחירים המוצגים צמודים למחיר המקורי של המוצר ועשויים להשתנות מעט מפריט לפריט. האתר אינו לוקח אחריות על המוצרים, על תנאי המשלוח, או על כל שינוי מחיר מצד הספק.
             </p>
         </footer>
         </div>
@@ -1339,8 +1342,9 @@
                 const title = product['Title'] || product['TITLE'];
                 const description = product['Description'] || product['DESCRIPTION'];
                 const priceRaw = product['Price'] || product['PRICE'] || '';
+                const USD_TO_ILS = 3.7;
                 const price = priceRaw && parseFloat(priceRaw) > 0
-                    ? `$${parseFloat(priceRaw).toFixed(2)}`
+                    ? `₪${Math.round(parseFloat(priceRaw) * USD_TO_ILS)}`
                     : '';
                 let imageUrl = product['Image'];
                 
