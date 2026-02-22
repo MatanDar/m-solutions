@@ -787,6 +787,37 @@
     </script>
     
     <script>
+        // ─── שער המרה USD → ILS דינמי ────────────────────────────────────
+        let USD_TO_ILS = 3.7;  // ברירת מחדל — יוחלף בשער אמיתי אם ה-API זמין
+
+        async function fetchExchangeRate() {
+            const CACHE_KEY   = 'msolutions_usd_ils_rate';
+            const CACHE_TIME  = 'msolutions_usd_ils_rate_time';
+            const ONE_DAY     = 24 * 60 * 60 * 1000;
+
+            const cached = localStorage.getItem(CACHE_KEY);
+            const cacheAge = Date.now() - parseInt(localStorage.getItem(CACHE_TIME) || '0');
+            if (cached && cacheAge < ONE_DAY) {
+                USD_TO_ILS = parseFloat(cached);
+                console.log(`💱 שער מחיר (cache): 1 USD = ${USD_TO_ILS} ₪`);
+                return;
+            }
+            try {
+                const res  = await fetch('https://open.er-api.com/v6/latest/USD');
+                const data = await res.json();
+                const rate = data?.rates?.ILS;
+                if (rate && rate > 1) {
+                    USD_TO_ILS = Math.round(rate * 100) / 100;
+                    localStorage.setItem(CACHE_KEY,  USD_TO_ILS.toString());
+                    localStorage.setItem(CACHE_TIME, Date.now().toString());
+                    console.log(`💱 שער מחיר עדכני: 1 USD = ${USD_TO_ILS} ₪`);
+                }
+            } catch (e) {
+                console.warn('💱 לא ניתן לאחזר שער חליפין — משתמש בברירת מחדל 3.7');
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────
+
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcIf9Ew8DK7FY7Bpys2hDumQBd0qXrtcNjxYmYuL6yLWrfb0r4l3tX1XcmytUksxl4ZqYZO0LfC3SE/pub?gid=725361923&single=true&output=csv';
         
         const HEADERS = ["URL", "Title", "Description", "Image", "Affiliate Link", "Last Updated", "CATEGORY", "Short Link", "Price"];
@@ -1342,7 +1373,6 @@
                 const title = product['Title'] || product['TITLE'];
                 const description = product['Description'] || product['DESCRIPTION'];
                 const priceRaw = product['Price'] || product['PRICE'] || '';
-                const USD_TO_ILS = 3.7;
                 const price = priceRaw && parseFloat(priceRaw) > 0
                     ? `₪${Math.round(parseFloat(priceRaw) * USD_TO_ILS)}`
                     : '';
@@ -1394,7 +1424,10 @@
 
         async function loadProducts() {
             try {
-                // PERFORMANCE NOTE: 
+                // אחזור שער חליפין עדכני לפני הצגת מחירים
+                await fetchExchangeRate();
+
+                // PERFORMANCE NOTE:
                 // Current strategy works well for hundreds-thousands of products:
                 // 1. All data loaded once from Google Sheets
                 // 2. Cached in localStorage for 1 hour (instant subsequent loads)

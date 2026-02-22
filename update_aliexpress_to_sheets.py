@@ -963,8 +963,10 @@ def fetch_product_prices_batch(product_ids):
     """
     שליפת מחירים עדכניים מ-AliExpress עבור batch של product IDs.
     מחזיר dict: { product_id_str: price_float }
+    מחזיר גם את קבוצת ה-PIDs שה-API הכיר (found_pids) — אלו שלא הוכרו = הוסרו מ-AliExpress.
     """
     prices = {}
+    found_pids = set()   # PIDs שה-API החזיר (גם אם ללא מחיר תקין)
     try:
         params = {
             'app_key': str(ALIEXPRESS_APP_KEY),
@@ -977,7 +979,8 @@ def fetch_product_prices_batch(product_ids):
             'tracking_id': str(ALIEXPRESS_TRACKING_ID),
             'target_currency': 'USD',
             'target_language': 'EN',
-            'fields': 'product_id,target_sale_price,sale_price,target_original_price,product_title',
+            # target_app_sale_price = מחיר אפליקציה (הנמוך ביותר, קרוב למה שמוצג באתר)
+            'fields': 'product_id,target_app_sale_price,target_sale_price,sale_price,target_original_price,product_title',
         }
         params['sign'] = generate_signature(params, ALIEXPRESS_APP_SECRET)
 
@@ -986,9 +989,7 @@ def fetch_product_prices_batch(product_ids):
 
         result_key = 'aliexpress_affiliate_productdetail_get_response'
         if result_key not in data:
-            # הדפסת התגובה המלאה לאבחון
             print(f"    ⚠️ Unexpected API response keys: {list(data.keys())}")
-            # בדיקה אם יש שגיאה מה-API
             error_resp = data.get('error_response', {})
             if error_resp:
                 print(f"    ❌ API Error: code={error_resp.get('code')}, msg={error_resp.get('msg')}, sub_msg={error_resp.get('sub_msg', '')}")
@@ -1003,7 +1004,6 @@ def fetch_product_prices_batch(product_ids):
         product_list = result.get('products', {}).get('product', [])
 
         if not product_list:
-            # הצגת ה-result המלא כדי להבין למה אין מוצרים
             print(f"    ⚠️ No products returned. Full result: {_json.dumps(result)[:600]}")
             return prices
 
@@ -1011,7 +1011,10 @@ def fetch_product_prices_batch(product_ids):
 
         for product in product_list:
             pid = str(product.get('product_id', ''))
-            price_str = (product.get('target_sale_price') or
+            found_pids.add(pid)
+            # מחיר עדיפות: app_sale > target_sale > sale > original
+            price_str = (product.get('target_app_sale_price') or
+                         product.get('target_sale_price') or
                          product.get('sale_price') or
                          product.get('target_original_price') or '0')
             try:
@@ -1028,7 +1031,133 @@ def fetch_product_prices_batch(product_ids):
         import traceback
         traceback.print_exc()
 
+    # שמירת found_pids כ-attribute זמני על המילון (Python trick)
+    prices._found_pids = found_pids
     return prices
+
+
+# ─── פונקציות עזר למחיקת שורות מהגיליון ───────────────────────────────────
+
+def get_sheet_id(service, spreadsheet_id, sheet_name):
+    """מחזיר את ה-sheetId הפנימי (מספרי) של גיליון לפי שמו"""
+    try:
+        spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+        for sheet in spreadsheet.get('sheets', []):
+            if sheet['properties']['title'] == sheet_name:
+                return sheet['properties']['sheetId']
+    except Exception as e:
+        print(f"    ⚠️ get_sheet_id שגיאה: {e}")
+    return None
+
+
+def delete_rows_from_sheet(service, spreadsheet_id, sheet_id, row_indices):
+    """
+    מוחק שורות לפי מספר שורה (1-based, כולל header).
+    חייב לבצע מחיקה בסדר יורד כדי למנוע הזזת אינדקסים.
+    """
+    if not row_indices:
+        return 0
+    sorted_rows = sorted(set(row_indices), reverse=True)
+    delete_requests = []
+    for row in sorted_rows:
+        delete_requests.append({
+            'deleteDimension': {
+                'range': {
+                    'sheetId': sheet_id,
+                    'dimension': 'ROWS',
+                    'startIndex': row - 1,   # Google Sheets: 0-based
+                    'endIndex': row           # exclusive
+                }
+            }
+        })
+    try:
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={'requests': delete_requests}
+        ).execute()
+        return len(sorted_rows)
+    except Exception as e:
+        print(f"    ⚠️ שגיאה במחיקת שורות: {e}")
+        return 0
+
+
+def check_and_remove_dead_products(missing_products):
+    """
+    מקבל רשימת מוצרים ללא מחיר.
+    קורא productdetail.get — מוצרים שה-API לא מחזיר = הוסרו מ-AliExpress → נמחקים מהגיליון.
+    מוצרים שה-API מחזיר אבל חסר מחיר — מחזיר את המחיר שנמצא.
+    בטיחות: לא מוחק כלום אם ה-API לא עובד (החזיר 0 מוצרים מ-batch ראשון).
+    מחזיר: (found_prices list, deleted_count int)
+    """
+    if not missing_products:
+        return [], 0
+
+    print(f"\n🔍 בודק {len(missing_products)} מוצרים ללא מחיר (חיפוש מתים + מחירים)...")
+
+    # מיפוי pid → (row, url)
+    pid_to_row = {}
+    for item in missing_products:
+        pid = extract_product_id(item.get('url', ''))
+        if pid:
+            pid_to_row[pid] = item['row']
+
+    if not pid_to_row:
+        print("  ⚠️ לא ניתן לחלץ Product IDs מה-URLs — דילוג")
+        return [], 0
+
+    all_pids = list(pid_to_row.keys())
+    BATCH = 50
+    found_prices = []
+    all_found_pids = set()
+    api_working = False   # נוודא ש-API עובד לפני מחיקה
+
+    for start in range(0, len(all_pids), BATCH):
+        batch_pids = all_pids[start:start + BATCH]
+        batch_num = start // BATCH + 1
+        print(f"  batch {batch_num} ({len(batch_pids)} מוצרים)...")
+
+        prices = fetch_product_prices_batch(batch_pids)
+        batch_found = getattr(prices, '_found_pids', set())
+
+        # אם batch ראשון מחזיר תוצאות — API עובד, ניתן לסמוך על הנתונים
+        if batch_num == 1 and batch_found:
+            api_working = True
+        elif batch_num == 1 and not batch_found:
+            print("  ⚠️ Batch ראשון החזיר 0 תוצאות — productdetail.get אינו זמין, דילוג על מחיקה")
+            return [], 0
+
+        all_found_pids.update(batch_found)
+        for pid, price in prices.items():
+            found_prices.append({'row': pid_to_row[pid], 'price': price})
+
+        time.sleep(1)
+
+    # מוצרים שלא הוחזרו כלל = הוסרו מ-AliExpress
+    dead_pids = set(all_pids) - all_found_pids
+    dead_rows = [pid_to_row[pid] for pid in dead_pids if pid in pid_to_row]
+
+    print(f"  ✅ מחירים חדשים: {len(found_prices)} | 🗑️ מוצרים מתים: {len(dead_rows)}")
+
+    deleted_count = 0
+    if dead_rows and api_working:
+        try:
+            credentials_json = os.environ.get('GOOGLE_SHEETS_CREDENTIALS')
+            credentials_dict = json.loads(credentials_json)
+            credentials = service_account.Credentials.from_service_account_info(
+                credentials_dict,
+                scopes=['https://www.googleapis.com/auth/spreadsheets']
+            )
+            service = build('sheets', 'v4', credentials=credentials)
+            sheet_id = get_sheet_id(service, SPREADSHEET_ID, SHEET_NAME)
+            if sheet_id is not None:
+                deleted_count = delete_rows_from_sheet(service, SPREADSHEET_ID, sheet_id, dead_rows)
+                print(f"  ✅ {deleted_count} מוצרים שהוסרו מ-AliExpress נמחקו מהגיליון")
+            else:
+                print("  ⚠️ לא נמצא sheetId — לא ניתן למחוק שורות")
+        except Exception as e:
+            print(f"  ⚠️ שגיאה במחיקת מוצרים מתים: {e}")
+
+    return found_prices, deleted_count
 
 
 def refresh_all_prices():
@@ -1297,11 +1426,25 @@ def main():
                     if link_prices:
                         update_prices_in_sheet(link_prices)
 
-                    final_missing = len(still_after_keyword) - len(link_prices)
-                    if final_missing > 0:
-                        print(f"  ⚠️  {final_missing} מוצרים ללא מחיר")
-                    else:
+                    found_rows_link = {u['row'] for u in link_prices}
+                    still_after_link = [
+                        item for item in still_after_keyword
+                        if item['row'] not in found_rows_link
+                    ]
+
+                    # ─── שלב 4: productdetail.get — מחיר + זיהוי מוצרים מתים ───
+                    if not still_after_link:
                         print("\n✅ כל המוצרים עודכנו עם מחיר!")
+                    else:
+                        print(f"\n  ℹ️  {len(still_after_link)} מוצרים עדיין ללא מחיר — בודק קיום + מחיר ישיר...")
+                        detail_prices, deleted = check_and_remove_dead_products(still_after_link)
+                        if detail_prices:
+                            update_prices_in_sheet(detail_prices)
+                        remaining = len(still_after_link) - len(detail_prices) - deleted
+                        if remaining > 0:
+                            print(f"  ⚠️  {remaining} מוצרים עדיין ללא מחיר (API לא מחזיר מחיר)")
+                        else:
+                            print("\n✅ כל המוצרים עודכנו או הוסרו!")
 
         print("\n✅ Done!")
         
