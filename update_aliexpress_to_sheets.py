@@ -25,23 +25,31 @@ except ImportError:
 
 CATEGORY_MAPPING = {
     'מוצרים לטלפון': [
-        # מגנים ומסכים - ספציפי מאוד
+        # מגנים ומסכים
         'phone case', 'iphone case', 'samsung case', 'phone cover', 'phone skin', 'back cover',
         'screen protector', 'tempered glass', 'glass protector', 'privacy glass',
         # סלפי ואחיזה
         'selfie stick', 'selfie ring', 'phone grip', 'phone ring holder', 'finger ring holder',
         # עמדות ומחזיקים לטלפון
         'phone holder', 'phone mount', 'car mount', 'car phone mount', 'phone stand',
-        'phone dock', 'phone wallet case', 'phone strap', 'phone pouch',
-        # טעינה ספציפית לטלפון
+        'phone dock', 'phone wallet case', 'phone strap', 'phone pouch', 'phone tripod',
+        # טעינה לטלפון
         'power bank', 'wireless charger', 'magsafe', 'magnetic charger', 'charging pad',
+        'car charger', 'type c charger', 'usb c charger', 'fast charger cable',
+        'type c cable', 'usb c cable', 'usb-c cable', 'lightning cable', 'lightning charger',
+        'charging cable', 'data cable', 'phone cable', 'type-c cable',
         # אוזניות
-        'earbuds', 'airpods', 'tws', 'true wireless', 'in-ear headphone',
-        # כבלים ספציפיים לטלפון
-        'lightning cable', 'lightning charger', 'for iphone', 'for ipad',
-        'for samsung galaxy', 'for android phone', 'for xiaomi', 'for huawei',
+        'earbuds', 'airpods', 'tws earphone', 'true wireless', 'in-ear headphone', 'in ear headphone',
+        'bluetooth earphone', 'wireless earbuds', 'sports earphone',
+        # כבלים וממירים ספציפיים לטלפון
+        'type c adapter', 'usb c adapter', 'otg adapter', 'usb otg',
+        'for iphone', 'for ipad', 'for samsung galaxy', 'for android phone',
+        'for xiaomi', 'for huawei', 'for oneplus',
         # עדשות לטלפון
-        'phone lens', 'phone camera lens', 'clip on lens',
+        'phone lens', 'phone camera lens', 'clip on lens', 'selfie light',
+        'clip lens', 'fisheye lens',
+        # תאורה לצילום
+        'ring light', 'selfie ring light', 'mini ring light',
         # מותגים ספציפיים = טלפון
         'iphone', 'ipad', 'airpods',
         # מפורשות טלפון
@@ -50,52 +58,83 @@ CATEGORY_MAPPING = {
     'מוצרי חשמל': [
         # בית חכם
         'smart home', 'smart plug', 'smart switch', 'smart bulb', 'smart light',
-        'smart lamp', 'smart socket', 'wifi smart', 'smart doorbell',
+        'smart lamp', 'smart socket', 'wifi smart', 'smart doorbell', 'smart sensor',
+        'motion sensor', 'door sensor', 'alexa compatible', 'google home',
         # מצלמות אבטחה
         'security camera', 'ip camera', 'wifi camera', 'cctv', 'nvr system', 'dvr system',
-        'outdoor security', 'indoor security', 'baby monitor',
+        'outdoor camera', 'indoor camera', 'baby monitor', 'nanny cam',
         # שואבי אבק חשמליים
         'robot vacuum', 'vacuum cleaner', 'robotic vacuum', 'cordless vacuum',
+        'handheld vacuum', 'wet dry vacuum',
         # מזגנים ומאווררים
-        'air conditioner', 'portable ac', 'air cooler', 'cooling fan',
-        'electric fan', 'tower fan', 'ceiling fan', 'bladeless fan',
+        'air conditioner', 'portable ac', 'air cooler', 'cooling fan', 'electric fan',
+        'tower fan', 'ceiling fan', 'bladeless fan', 'desk fan', 'table fan',
+        'mini fan', 'neck fan', 'portable fan', 'usb fan',
         # מטהרי אוויר ולחות
         'air purifier', 'humidifier', 'dehumidifier', 'air diffuser', 'essential oil diffuser',
+        'aroma diffuser',
         # תאורה
-        'led strip', 'led light strip', 'strip light', 'neon light', 'rgb light',
+        'led strip', 'led light strip', 'strip light', 'neon light', 'rgb light', 'rgb strip',
         'desk lamp', 'floor lamp', 'table lamp', 'bedside lamp', 'led bulb', 'smart bulb',
-        'led grow light', 'grow light',
+        'led grow light', 'grow light', 'night light lamp', 'led night light',
+        'monitor light', 'screen light bar', 'monitor bar', 'led bar light',
         # מקרנים
-        'projector', 'mini projector', 'portable projector', 'home projector',
-        # מצלמות
+        'projector', 'mini projector', 'portable projector', 'home projector', 'home theater',
+        # מצלמות כלליות
         'dash cam', 'dashcam', 'action camera', 'body camera', 'car recorder',
-        # רמקולים (לא אוזניות)
+        'web camera', 'webcam', 'pc camera',
+        # רמקולים
         'bluetooth speaker', 'portable speaker', 'soundbar', 'sound bar',
-        'wireless speaker', 'outdoor speaker', 'desktop speaker',
+        'wireless speaker', 'outdoor speaker', 'desktop speaker', 'mini speaker',
+        # אוזניות over-ear
+        'wireless headphones', 'bluetooth headphones', 'gaming headset', 'over ear headphones',
+        'on ear headphones', 'noise cancelling headphones', 'noise canceling headphones',
+        'headphone with mic', 'studio headphones', 'foldable headphones',
         # שעוני חכם ופיטנס
         'smart watch', 'smartwatch', 'fitness band', 'fitness tracker', 'smart band',
-        'gps watch', 'sport watch',
-        # מוצרי טיפוח חשמליים
+        'gps watch', 'sport watch', 'health monitor', 'activity tracker',
+        # מוצרי בריאות חשמליים
+        'massage gun', 'neck massager', 'back massager', 'foot massager', 'electric massager',
+        'blood pressure monitor', 'pulse oximeter', 'digital thermometer', 'body thermometer',
+        'heating pad', 'electric heating', 'tens machine', 'ems machine',
+        'facial steamer', 'face steamer', 'led face mask', 'skin care device',
+        # מוצרי טיפוח חשמלי
         'electric kettle', 'electric razor', 'electric shaver', 'electric toothbrush',
         'hair dryer', 'hair straightener', 'curling iron', 'hair curler', 'epilator',
-        'face massager', 'skin care device',
+        'face massager', 'hair trimmer', 'beard trimmer', 'nose hair trimmer',
+        'electric nail drill', 'nail drill machine',
+        # מחשב ואביזרים
+        'gaming mouse', 'wireless mouse', 'optical mouse', 'bluetooth mouse', 'computer mouse',
+        'gaming keyboard', 'mechanical keyboard', 'wireless keyboard', 'bluetooth keyboard',
+        'rgb keyboard', 'rgb mouse', 'gaming controller', 'game controller', 'gamepad controller',
+        'laptop stand', 'laptop cooler', 'laptop cooling pad', 'cooling pad', 'laptop riser',
+        'mouse pad', 'gaming mouse pad', 'extended mouse pad', 'desk mat',
+        'usb hub', 'usb splitter', 'usb dock', 'docking station', 'type c hub',
+        'hdmi cable', 'hdmi adapter', 'hdmi switch', 'dp cable', 'displayport cable',
+        'vga cable', 'data cable usb', 'usb extension cable',
+        'power strip', 'extension cord', 'surge protector', 'usb power strip',
+        'wall charger', 'usb wall charger', 'fast charger', 'quick charger', 'pd charger',
+        'power adapter', 'ac adapter', 'charging station', 'charging dock',
         # ציוד חשמלי כללי
-        'usb hub', 'usb splitter', 'power strip', 'extension cord', 'surge protector',
         'voltage tester', 'multimeter', 'clamp meter', 'soldering iron', 'heat gun', 'hot glue gun',
-        'battery charger', 'solar panel', 'solar charger', 'power inverter',
+        'battery charger', 'aa battery charger', 'solar panel', 'solar charger', 'power inverter',
         # רחפנים
-        'drone', 'quadcopter', 'fpv drone', 'rc drone', 'aerial drone',
+        'drone', 'quadcopter', 'fpv drone', 'rc drone', 'aerial drone', 'mini drone',
         # טלוויזיה ומולטימדיה
-        'smart tv', 'tv box', 'android tv box', 'media player', 'hdmi switch',
+        'smart tv', 'tv box', 'android tv box', 'media player', 'streaming stick',
+        'digital frame', 'photo frame digital', 'digital photo frame',
+        # ניקיון חשמלי
+        'steam mop', 'steam cleaner', 'steam iron', 'electric steam',
         # תחבורה חשמלית
         'electric scooter', 'e-scooter', 'electric bicycle', 'e-bike', 'electric skateboard',
-        'hover board'
+        'hoverboard', 'hover board', 'self balancing',
     ],
     'מטבח ובית': [
         # בישול ואפייה
         'kitchen', 'cooking', 'baking', 'frying pan', 'sauce pan', 'wok pan', 'pot set',
         'knife set', 'cutting board', 'chopping board', 'peeler', 'grater', 'colander',
         'spatula', 'ladle', 'silicone tongs', 'whisk', 'rolling pin', 'pizza cutter',
+        'kitchen gadget', 'cooking tool', 'kitchen tool',
         # אחסון מזון
         'food container', 'lunch box', 'food storage', 'mason jar', 'vacuum seal',
         'meal prep container', 'bento box', 'airtight container',
@@ -103,23 +142,31 @@ CATEGORY_MAPPING = {
         'coffee maker', 'coffee grinder', 'french press', 'tea infuser', 'pour over',
         'blender', 'juicer', 'toaster oven', 'waffle maker', 'sandwich maker', 'egg cooker',
         'rice cooker', 'slow cooker', 'instant pot', 'pressure cooker',
-        # ארגון מטבח
+        # ארגון מטבח ובית
         'dish rack', 'dish drying rack', 'kitchen organizer', 'spice rack', 'spice jar',
-        'drawer organizer', 'cabinet organizer', 'pot rack',
+        'drawer organizer', 'cabinet organizer', 'pot rack', 'shelf organizer',
+        'storage box', 'storage organizer', 'storage bin', 'organizer box', 'desk organizer',
+        'closet organizer', 'wardrobe organizer', 'clothes organizer', 'storage rack',
+        'shoe rack', 'shoe organizer', 'shoe box', 'shoe storage', 'shoe shelf',
+        'cable management', 'cable organizer', 'cable box', 'wire organizer',
         # אמבטיה ושירותים
         'toilet brush', 'shower curtain', 'soap dispenser', 'bath mat set',
-        'bathroom organizer', 'toilet paper holder', 'shower caddy',
+        'bathroom organizer', 'toilet paper holder', 'shower caddy', 'bathroom shelf',
         # כביסה וניקיון
-        'laundry bag', 'clothes hanger', 'drying rack', 'ironing board', 'lint roller',
-        'mop set', 'broom dustpan', 'cleaning brush', 'scrub sponge', 'microfiber towel',
+        'laundry bag', 'laundry basket', 'laundry hamper', 'clothes hanger', 'drying rack',
+        'ironing board', 'lint roller', 'mop set', 'broom dustpan', 'cleaning brush',
+        'scrub sponge', 'microfiber towel', 'microfiber cloth', 'cleaning cloth',
+        'garbage bag', 'trash bag', 'bin liner', 'trash can', 'waste bin', 'rubbish bin',
         # מיטה ושינה
-        'bed sheet set', 'pillow case', 'throw blanket', 'quilt cover', 'duvet cover', 'mattress topper',
+        'bed sheet set', 'pillow case', 'throw blanket', 'quilt cover', 'duvet cover',
+        'mattress topper', 'memory foam pillow', 'sleep mask', 'eye mask sleep',
         # עיצוב הבית
-        'shower curtain', 'tablecloth', 'placemats', 'coaster set', 'candle holder',
-        'picture frame', 'wall sticker', 'wall art print', 'wall clock', 'planter pot',
+        'tablecloth', 'placemats', 'coaster set', 'candle holder', 'picture frame',
+        'wall sticker', 'wall art print', 'wall clock', 'planter pot', 'flower vase',
         'doormat', 'bath mat', 'area rug', 'chair cushion', 'sofa cover', 'throw pillow',
+        'curtain rod', 'curtain hooks', 'home decoration', 'home decor', 'room decor',
         # כלים לחדר אוכל
-        'dinnerware set', 'plate set', 'bowl set', 'ceramic mug', 'wine glass', 'cutlery set'
+        'dinnerware set', 'plate set', 'bowl set', 'ceramic mug', 'wine glass', 'cutlery set',
     ],
     'ספורט וכושר': [
         # ציוד כושר
