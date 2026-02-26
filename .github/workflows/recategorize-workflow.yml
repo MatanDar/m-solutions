@@ -1,0 +1,32 @@
+name: Recategorize + Clean (Remove No-Price)
+
+on:
+  # הפעלה ידנית מ-GitHub Actions
+  workflow_dispatch:
+
+  # הפעלה אוטומטית כל יום ראשון ב-03:00 UTC
+  schedule:
+    - cron: '0 3 * * 0'
+
+jobs:
+  recategorize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install google-auth google-auth-httplib2 google-api-python-client requests
+
+      - name: Run recategorize + clean
+        env:
+          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
+        run: python recategorize_clean.py

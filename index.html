@@ -1073,30 +1073,32 @@
                     'leather belt', 'watch band', 'watch strap', 'apple watch band'
                 ],
                 'כלי עבודה': [
-                    // כלי יד
-                    'screwdriver set', 'wrench set', 'pliers', 'hammer', 'saw', 'handsaw',
-                    'hex key', 'allen key', 'socket set', 'torque wrench', 'adjustable wrench',
+                    // כלי יד — ספציפיים בלבד (מונע בלבול עם מטבח)
+                    'screwdriver set', 'wrench set', 'combination pliers', 'claw hammer', 'hand saw',
+                    'hex key set', 'allen wrench', 'socket wrench', 'torque wrench', 'adjustable spanner',
+                    'adjustable wrench', 'socket set', 'hex key', 'allen key',
                     // מדידה
                     'measuring tape', 'tape measure', 'spirit level', 'laser level', 'laser measure',
-                    'digital caliper', 'ruler', 'angle finder',
-                    // כלי חיתוך
-                    'utility knife', 'box cutter', 'wire stripper', 'crimping tool', 'cable cutter',
-                    // כלים חשמליים
-                    'electric drill', 'cordless drill', 'drill bit', 'impact driver', 'electric screwdriver',
-                    'jigsaw', 'circular saw', 'angle grinder', 'soldering iron', 'heat gun', 'hot glue gun',
+                    'laser distance', 'digital caliper', 'angle finder', 'protractor',
+                    // כלי חיתוך עבודה (לא מטבח)
+                    'utility knife', 'box cutter', 'wire stripper', 'crimping tool', 'cable cutter', 'pipe cutter',
+                    // כלים חשמליים לעבודה (ללא "hot glue gun"/"heat gun"/"soldering iron" — הם ב"מוצרי חשמל")
+                    'electric drill', 'cordless drill', 'drill bit set', 'drill bit', 'impact driver',
+                    'electric screwdriver', 'rotary tool', 'jigsaw', 'circular saw', 'angle grinder',
+                    'belt sander', 'orbital sander',
                     // ארגון כלים
-                    'tool set', 'tool kit', 'tool box', 'tool bag', 'workbench', 'tool organizer',
+                    'tool set', 'tool kit', 'hand tool kit', 'tool box', 'tool bag', 'workbench', 'tool organizer',
                     // פנסים ותאורת עבודה
-                    'flashlight', 'headlamp', 'work light', 'led torch', 'tactical light',
+                    'flashlight', 'headlamp', 'work light', 'tactical flashlight', 'led torch', 'tactical light',
                     // סולמות
-                    'ladder', 'step ladder', 'extension ladder', 'folding ladder',
+                    'ladder', 'step ladder', 'extension ladder', 'folding ladder', 'telescoping ladder',
                     // חומרים
-                    'sandpaper', 'grinding disc', 'cutting disc', 'abrasive',
+                    'sandpaper', 'grinding disc', 'cutting disc', 'grinding wheel', 'cutting wheel', 'abrasive',
                     // בטיחות
-                    'safety glasses', 'work gloves', 'ear protection', 'dust mask', 'face shield',
+                    'safety glasses', 'work gloves', 'ear protection', 'ear muffs', 'dust mask', 'n95 mask', 'face shield',
                     // רכב ואוטומוטיב
-                    'cable tie', 'zip tie', 'hose clamp', 'car jack', 'car repair tool',
-                    'automotive tool', 'oil filter wrench', 'tire inflator', 'jump starter'
+                    'cable tie', 'zip tie', 'hose clamp', 'car jack', 'floor jack', 'car repair tool',
+                    'automotive tool', 'oil filter wrench', 'tire inflator', 'jump starter', 'obd scanner'
                 ],
                 'צעצועים': [
                     // לגו ובלוקים
@@ -1189,10 +1191,12 @@
                 // בדיקת סף ניקוד — ניקוד נמוך מדי = שונות
                 const validBest = (bestCategory && scores[bestCategory] >= MIN_SCORE) ? bestCategory : null;
 
-                const hasValidCategory = originalCategory && CATEGORIES.find(c => c.name === originalCategory);
+                // "שונות" נחשבת כ-invalid — תמיד תתוקן
+                const isShonot = originalCategory === 'שונות';
+                const hasValidCategory = !isShonot && originalCategory && CATEGORIES.find(c => c.name === originalCategory);
 
                 if (!hasValidCategory) {
-                    // קטגוריה חסרה/לא תקינה - מקצה לפי הניקוד הטוב ביותר
+                    // קטגוריה חסרה / לא תקינה / שונות — מקצה לפי הניקוד הטוב ביותר
                     const newCat = validBest || 'שונות';
                     product['CATEGORY'] = newCat;
                     fixes.push({ title, from: originalCategory || 'ללא', to: newCat, score: scores[newCat] || 0 });
@@ -1200,8 +1204,11 @@
                 } else if (validBest && validBest !== originalCategory) {
                     const currentScore = scores[originalCategory] || 0;
                     const bestScore = scores[validBest];
-                    // תיקון רק אם הקטגוריה החדשה מנצחת ב-4+ נקודות (כדי למנוע תיקון יתר)
-                    if (bestScore > currentScore + 3) {
+                    // דריסה רק אם הקטגוריה החדשה:
+                    //  1) ניקוד מוחלט >= 8 (לפחות ביטוי 2-מילה מוצק)
+                    //  2) מנצחת ב-8+ נקודות על הקטגוריה הנוכחית
+                    // → מונע דריסת סיווג נכון של Python ע"י JS
+                    if (bestScore >= 8 && bestScore > currentScore + 8) {
                         product['CATEGORY'] = validBest;
                         fixes.push({ title, from: originalCategory, to: validBest, score: bestScore });
                         fixedCount++;
